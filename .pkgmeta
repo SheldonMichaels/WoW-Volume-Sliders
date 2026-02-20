@@ -1,11 +1,5 @@
 package-as: VolumeSliders
-enable-nolib-creation: yes
-
-externals:
-  Libs/LibStub: https://github.com/Stanzilla/LibStub
-  Libs/CallbackHandler-1.0: https://github.com/tekkub/callbackhandler
-  Libs/LibDataBroker-1.1: https://github.com/tekkub/libdatabroker-1-1
-  Libs/LibDBIcon-1.0: https://github.com/nebularg/libdbicon-1.0
+enable-nolib-creation: no
 
 manual-changelog:
   filename: changelog.md
