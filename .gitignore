@@ -1,0 +1,17 @@
+# Packager output
+.release/
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vs/
+.vscode/
+*.code-workspace
+
+# Internal docs
+dev_changelog.md
+TODO.md
+GEMINI.md
