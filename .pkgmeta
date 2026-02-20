@@ -2,10 +2,10 @@ package-as: VolumeSliders
 enable-nolib-creation: yes
 
 externals:
-  VolumeSliders/Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk/LibStub
-  VolumeSliders/Libs/CallbackHandler-1.0: https://repos.wowace.com/wow/callbackhandler/trunk/CallbackHandler-1.0
-  VolumeSliders/Libs/LibDataBroker-1.1: https://repos.wowace.com/wow/libdatabroker-1-1/trunk/LibDataBroker-1.1
-  VolumeSliders/Libs/LibDBIcon-1.0: https://repos.wowace.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
+  Libs/LibStub: https://repos.wowace.com/wow/libstub/trunk/LibStub
+  Libs/CallbackHandler-1.0: https://repos.wowace.com/wow/callbackhandler/trunk/CallbackHandler-1.0
+  Libs/LibDataBroker-1.1: https://repos.wowace.com/wow/libdatabroker-1-1/trunk/LibDataBroker-1.1
+  Libs/LibDBIcon-1.0: https://repos.wowace.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
 
 manual-changelog:
   filename: changelog.md
