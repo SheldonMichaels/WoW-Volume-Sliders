@@ -5,7 +5,6 @@
 ## Version: 1.2.0
 ## SavedVariables: VolumeSlidersMMDB
 ## SavedVariablesPerCharacter:
-## Dependencies: Blizzard_Settings, Blizzard_SharedXML
 ## OptionalDeps:
 ## IconTexture: Interface\AddOns\VolumeSliders\Media\speaker_on.png
 ## Category: User Interface
