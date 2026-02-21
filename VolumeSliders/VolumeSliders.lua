@@ -71,7 +71,7 @@ local TEMPLATE_CONTENT_OFFSET_TOP = 18
 local TEMPLATE_CONTENT_OFFSET_BOTTOM = 3
 
 -- Each slider occupies a column of this width, with this spacing between them.
-local SLIDER_COLUMN_WIDTH = 70
+local SLIDER_COLUMN_WIDTH = 60
 local SLIDER_COLUMN_SPACING = 15
 
 -- Fixed height of the slider track itself (excludes labels and buttons).
@@ -81,7 +81,7 @@ local SLIDER_HEIGHT = 120
 local NUM_SLIDERS = 5
 
 -- Padding around the content area inside the NineSlice border.
-local CONTENT_PADDING_X = 25
+local CONTENT_PADDING_X = 20
 local CONTENT_PADDING_TOP = 15
 local CONTENT_PADDING_BOTTOM = 15
 
@@ -91,10 +91,10 @@ local CONTENT_WIDTH = (CONTENT_PADDING_X * 2)
     + ((NUM_SLIDERS - 1) * SLIDER_COLUMN_SPACING)
 
 -- Content height breakdown:
---   CONTENT_PADDING_TOP + 65 (instruction text + slider titles) +
---   SLIDER_HEIGHT + 95 (mute checkboxes) + 35 (bottom row) +
+--   CONTENT_PADDING_TOP + 95 (instruction text + slider titles + percentages) +
+--   SLIDER_HEIGHT + 100 (mute checkboxes shifted down) + 35 (bottom row) +
 --   CONTENT_PADDING_BOTTOM
-local CONTENT_HEIGHT = CONTENT_PADDING_TOP + 65 + SLIDER_HEIGHT + 95 + 35 + CONTENT_PADDING_BOTTOM
+local CONTENT_HEIGHT = CONTENT_PADDING_TOP + 95 + SLIDER_HEIGHT + 100 + 35 + CONTENT_PADDING_BOTTOM
 
 -- Full frame size including NineSlice border insets.
 local FRAME_WIDTH = CONTENT_WIDTH + TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT
@@ -390,12 +390,6 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     -- Labels & Value Text
     ---------------------------------------------------------------------------
 
-    -- Title label (centered above the slider column).
-    slider.label = slider:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    slider.label:SetPoint("BOTTOM", slider, "TOP", 0, 35)
-    slider.label:SetText(label)
-    slider.label:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
-
     -- "High" / "Low" endpoint labels above and below the stepper arrows.
     slider.highLabel = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     slider.highLabel:SetPoint("BOTTOM", upBtn, "TOP", 0, 5)
@@ -405,10 +399,16 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     slider.lowLabel:SetPoint("TOP", downBtn, "BOTTOM", 0, -3)
     slider.lowLabel:SetText("Low")
 
-    -- Numeric percentage readout to the right of the thumb.
+    -- Numeric percentage readout above the "High" text.
     slider.valueText = slider:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    slider.valueText:SetPoint("LEFT", slider, "RIGHT", 5, 0)
+    slider.valueText:SetPoint("BOTTOM", slider.highLabel, "TOP", 0, 10)
     slider.valueText:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
+
+    -- Title label (centered above the percentage).
+    slider.label = slider:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    slider.label:SetPoint("BOTTOM", slider.valueText, "TOP", 0, 4)
+    slider.label:SetText(label)
+    slider.label:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
 
     ---------------------------------------------------------------------------
     -- Initial Value & OnValueChanged
@@ -459,7 +459,7 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     ---------------------------------------------------------------------------
     local muteCheck = CreateFrame("CheckButton", name .. "Mute", parent, "SettingsCheckboxTemplate")
     muteCheck:SetSize(26, 26)
-    muteCheck:SetPoint("TOP", slider, "BOTTOM", 0, -35)
+    muteCheck:SetPoint("TOP", slider, "BOTTOM", 0, -40)
     DisableCheckboxHoverBackground(muteCheck)
 
     -- "Mute" label below the checkbox.
@@ -586,6 +586,14 @@ function VS:CreateOptionsFrame()
         elseif event == "GLOBAL_MOUSE_DOWN" then
             -- Close the panel when the user clicks anywhere outside it.
             if self:IsShown() and not self:IsMouseOver() then
+                -- Check if the mouse is currently hovering the expanded output list.
+                -- Since the list extends below the main panel bounds, IsMouseOver()
+                -- on the parent frame returns false.
+                local ddList = VolumeSlidersOutputDropdown and VolumeSlidersOutputDropdown.list
+                if ddList and ddList:IsShown() and ddList:IsMouseOver() then
+                    return -- Don't hide the panel; the click is inside the list.
+                end
+                
                 self:Hide()
             end
         end
@@ -636,7 +644,7 @@ function VS:CreateOptionsFrame()
     -- Instruction text displayed at the top of the panel.
     local instruction = contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     instruction:SetPoint("TOP", contentFrame, "TOP", 0, -CONTENT_PADDING_TOP)
-    instruction:SetText("Right-click on the broker or minimap icon to toggle master mute.")
+    instruction:SetText("Right-click on the icon to toggle master mute.")
     instruction:SetTextColor(1, 1, 1)
 
     ---------------------------------------------------------------------------
@@ -646,7 +654,7 @@ function VS:CreateOptionsFrame()
     -- SLIDER_COLUMN_WIDTH wide with SLIDER_COLUMN_SPACING between them.
     ---------------------------------------------------------------------------
     local startX = CONTENT_PADDING_X
-    local startY = -(CONTENT_PADDING_TOP + 65)
+    local startY = -(CONTENT_PADDING_TOP + 95)
 
     -- Master Volume
     local masterSlider = CreateVerticalSlider(contentFrame, "VolumeSlidersSliderMaster", "Master", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01)
@@ -708,13 +716,13 @@ function VS:CreateOptionsFrame()
 
     -- Dropdown button
     local dropdown = CreateFrame("Button", "VolumeSlidersOutputDropdown", contentFrame)
-    dropdown:SetSize(200, 25)
+    dropdown:SetSize(140, 36)
     dropdown:SetPoint("LEFT", outputLabel, "RIGHT", 5, 0)
 
     -- Background texture (Blizzard atlas, extends slightly beyond frame bounds
     -- to match the original template's visual padding).
     local ddBg = dropdown:CreateTexture(nil, "BACKGROUND")
-    ddBg:SetAtlas("common-dropdown-c-button", true)
+    ddBg:SetAtlas("common-dropdown-c-button")
     ddBg:SetPoint("TOPLEFT", -7, 7)
     ddBg:SetPoint("BOTTOMRIGHT", 7, -7)
     dropdown.Background = ddBg
@@ -726,11 +734,15 @@ function VS:CreateOptionsFrame()
     arrow:Hide()
     dropdown.Arrow = arrow
 
-    -- Currently selected device name.
+    -- Currently selected device name (allows wrapping to 2 lines).
     local ddText = dropdown:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     ddText:SetPoint("LEFT", dropdown, "LEFT", 13, 0)
     ddText:SetPoint("RIGHT", dropdown, "RIGHT", -13, 0)
     ddText:SetJustifyH("CENTER")
+    ddText:SetJustifyV("MIDDLE")
+    ddText:SetWordWrap(true)
+    ddText:SetMaxLines(2)
+    ddText:SetSpacing(2)
     ddText:SetText("System Default")
     dropdown.text = ddText
 
@@ -875,10 +887,34 @@ function VS:CreateOptionsFrame()
 
                 btn.text:SetText(name)
                 btn:SetScript("OnClick", function()
-                    -- Apply the selected output device and restart the sound
-                    -- system so the change takes effect immediately.
+                    VolumeSlidersMMDB.deviceVolumes = VolumeSlidersMMDB.deviceVolumes or {}
+                    
+                    -- Save the current master volume under the active device's name before swapping
+                    local oldIndex = tonumber(GetCVar("Sound_OutputDriverIndex")) or 0
+                    local oldName = Sound_GameSystem_GetOutputDriverNameByIndex(oldIndex) or "System Default"
+                    local currentMaster = GetCVar("Sound_MasterVolume")
+                    VolumeSlidersMMDB.deviceVolumes[oldName] = currentMaster
+
+                    -- Apply the selected output device and restart the sound system
                     SetCVar("Sound_OutputDriverIndex", i)
                     Sound_GameSystem_RestartSoundSystem()
+                    
+                    -- Decide the target volume for the newly selected device
+                    local targetVol = VolumeSlidersMMDB.deviceVolumes[name] or currentMaster
+                    
+                    -- WoW's sound system restart takes an unpredictable amount of time and will
+                    -- forcefully reset the CVar to 1.0 when it finishes.
+                    -- Use a ticker to forcefully apply the volume continuously for 3 seconds to guarantee it overrides the engine reset.
+                    local enforceCount = 0
+                    if dropdown.volTicker then dropdown.volTicker:Cancel() end
+                    dropdown.volTicker = C_Timer.NewTicker(0.5, function()
+                        SetCVar("Sound_MasterVolume", targetVol)
+                        enforceCount = enforceCount + 1
+                        if enforceCount >= 6 then
+                            dropdown.volTicker:Cancel()
+                        end
+                    end)
+
                     dropdown.text:SetText(name)
                     list:Hide()
                     isMenuOpen = false
@@ -902,6 +938,28 @@ function VS:CreateOptionsFrame()
     end)
     -- Refresh selected device text whenever the dropdown becomes visible.
     dropdown:HookScript("OnShow", RefreshDropdownText)
+
+    ---------------------------------------------------------------------------
+    -- Bottom Row Centering
+    ---------------------------------------------------------------------------
+    -- Defer layout calculation slightly to ensure font strings have initialized
+    -- their widths, then re-anchor the character checkbox to dynamically center
+    -- the entire bottom row within the content width.
+    C_Timer.After(0.01, function()
+        if VS.characterCheckbox and VS.characterCheckbox.labelText and outputLabel and dropdown then
+            local checkWidth = VS.characterCheckbox:GetWidth()
+            local checkLabelWidth = VS.characterCheckbox.labelText:GetStringWidth()
+            local outputLabelWidth = outputLabel:GetStringWidth()
+            local dropWidth = dropdown:GetWidth()
+
+            -- Sum of all elements and manual horizontal spacing gaps
+            local totalRowWidth = checkWidth + 4 + checkLabelWidth + 20 + outputLabelWidth + 5 + dropWidth
+            local offsetX = (CONTENT_WIDTH - totalRowWidth) / 2
+
+            -- Shifted down 7 pixels to accommodate the taller multi-line dropdown button so it doesn't crowd the sliders
+            VS.characterCheckbox:SetPoint("BOTTOMLEFT", contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 3)
+        end
+    end)
 
     -- Register combat lockdown event and start hidden.
     vsContainer:RegisterEvent("PLAYER_REGEN_DISABLED")
