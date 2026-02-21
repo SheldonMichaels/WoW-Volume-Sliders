@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.1.4
+
+- Restructured repository layout to use a nested AddOn folder for cleaner code management.
+- Re-configured CurseForge packager and GitHub release workflows.
+
 ## v1.0.0
 
 Initial release.
