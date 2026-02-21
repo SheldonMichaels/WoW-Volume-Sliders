@@ -1,8 +1,11 @@
 package-as: VolumeSliders
 enable-nolib-creation: no
 
+move-folders:
+  VolumeSliders/VolumeSliders: VolumeSliders
+
 manual-changelog:
-  filename: changelog.md
+  filename: CHANGELOG.md
   markup-type: markdown
 
 ignore:

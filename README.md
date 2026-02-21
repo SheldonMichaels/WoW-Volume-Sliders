@@ -21,7 +21,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ### Manual
 1. Download or clone this repository
-2. Copy the `VolumeSliders` folder into your WoW addons directory:
+2. Open the repository contents and copy the inner `VolumeSliders/` folder into your WoW addons directory:
    ```
    World of Warcraft/_retail_/Interface/AddOns/
    ```
