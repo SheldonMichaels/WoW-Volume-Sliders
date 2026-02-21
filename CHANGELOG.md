@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.1
+
+- **Optimization:** Removed native Blizzard UI dependencies (`Blizzard_Settings`, `Blizzard_SharedXML`) from the addon manifest.
+
 ## v1.2.0
 
 ### Layout & UI Overhaul
