@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.2.0
+
+### Layout & UI Overhaul
+- Narrowed the overall window for a more compact and space-efficient view.
+- Re-anchored the exact volume percentages to sit directly under the title texts.
+- Widened the audio device selector dropdown.
+- Configured audio device names to natively wrap into two lines, preventing UI stacking issues that occurred with excessively long device names.
+- Dynamically centered the audio device and "Sound at Character" selections to perfectly align with the content, regardless of user locale translation lengths.
+
+### Audio Device State Persistence
+- *Hotfix:* Restored a core feature that was being broken by World of Warcraft itself. When switching output devices natively, WoW asynchronously crashes the Master Volume back to 100%. The addon now remembers your chosen Master Volume per device and aggressively enforces that value for a few seconds following an output swap to override the engine reset.
+
 ## v1.1.4
 
 - Restructured repository layout to use a nested AddOn folder for cleaner code management.

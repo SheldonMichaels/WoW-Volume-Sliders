@@ -2,7 +2,7 @@
 ## Title: Volume Sliders
 ## Notes: Volume sliders for all sound channels
 ## Author: Sheldon Michaels
-## Version: 1.1.4
+## Version: 1.2.0
 ## SavedVariables: VolumeSlidersMMDB
 ## SavedVariablesPerCharacter:
 ## Dependencies: Blizzard_Settings, Blizzard_SharedXML
