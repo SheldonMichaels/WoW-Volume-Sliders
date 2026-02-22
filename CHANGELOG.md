@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.3
+
+- **Documentation:** Updated README.md to match the current description on the CurseForge project page.
+
 ## v1.2.2
 
 - **Under the Hood:** Integrated Luacheck static analysis to ensure code quality and prevent Lua errors natively.

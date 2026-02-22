@@ -4,18 +4,29 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ![WoW](https://img.shields.io/badge/WoW-12.0.1-blue)
 
-## Features
+## Current Features
 
-- **Five Channel Sliders** — Master, Effects, Music, Ambience, and Dialog, each with a vertical slider and percentage readout
-- **Per-Channel Mute** — Individual mute checkbox below each slider
-- **Minimap Button** — Left-click to open the panel, right-click to toggle master mute
-- **Scroll to Adjust** — Mouse-wheel on the minimap/broker icon adjusts master volume (fine control with Ctrl held or at low volumes)
-- **Stepper Arrows** — ▲/▼ buttons snap volume to the nearest 5% increment
-- **Sound Output Device** — Dropdown to select your active audio output device
-- **Sound at Character** — Toggle whether audio is positioned at your character or the camera
-- **Addon Compartment** — Also accessible from the minimap Addon Compartment menu
-- **Data Broker Support** — Compatible with LDB display addons (Titan Panel, ChocolateBar, etc.)
-- **Modern UI** — Uses Blizzard's `SettingsFrameTemplate` and `MinimalSlider` atlas assets for a native feel
+- **Five vertical sliders** — one for each channel and last used volume values persist between mute/unmute
+- **Per-channel mute toggles** — mute each channel individually
+- **Minimap button** — left-click to open the panel, right-click to quick-toggle master mute
+- **Scroll wheel** — over the minimap icon to adjust master volume (hold Ctrl for fine 1% steps)
+- **Stepper arrows** (▲/▼) — snap volume to the nearest 5% increment
+- **Sound output device selector** — change your active audio device, with a saved master volume value per device
+- **"Sound at Character" toggle** — positional audio at your character (checked) or at the camera location (unchecked)
+- **Addon Compartment & Data Broker** — works with the built-in compartment menu (tested) and LDB displays like Titan Panel (untested) or ChocolateBar (untested)
+- **Native look & feel** — uses native Blizzard UI assets
+
+## Possible Future Features
+
+- Movable slider window
+- Toggle for persistent slider window if desired
+- Hotkey to show/hide the slider window
+- Settings page, to include:
+  - Toggle to show/hide elements in the volume slider window such as output selector
+  - Configure what mouse buttons and modifiers perform which actions on the minimap button and sliders
+  - Change element spacing in the slider window for more or less empty space
+  - Change slider order
+  - Show/hide specific sliders
 
 ## Installation
 
