@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.4
+
+- **Visual Update:** The slider thumbs have been replaced with the modern "Boss Abilities" golden diamond.
+- **Visual Update:** The horizontal stepper arrows have been replaced with the modern minimap Plus `(+)` and Minus `(-)` zoom buttons for better clarity and native vertical alignment.
+- **Under the Hood:** Adjusted interactive hitboxes and element spacing for a crisp layout. Future groundwork was laid for a toggle to restore legacy silver aesthetic.
+
 ## v1.2.3
 
 - **Documentation:** Updated README.md to match the current description on the CurseForge project page.

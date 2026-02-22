@@ -320,9 +320,11 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     trackMiddle:SetPoint("TOP", trackTop, "BOTTOM", 0, 0)
     trackMiddle:SetPoint("BOTTOM", trackBottom, "TOP", 0, 0)
 
-    -- Diamond-shaped thumb (used as-is from the MinimalSlider atlas).
+    -- Diamond-shaped thumb (uses the gold diamond from Boss Abilities).
+    -- Future Options Reference:
+    --   Old silver knob atlas: "Minimal_SliderBar_Button"
     local thumb = slider:CreateTexture(name .. "Thumb", "OVERLAY")
-    thumb:SetAtlas("Minimal_SliderBar_Button", true)
+    thumb:SetAtlas("combattimeline-pip", true)
     slider:SetThumbTexture(thumb)
 
     -- Force the thumb to be visible after a brief delay.  On initial frame
@@ -344,13 +346,19 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     ---------------------------------------------------------------------------
     local STEP_PERCENT = 5
 
-    -- Up arrow (increase volume) — uses the horizontal "Left" stepper atlas
-    -- rotated 90° CW so the arrow points upward.
+    -- Up arrow (increase volume)
+    -- Future Options Reference:
+    --   Old silver up arrow layout:
+    --   upBtn:SetSize(19, 11)
+    --   SetAtlasRotated90CW(upTex, "Minimal_SliderBar_Button_Left")
+    --   Old gold up arrow layout:
+    --   upTex:SetAtlas("ui-hud-actionbar-pageuparrow-up")
     local upBtn = CreateFrame("Button", name .. "StepUp", parent)
-    upBtn:SetSize(19, 11) -- Dimensions swapped from the horizontal 11×19 original
+    upBtn:SetSize(20, 20) -- Explicitly size the button hit-box so it doesn't collapse to 0x0
     local upTex = upBtn:CreateTexture(nil, "BACKGROUND")
-    SetAtlasRotated90CW(upTex, "Minimal_SliderBar_Button_Left")
-    upTex:SetAllPoints()
+    upTex:SetAtlas("ui-hud-minimap-zoom-in")
+    upTex:SetSize(20, 20)
+    upTex:SetPoint("CENTER", upBtn, "CENTER", 0, 0)
     upBtn:SetPoint("BOTTOM", slider, "TOP", 0, 3)
     upBtn:SetScript("OnClick", function()
         -- Convert from inverted slider value to real volume percentage.
@@ -364,13 +372,19 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
 
-    -- Down arrow (decrease volume) — uses the horizontal "Right" stepper
-    -- atlas rotated 90° CW so the arrow points downward.
+    -- Down arrow (decrease volume)
+    -- Future Options Reference:
+    --   Old silver down arrow layout:
+    --   downBtn:SetSize(19, 11)
+    --   SetAtlasRotated90CW(downTex, "Minimal_SliderBar_Button_Right")
+    --   Old gold down arrow layout:
+    --   downTex:SetAtlas("ui-hud-actionbar-pagedownarrow-up")
     local downBtn = CreateFrame("Button", name .. "StepDown", parent)
-    downBtn:SetSize(19, 11) -- Dimensions swapped from original
+    downBtn:SetSize(20, 20) -- Explicitly size the button hit-box
     local downTex = downBtn:CreateTexture(nil, "BACKGROUND")
-    SetAtlasRotated90CW(downTex, "Minimal_SliderBar_Button_Right")
-    downTex:SetAllPoints()
+    downTex:SetAtlas("ui-hud-minimap-zoom-out")
+    downTex:SetSize(20, 20)
+    downTex:SetPoint("CENTER", downBtn, "CENTER", 0, 0) -- No offset
     downBtn:SetPoint("TOP", slider, "BOTTOM", 0, -3)
     downBtn:SetScript("OnClick", function()
         local currentVol = 1 - slider:GetValue()
@@ -396,7 +410,7 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     slider.highLabel:SetText("High")
 
     slider.lowLabel = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    slider.lowLabel:SetPoint("TOP", downBtn, "BOTTOM", 0, -3)
+    slider.lowLabel:SetPoint("TOP", downBtn, "BOTTOM", 0, -1)
     slider.lowLabel:SetText("Low")
 
     -- Numeric percentage readout above the "High" text.
@@ -459,7 +473,7 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     ---------------------------------------------------------------------------
     local muteCheck = CreateFrame("CheckButton", name .. "Mute", parent, "SettingsCheckboxTemplate")
     muteCheck:SetSize(26, 26)
-    muteCheck:SetPoint("TOP", slider, "BOTTOM", 0, -40)
+    muteCheck:SetPoint("TOP", slider, "BOTTOM", 0, -42)
     DisableCheckboxHoverBackground(muteCheck)
 
     -- "Mute" label below the checkbox.
