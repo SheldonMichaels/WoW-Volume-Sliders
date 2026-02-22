@@ -1,0 +1,22 @@
+name: Luacheck
+
+on:
+  push:
+    branches: [ "main", "dev/*" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  luacheck:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Luarocks
+      run: sudo apt-get install -y luarocks
+
+    - name: Install Luacheck
+      run: sudo luarocks install luacheck
+
+    - name: Run Luacheck
+      run: luacheck VolumeSliders

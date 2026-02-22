@@ -22,7 +22,7 @@
 -------------------------------------------------------------------------------
 
 -- The vararg (...) passed to every addon file is the addon folder name.
-local addonName = ...
+local _addonName = ...
 
 -- Core addon table (plain Lua table — no framework dependency).
 local VS = {}
@@ -824,7 +824,7 @@ function VS:CreateOptionsFrame()
             if not list.buttons then list.buttons = {} end
 
             -- Hide all existing buttons before re-populating.
-            for i, btn in ipairs(list.buttons) do btn:Hide() end
+            for _, btn in ipairs(list.buttons) do btn:Hide() end
 
             for i = 0, numDevices - 1 do
                 local name = Sound_GameSystem_GetOutputDriverNameByIndex(i)
@@ -1154,7 +1154,7 @@ end)
 
 --- Global click handler for the Addon Compartment entry.
 --- Toggles the slider panel visibility.
-function VolumeSliders_OnAddonCompartmentClick(addonName, menuButtonFrame)
+function VolumeSliders_OnAddonCompartmentClick(_addonName, menuButtonFrame)
     if not vsContainer then
         VS:CreateOptionsFrame()
     end

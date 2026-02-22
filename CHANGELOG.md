@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.2
+
+- **Under the Hood:** Integrated Luacheck static analysis to ensure code quality and prevent Lua errors natively.
+
 ## v1.2.1
 
 - **Optimization:** Removed native Blizzard UI dependencies (`Blizzard_Settings`, `Blizzard_SharedXML`) from the addon manifest.
