@@ -13,8 +13,8 @@
 --   • Mouse-wheel on the icon adjusts master volume directly.
 --
 -- Author: Sheldon Michaels
--- Version: 1.0
--- License: All Rights Reserved
+-- Version: 1.3.0
+-- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -42,6 +42,7 @@ VolumeSlidersMMDB = VolumeSlidersMMDB or {
     minimapPos = 180,   -- Degrees around the minimap (0 = top, 180 = bottom)
     hide = false,       -- Whether the minimap button is hidden
 }
+
 
 -------------------------------------------------------------------------------
 -- Module-Level State
@@ -75,7 +76,7 @@ local SLIDER_COLUMN_WIDTH = 60
 local SLIDER_COLUMN_SPACING = 15
 
 -- Fixed height of the slider track itself (excludes labels and buttons).
-local SLIDER_HEIGHT = 120
+local SLIDER_HEIGHT = 160
 
 -- Total number of volume channel sliders displayed.
 local NUM_SLIDERS = 5
@@ -187,8 +188,7 @@ end
 -- UI Construction
 -----------------------------------------
 
--- Forward reference for the popup container frame (created lazily).
-local vsContainer
+
 
 -- Lookup table mapping CVar name → slider widget.  Populated during
 -- CreateOptionsFrame() and used to sync slider positions when CVars change
@@ -301,11 +301,13 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     local trackTop = slider:CreateTexture(nil, "BACKGROUND")
     SetAtlasRotated90CW(trackTop, "Minimal_SliderBar_Left")
     trackTop:SetPoint("TOP", slider, "TOP", 0, 0)
+    slider.trackTop = trackTop
 
     -- Bottom endcap (originally the horizontal "Right" end piece).
     local trackBottom = slider:CreateTexture(nil, "BACKGROUND")
     SetAtlasRotated90CW(trackBottom, "Minimal_SliderBar_Right")
     trackBottom:SetPoint("BOTTOM", slider, "BOTTOM", 0, 0)
+    slider.trackBottom = trackBottom
 
     -- Middle fill (stretches between cap anchors).
     local trackMiddle = slider:CreateTexture(nil, "BACKGROUND")
@@ -319,12 +321,14 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     end
     trackMiddle:SetPoint("TOP", trackTop, "BOTTOM", 0, 0)
     trackMiddle:SetPoint("BOTTOM", trackBottom, "TOP", 0, 0)
+    slider.trackMiddle = trackMiddle
 
     -- Diamond-shaped thumb (uses the gold diamond from Boss Abilities).
     -- Future Options Reference:
     --   Old silver knob atlas: "Minimal_SliderBar_Button"
     local thumb = slider:CreateTexture(name .. "Thumb", "OVERLAY")
     thumb:SetAtlas("combattimeline-pip", true)
+    slider.thumb = thumb
     slider:SetThumbTexture(thumb)
 
     -- Force the thumb to be visible after a brief delay.  On initial frame
@@ -359,7 +363,8 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     upTex:SetAtlas("ui-hud-minimap-zoom-in")
     upTex:SetSize(20, 20)
     upTex:SetPoint("CENTER", upBtn, "CENTER", 0, 0)
-    upBtn:SetPoint("BOTTOM", slider, "TOP", 0, 3)
+    slider.upTex = upTex
+    upBtn:SetPoint("BOTTOM", slider, "TOP", 0, 4)
     upBtn:SetScript("OnClick", function()
         -- Convert from inverted slider value to real volume percentage.
         local currentVol = 1 - slider:GetValue()
@@ -385,7 +390,8 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     downTex:SetAtlas("ui-hud-minimap-zoom-out")
     downTex:SetSize(20, 20)
     downTex:SetPoint("CENTER", downBtn, "CENTER", 0, 0) -- No offset
-    downBtn:SetPoint("TOP", slider, "BOTTOM", 0, -3)
+    slider.downTex = downTex
+    downBtn:SetPoint("TOP", slider, "BOTTOM", 0, -4)
     downBtn:SetScript("OnClick", function()
         local currentVol = 1 - slider:GetValue()
         local currentPct = currentVol * 100
@@ -406,11 +412,11 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
 
     -- "High" / "Low" endpoint labels above and below the stepper arrows.
     slider.highLabel = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    slider.highLabel:SetPoint("BOTTOM", upBtn, "TOP", 0, 5)
+    slider.highLabel:SetPoint("BOTTOM", slider, "TOP", 0, 26)
     slider.highLabel:SetText("High")
 
     slider.lowLabel = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    slider.lowLabel:SetPoint("TOP", downBtn, "BOTTOM", 0, -1)
+    slider.lowLabel:SetPoint("TOP", slider, "BOTTOM", 0, -26)
     slider.lowLabel:SetText("Low")
 
     -- Numeric percentage readout above the "High" text.
@@ -541,6 +547,520 @@ local function CreateCheckbox(parent, name, label, onClick, initialValueFunc)
 end
 
 -------------------------------------------------------------------------------
+-- Appearance & Settings Customization
+-------------------------------------------------------------------------------
+
+function VS:UpdateSliderLayout(slider)
+    local db = VolumeSlidersMMDB
+
+    -- Show/hide track textures
+    if db.showSlider then
+        slider:SetHeight(160)
+        slider:EnableMouse(true)
+        slider.trackTop:SetAlpha(1)
+        slider.trackMiddle:SetAlpha(1)
+        slider.trackBottom:SetAlpha(1)
+        if slider.thumb then slider.thumb:SetAlpha(1) end
+    else
+        slider:SetHeight(0.001)
+        slider:EnableMouse(false)
+        slider.trackTop:SetAlpha(0)
+        slider.trackMiddle:SetAlpha(0)
+        slider.trackBottom:SetAlpha(0)
+        if slider.thumb then slider.thumb:SetAlpha(0) end
+    end
+
+    -- Toggle visibility flags
+    if slider.label then slider.label:SetShown(db.showTitle) end
+    if slider.valueText then slider.valueText:SetShown(db.showValue) end
+    if slider.highLabel then slider.highLabel:SetShown(db.showHigh) end
+    if slider.upBtn then slider.upBtn:SetShown(db.showUpArrow) end
+    
+    if slider.downBtn then slider.downBtn:SetShown(db.showDownArrow) end
+    if slider.lowLabel then slider.lowLabel:SetShown(db.showLow) end
+    if slider.muteCheck then slider.muteCheck:SetShown(db.showMute) end
+    if slider.muteCheck and slider.muteCheck.muteLabel then slider.muteCheck.muteLabel:SetShown(db.showMute) end
+
+    -- Top Half Anchoring (Building Upwards)
+    local prevTop = slider
+    local prevTopPoint = "TOP"
+    
+    local function AnchorTop(element, pad, overrideTop)
+        element:ClearAllPoints()
+        element:SetPoint("BOTTOM", prevTop, prevTopPoint, 0, pad)
+        prevTop = element
+        prevTopPoint = overrideTop or "TOP"
+    end
+
+    if db.showUpArrow and slider.upBtn then
+        AnchorTop(slider.upBtn, 4)
+    end
+    if db.showHigh and slider.highLabel then
+        local pad = 4
+        if not db.showUpArrow and db.showSlider then pad = 8 end
+        AnchorTop(slider.highLabel, pad)
+    end
+    if db.showValue and slider.valueText then
+        AnchorTop(slider.valueText, 10)
+    end
+    if db.showTitle and slider.label then
+        AnchorTop(slider.label, 4)
+    end
+
+    -- Bottom Half Anchoring (Building Downwards)
+    local prevBottom = slider
+    local prevBottomPoint = "BOTTOM"
+
+    local function AnchorBottom(element, pad, overrideBottom)
+        element:ClearAllPoints()
+        element:SetPoint("TOP", prevBottom, prevBottomPoint, 0, -pad)
+        prevBottom = element
+        prevBottomPoint = overrideBottom or "BOTTOM"
+    end
+
+    if db.showDownArrow and slider.downBtn then
+        AnchorBottom(slider.downBtn, 4)
+    end
+    if db.showLow and slider.lowLabel then
+        local pad = 4
+        if not db.showDownArrow and db.showSlider then pad = 8 end
+        AnchorBottom(slider.lowLabel, pad)
+    end
+    if db.showMute and slider.muteCheck then
+        AnchorBottom(slider.muteCheck, 8)
+        
+        -- Re-link Mute text below the checkbox
+        if slider.muteCheck.muteLabel then
+            slider.muteCheck.muteLabel:ClearAllPoints()
+            slider.muteCheck.muteLabel:SetPoint("TOP", slider.muteCheck, "BOTTOM", 0, -2)
+        end
+    end
+end
+
+--- Calculates the vertical pixels required above and below a slider track
+--- based on the currently visible components.
+function VS:GetSliderHeightExtent()
+    local db = VolumeSlidersMMDB
+    local hTop = 0
+    local hBottom = 0
+
+    if db.showUpArrow then hTop = hTop + 20 + 4 end
+    if db.showHigh then
+        local pad = db.showUpArrow and 4 or (db.showSlider and 8 or 0)
+        hTop = hTop + 15 + pad
+    end
+    if db.showValue then hTop = hTop + 15 + 10 end
+    if db.showTitle then hTop = hTop + 15 + 4 end
+
+    if db.showDownArrow then hBottom = hBottom + 20 + 4 end
+    if db.showLow then
+        local pad = db.showDownArrow and 4 or (db.showSlider and 8 or 0)
+        hBottom = hBottom + 15 + pad
+    end
+    if db.showMute then hBottom = hBottom + 26 + 8 + 15 + 2 end -- Check (26) + Pad (8) + Label (15) + Gap (2)
+
+    local hTrack = db.showSlider and 160 or 0
+    return hTop, hBottom, hTrack
+end
+
+--- Retrieves stored options state and updates the appearances of all
+--- active slider UI elements in bulk.
+function VS:UpdateAppearance()
+    local knobSelected = VolumeSlidersMMDB.knobStyle or 1
+    local arrowSelected = VolumeSlidersMMDB.arrowStyle or 1
+    local titleSelected = VolumeSlidersMMDB.titleColor or 1
+    local valueSelected = VolumeSlidersMMDB.valueColor or 1
+    local highSelected = VolumeSlidersMMDB.highColor or 2
+    local lowSelected = VolumeSlidersMMDB.lowColor or 2
+
+    -- Update main panel sliders visibility and layout
+    if VS.sliders then
+        for _, slider in pairs(VS.sliders) do
+            VS:ApplySliderAppearance(slider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
+        end
+    end
+
+    -- Update the preview slider if it exists
+    if VS.previewSlider then
+        VS:ApplySliderAppearance(VS.previewSlider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
+    end
+
+    -- Dynamically resize the main popup frame if it exists
+    if VS.container then
+        local hTop, hBottom, hTrack = VS:GetSliderHeightExtent()
+
+        -- Header: Padding (15) + Instruction (15) + Gap (10)
+        local headerHeight = 40
+        -- Footer: Gap (25) + Output Row (36) + Padding (15)
+        local footerHeight = 76
+
+        local contentHeight = headerHeight + hTop + hTrack + hBottom + footerHeight
+        local frameHeight = contentHeight + TEMPLATE_CONTENT_OFFSET_TOP + TEMPLATE_CONTENT_OFFSET_BOTTOM
+
+        VS.container:SetHeight(frameHeight)
+
+        -- Adjust startY so the sliders are pushed up when labels are hidden
+        local startY = -(headerHeight + hTop)
+
+        -- Re-anchor all active sliders to the new dynamic startY
+        if VS.sliders then
+            local startX = CONTENT_PADDING_X
+            local i = 0
+
+            -- We need to maintain the same X-offsets as CreateOptionsFrame
+            local cvars = {
+                "Sound_MasterVolume", "Sound_SFXVolume", "Sound_MusicVolume",
+                "Sound_AmbienceVolume", "Sound_DialogVolume"
+            }
+
+            for _, cvar in ipairs(cvars) do
+                local slider = VS.sliders[cvar]
+                if slider then
+                    local offsetX = startX + (i * (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING)) + (SLIDER_COLUMN_WIDTH / 2) - 8
+                    slider:ClearAllPoints()
+                    slider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", offsetX, startY)
+                end
+                i = i + 1
+            end
+        end
+    end
+end
+
+function VS:ApplySliderAppearance(slider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
+    -- Update Knob
+    if knobSelected == 1 then
+        slider.thumb:SetAtlas("combattimeline-pip", true)
+    elseif knobSelected == 2 then
+        slider.thumb:SetAtlas("Minimal_SliderBar_Button", true)
+    end
+
+    -- Update Arrows
+    -- Clear standard texture paths and specific anchors before reapplying.
+    slider.upTex:SetTexture(nil)
+    slider.upTex:SetTexCoord(0, 1, 0, 1) -- Reset any previous rotation
+    slider.upTex:SetDesaturated(false) -- Reset any previous color filtering
+    slider.upTex:ClearAllPoints()
+    slider.upTex:SetPoint("CENTER", slider.upBtn, "CENTER", 0, 0)
+    
+    slider.downTex:SetTexture(nil)
+    slider.downTex:SetTexCoord(0, 1, 0, 1) -- Reset any previous rotation
+    slider.downTex:SetDesaturated(false) -- Reset any previous color filtering
+    slider.downTex:ClearAllPoints()
+    slider.downTex:SetPoint("CENTER", slider.downBtn, "CENTER", 0, 0)
+
+    if arrowSelected == 1 then
+        -- Zoom arrows (Plus/Minus)
+        slider.upTex:SetAtlas("ui-hud-minimap-zoom-in")
+        slider.upBtn:SetSize(20, 20)
+        slider.upTex:SetSize(20, 20)
+        
+        slider.downTex:SetAtlas("ui-hud-minimap-zoom-out")
+        slider.downBtn:SetSize(20, 20)
+        slider.downTex:SetSize(20, 20)
+    elseif arrowSelected == 2 then
+        -- Gold arrows
+        slider.upTex:SetAtlas("ui-hud-actionbar-pageuparrow-up")
+        slider.upBtn:SetSize(17, 14)
+        slider.upTex:SetSize(17, 14)
+
+        slider.downTex:SetAtlas("ui-hud-actionbar-pagedownarrow-up")
+        slider.downBtn:SetSize(17, 14)
+        slider.downTex:SetSize(17, 14)
+    elseif arrowSelected == 3 then
+        -- Silver arrows
+        slider.upBtn:SetSize(19, 11)
+        SetAtlasRotated90CW(slider.upTex, "Minimal_SliderBar_Button_Left")
+        
+        slider.upTex:ClearAllPoints()
+        slider.upTex:SetPoint("CENTER", slider.upBtn, "CENTER", 1, -1) -- Shift right to center visually
+
+        slider.downBtn:SetSize(19, 11)
+        SetAtlasRotated90CW(slider.downTex, "Minimal_SliderBar_Button_Right")
+        
+        slider.downTex:ClearAllPoints()
+        slider.downTex:SetPoint("CENTER", slider.downBtn, "CENTER", -1, -3) -- Shift left, and shift down to stop overlapping track
+    elseif arrowSelected == 4 then
+        -- Silver Plus/Minus (zoom icons using desaturation)
+        slider.upTex:SetAtlas("ui-hud-minimap-zoom-in")
+        slider.upTex:SetDesaturated(true)
+        slider.upBtn:SetSize(20, 20)
+        slider.upTex:SetSize(20, 20)
+
+        slider.downTex:SetAtlas("ui-hud-minimap-zoom-out")
+        slider.downTex:SetDesaturated(true)
+        slider.downBtn:SetSize(20, 20)
+        slider.downTex:SetSize(20, 20)
+    end
+
+    -- Update Text Colors
+    local function ApplyColor(fontString, colorType)
+        if fontString then
+            if colorType == 1 then
+                fontString:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
+            else
+                fontString:SetTextColor(HIGHLIGHT_FONT_COLOR:GetRGB())
+            end
+        end
+    end
+
+    ApplyColor(slider.label, titleSelected)
+    ApplyColor(slider.valueText, valueSelected)
+    ApplyColor(slider.highLabel, highSelected)
+    ApplyColor(slider.lowLabel, lowSelected)
+
+    -- Finally, update dynamic anchoring layout
+    VS:UpdateSliderLayout(slider)
+end
+
+--- Registers the native WoW Options Settings page using a Canvas Layout.
+function VS:InitializeSettings()
+    local categoryFrame = CreateFrame("Frame", "VolumeSlidersOptionsFrame", UIParent)
+    local category, layout = Settings.RegisterCanvasLayoutCategory(categoryFrame, "Volume Sliders")
+
+    local title = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightHuge")
+    title:SetPoint("TOPLEFT", 15, -15)
+    title:SetText("Volume Sliders Settings")
+
+    local desc = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
+    desc:SetText("Customization options for the Volume Sliders minimap popup.")
+    desc:SetJustifyH("LEFT")
+
+    ---------------------------------------------------------------------------
+    -- Dropdown Menus
+    ---------------------------------------------------------------------------
+    local dropdownWidth = 160
+
+    -- Title Color Label & Dropdown
+    local titleColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    titleColorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -35)
+    titleColorLabel:SetText("Title Text Color")
+
+    local function IsTitleSelected(value)
+        return VolumeSlidersMMDB.titleColor == value
+    end
+    local function SetTitleSelected(value)
+        VolumeSlidersMMDB.titleColor = value
+        VS:UpdateAppearance()
+    end
+
+    local titleDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    titleDropdown:SetPoint("TOPLEFT", titleColorLabel, "BOTTOMLEFT", -15, -10)
+    titleDropdown:SetWidth(dropdownWidth)
+    titleDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Gold", IsTitleSelected, SetTitleSelected, 1)
+        rootDescription:CreateRadio("White", IsTitleSelected, SetTitleSelected, 2)
+    end)
+    titleDropdown:GenerateMenu()
+
+    -- Value Color Label & Dropdown
+    local valueColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    valueColorLabel:SetPoint("TOPLEFT", titleDropdown, "BOTTOMLEFT", 15, -25)
+    valueColorLabel:SetText("Value Text Color")
+
+    local function IsValueSelected(value)
+        return VolumeSlidersMMDB.valueColor == value
+    end
+    local function SetValueSelected(value)
+        VolumeSlidersMMDB.valueColor = value
+        VS:UpdateAppearance()
+    end
+
+    local valueDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    valueDropdown:SetPoint("TOPLEFT", valueColorLabel, "BOTTOMLEFT", -15, -10)
+    valueDropdown:SetWidth(dropdownWidth)
+    valueDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Gold", IsValueSelected, SetValueSelected, 1)
+        rootDescription:CreateRadio("White", IsValueSelected, SetValueSelected, 2)
+    end)
+    valueDropdown:GenerateMenu()
+
+    -- High Color Label & Dropdown
+    local highColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    highColorLabel:SetPoint("TOPLEFT", valueDropdown, "BOTTOMLEFT", 15, -25)
+    highColorLabel:SetText("High Text Color")
+
+    local function IsHighSelected(value)
+        return VolumeSlidersMMDB.highColor == value
+    end
+    local function SetHighSelected(value)
+        VolumeSlidersMMDB.highColor = value
+        VS:UpdateAppearance()
+    end
+
+    local highDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    highDropdown:SetPoint("TOPLEFT", highColorLabel, "BOTTOMLEFT", -15, -10)
+    highDropdown:SetWidth(dropdownWidth)
+    highDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Gold", IsHighSelected, SetHighSelected, 1)
+        rootDescription:CreateRadio("White", IsHighSelected, SetHighSelected, 2)
+    end)
+    highDropdown:GenerateMenu()
+
+    -- Arrow Style Label & Dropdown
+    local arrowLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    arrowLabel:SetPoint("TOPLEFT", highDropdown, "BOTTOMLEFT", 15, -25)
+    arrowLabel:SetText("Stepper Arrow Style")
+
+    local function IsArrowSelected(value)
+        return VolumeSlidersMMDB.arrowStyle == value
+    end
+    local function SetArrowSelected(value)
+        VolumeSlidersMMDB.arrowStyle = value
+        VS:UpdateAppearance()
+    end
+
+    local arrowDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    arrowDropdown:SetPoint("TOPLEFT", arrowLabel, "BOTTOMLEFT", -15, -10)
+    arrowDropdown:SetWidth(dropdownWidth)
+    arrowDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Gold Plus / Minus", IsArrowSelected, SetArrowSelected, 1)
+        rootDescription:CreateRadio("Gold Arrows", IsArrowSelected, SetArrowSelected, 2)
+        rootDescription:CreateRadio("Silver Arrows", IsArrowSelected, SetArrowSelected, 3)
+        rootDescription:CreateRadio("Silver Plus / Minus", IsArrowSelected, SetArrowSelected, 4)
+    end)
+    arrowDropdown:GenerateMenu()
+
+    -- Knob Style Label & Dropdown
+    local knobLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    knobLabel:SetPoint("TOPLEFT", arrowDropdown, "BOTTOMLEFT", 15, -25)
+    knobLabel:SetText("Slider Knob Style")
+
+    local function IsKnobSelected(value)
+        return VolumeSlidersMMDB.knobStyle == value
+    end
+    local function SetKnobSelected(value)
+        VolumeSlidersMMDB.knobStyle = value
+        VS:UpdateAppearance()
+    end
+
+    local knobDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    knobDropdown:SetPoint("TOPLEFT", knobLabel, "BOTTOMLEFT", -15, -10)
+    knobDropdown:SetWidth(dropdownWidth)
+    knobDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Gold Diamond", IsKnobSelected, SetKnobSelected, 1)
+        rootDescription:CreateRadio("Silver Knob", IsKnobSelected, SetKnobSelected, 2)
+    end)
+    knobDropdown:GenerateMenu()
+
+    -- Low Color Label & Dropdown
+    local lowColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    lowColorLabel:SetPoint("TOPLEFT", knobDropdown, "BOTTOMLEFT", 15, -25)
+    lowColorLabel:SetText("Low Text Color")
+
+    local function IsLowSelected(value)
+        return VolumeSlidersMMDB.lowColor == value
+    end
+    local function SetLowSelected(value)
+        VolumeSlidersMMDB.lowColor = value
+        VS:UpdateAppearance()
+    end
+
+    local lowDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    lowDropdown:SetPoint("TOPLEFT", lowColorLabel, "BOTTOMLEFT", -15, -10)
+    lowDropdown:SetWidth(dropdownWidth)
+    lowDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Gold", IsLowSelected, SetLowSelected, 1)
+        rootDescription:CreateRadio("White", IsLowSelected, SetLowSelected, 2)
+    end)
+    lowDropdown:GenerateMenu()
+
+    ---------------------------------------------------------------------------
+    -- Live Preview Column
+    ---------------------------------------------------------------------------
+    local previewLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    previewLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 215, -35)
+    previewLabel:SetText("Live Preview:")
+
+    -- Place the preview container in the 2nd column
+    local previewBackdrop = CreateFrame("Frame", nil, categoryFrame, "BackdropTemplate")
+    previewBackdrop:SetPoint("TOP", previewLabel, "BOTTOM", 0, -10)
+    previewBackdrop:SetSize(120, 360)
+    previewBackdrop:SetBackdrop({
+        bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true,
+        tileSize = 16,
+        edgeSize = 16,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 }
+    })
+    previewBackdrop:SetBackdropColor(0, 0, 0, 0.4)
+    previewBackdrop:SetBackdropBorderColor(0.6, 0.6, 0.6, 0.8)
+
+    -- Generate a disabled preview slider centered within the backdrop
+    VS.previewSlider = CreateVerticalSlider(categoryFrame, "VolumeSlidersPreviewSlider", "Master", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01)
+    VS.previewSlider:SetParent(previewBackdrop)
+    VS.previewSlider:ClearAllPoints()
+    VS.previewSlider:SetPoint("CENTER", previewBackdrop, "CENTER", 0, 0)
+    VS.previewSlider:SetScale(0.9)
+    VS.previewSlider:EnableMouse(false)
+    
+    -- Disable functional updates for the preview slider
+    VS.previewSlider:SetScript("OnValueChanged", nil)
+    VS.previewSlider:SetScript("OnMouseWheel", nil)
+    VS.previewSlider.upBtn:SetScript("OnClick", nil)
+    VS.previewSlider.downBtn:SetScript("OnClick", nil)
+    VS.previewSlider.muteCheck:SetScript("OnClick", nil)
+    
+    VS.previewSlider.upBtn:EnableMouse(false)
+    VS.previewSlider.downBtn:EnableMouse(false)
+    VS.previewSlider.muteCheck:EnableMouse(false)
+    
+    -- Mute Button is hidden by default if not strictly passed state, toggle explicit
+    VS.previewSlider.muteCheck:Show()
+    if VS.previewSlider.muteCheck.muteLabel then
+        VS.previewSlider.muteCheck.muteLabel:Show()
+    end
+
+    ---------------------------------------------------------------------------
+    -- 3rd Column: Visibility Checkboxes
+    ---------------------------------------------------------------------------
+    local visibilityLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    visibilityLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 380, -35)
+    visibilityLabel:SetText("Element Visibility")
+
+    local checkboxes = {
+        { name = "Title", var = "showTitle" },
+        { name = "Value (%)", var = "showValue" },
+        { name = "High Label", var = "showHigh" },
+        { name = "Up Arrow", var = "showUpArrow" },
+        { name = "Slider Track", var = "showSlider" },
+        { name = "Down Arrow", var = "showDownArrow" },
+        { name = "Low Label", var = "showLow" },
+        { name = "Mute Button", var = "showMute" },
+    }
+
+    local previousCheckbox = nil
+
+    for _, data in ipairs(checkboxes) do
+        local checkbox = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+        if previousCheckbox then
+            checkbox:SetPoint("TOPLEFT", previousCheckbox, "BOTTOMLEFT", 0, 5)
+        else
+            checkbox:SetPoint("TOPLEFT", visibilityLabel, "BOTTOMLEFT", -5, -5)
+        end
+        
+        checkbox.text:SetText(data.name)
+        checkbox:SetChecked(VolumeSlidersMMDB[data.var])
+        
+        checkbox:SetScript("OnClick", function(self)
+            VolumeSlidersMMDB[data.var] = self:GetChecked()
+            VS:UpdateAppearance()
+        end)
+        
+        previousCheckbox = checkbox
+    end
+
+    ---------------------------------------------------------------------------
+    -- Final Registration
+    ---------------------------------------------------------------------------
+    -- Sync preview appearance to current settings.
+    VS:UpdateAppearance()
+
+    Settings.RegisterAddOnCategory(category)
+end
+
+-------------------------------------------------------------------------------
 -- CreateOptionsFrame
 --
 -- Lazily creates the main popup panel containing all five sliders, the
@@ -549,51 +1069,51 @@ end
 -- Uses Blizzard's SettingsFrameTemplate for the outer chrome.
 -------------------------------------------------------------------------------
 function VS:CreateOptionsFrame()
-    if vsContainer then return vsContainer end
+    if VS.container then return VS.container end
 
     -- Create the popup using the modern settings frame template.
-    vsContainer = CreateFrame("Frame", "VolumeSlidersFrame", UIParent, "SettingsFrameTemplate")
-    vsContainer:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
-    vsContainer:SetPoint("CENTER")
-    vsContainer:SetFrameStrata("DIALOG")
-    vsContainer:SetFrameLevel(100)
-    vsContainer:SetClampedToScreen(true)
-    vsContainer:EnableMouse(true)
+    VS.container = CreateFrame("Frame", "VolumeSlidersFrame", UIParent, "SettingsFrameTemplate")
+    VS.container:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
+    VS.container:SetPoint("CENTER")
+    VS.container:SetFrameStrata("DIALOG")
+    VS.container:SetFrameLevel(100)
+    VS.container:SetClampedToScreen(true)
+    VS.container:EnableMouse(true)
 
     -- Set the title bar text via the NineSlice's built-in Text font string.
-    if vsContainer.NineSlice and vsContainer.NineSlice.Text then
-        vsContainer.NineSlice.Text:SetText("Volume Sliders")
+    if VS.container.NineSlice and VS.container.NineSlice.Text then
+        VS.container.NineSlice.Text:SetText("Volume Sliders")
     else
         -- Fallback: create our own title if the template layout differs.
-        local titleText = vsContainer:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        local titleText = VS.container:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         titleText:SetText("Volume Sliders")
-        titleText:SetPoint("TOP", vsContainer, "TOP", 0, -5)
+        titleText:SetPoint("TOP", VS.container, "TOP", 0, -5)
     end
 
     -- Wire the close button (provided by SettingsFrameTemplate).
-    if vsContainer.ClosePanelButton then
-        vsContainer.ClosePanelButton:SetScript("OnClick", function() vsContainer:Hide() end)
+    if VS.container.ClosePanelButton then
+        VS.container.ClosePanelButton:SetScript("OnClick", function() VS.container:Hide() end)
     else
         -- Fallback close button if template doesn't include one.
-        local closeButton = CreateFrame("Button", "VolumeSlidersFrameCloseButton", vsContainer, "UIPanelCloseButtonDefaultAnchors")
-        closeButton:SetScript("OnClick", function() vsContainer:Hide() end)
+        local closeButton = CreateFrame("Button", "VolumeSlidersFrameCloseButton", VS.container, "UIPanelCloseButtonDefaultAnchors")
+        closeButton:SetScript("OnClick", function() VS.container:Hide() end)
     end
 
     -- Replace the template's default light background with a darker one
     -- for better contrast against the volume controls.
-    if vsContainer.Bg then vsContainer.Bg:Hide() end
-    local newBg = vsContainer:CreateTexture(nil, "BACKGROUND", nil, -1)
-    newBg:SetPoint("TOPLEFT", vsContainer, "TOPLEFT", TEMPLATE_CONTENT_OFFSET_LEFT, -TEMPLATE_CONTENT_OFFSET_TOP)
-    newBg:SetPoint("BOTTOMRIGHT", vsContainer, "BOTTOMRIGHT", -TEMPLATE_CONTENT_OFFSET_RIGHT, TEMPLATE_CONTENT_OFFSET_BOTTOM)
+    if VS.container.Bg then VS.container.Bg:Hide() end
+    local newBg = VS.container:CreateTexture(nil, "BACKGROUND", nil, -1)
+    newBg:SetPoint("TOPLEFT", VS.container, "TOPLEFT", TEMPLATE_CONTENT_OFFSET_LEFT, -TEMPLATE_CONTENT_OFFSET_TOP)
+    newBg:SetPoint("BOTTOMRIGHT", VS.container, "BOTTOMRIGHT", -TEMPLATE_CONTENT_OFFSET_RIGHT, TEMPLATE_CONTENT_OFFSET_BOTTOM)
     newBg:SetColorTexture(0.05, 0.05, 0.05, 0.95)
 
     -- Register for Escape-key closing via the Blizzard UISpecialFrames list.
-    tinsert(UISpecialFrames, vsContainer:GetName())
+    tinsert(UISpecialFrames, VS.container:GetName())
 
     ---------------------------------------------------------------------------
     -- Event Handlers: Close on outside click / combat lockdown
     ---------------------------------------------------------------------------
-    vsContainer:SetScript("OnEvent", function(self, event, ...)
+    VS.container:SetScript("OnEvent", function(self, event, ...)
         if event == "PLAYER_REGEN_DISABLED" then
             -- Auto-hide when entering combat to avoid taint issues.
             self:Hide()
@@ -613,7 +1133,7 @@ function VS:CreateOptionsFrame()
         end
     end)
 
-    vsContainer:SetScript("OnShow", function(self)
+    VS.container:SetScript("OnShow", function(self)
         -- Start listening for outside clicks when the panel opens.
         self:RegisterEvent("GLOBAL_MOUSE_DOWN")
 
@@ -643,7 +1163,7 @@ function VS:CreateOptionsFrame()
         end
     end)
 
-    vsContainer:SetScript("OnHide", function(self)
+    VS.container:SetScript("OnHide", function(self)
         -- Stop listening for outside clicks when the panel is closed.
         self:UnregisterEvent("GLOBAL_MOUSE_DOWN")
     end)
@@ -651,13 +1171,13 @@ function VS:CreateOptionsFrame()
     ---------------------------------------------------------------------------
     -- Content Frame (inside the NineSlice border insets)
     ---------------------------------------------------------------------------
-    local contentFrame = CreateFrame("Frame", "VolumeSlidersContentFrame", vsContainer)
-    contentFrame:SetPoint("TOPLEFT", vsContainer, "TOPLEFT", TEMPLATE_CONTENT_OFFSET_LEFT, -TEMPLATE_CONTENT_OFFSET_TOP)
-    contentFrame:SetPoint("BOTTOMRIGHT", vsContainer, "BOTTOMRIGHT", -TEMPLATE_CONTENT_OFFSET_RIGHT, TEMPLATE_CONTENT_OFFSET_BOTTOM)
+    VS.contentFrame = CreateFrame("Frame", "VolumeSlidersContentFrame", VS.container)
+    VS.contentFrame:SetPoint("TOPLEFT", VS.container, "TOPLEFT", TEMPLATE_CONTENT_OFFSET_LEFT, -TEMPLATE_CONTENT_OFFSET_TOP)
+    VS.contentFrame:SetPoint("BOTTOMRIGHT", VS.container, "BOTTOMRIGHT", -TEMPLATE_CONTENT_OFFSET_RIGHT, TEMPLATE_CONTENT_OFFSET_BOTTOM)
 
     -- Instruction text displayed at the top of the panel.
-    local instruction = contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    instruction:SetPoint("TOP", contentFrame, "TOP", 0, -CONTENT_PADDING_TOP)
+    local instruction = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    instruction:SetPoint("TOP", VS.contentFrame, "TOP", 0, -CONTENT_PADDING_TOP)
     instruction:SetText("Right-click on the icon to toggle master mute.")
     instruction:SetTextColor(1, 1, 1)
 
@@ -671,28 +1191,28 @@ function VS:CreateOptionsFrame()
     local startY = -(CONTENT_PADDING_TOP + 95)
 
     -- Master Volume
-    local masterSlider = CreateVerticalSlider(contentFrame, "VolumeSlidersSliderMaster", "Master", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01)
-    masterSlider:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    local masterSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMaster", "Master", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01)
+    masterSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_MasterVolume"] = masterSlider
 
     -- Effects Volume
-    local sfxSlider = CreateVerticalSlider(contentFrame, "VolumeSlidersSliderSFX", "Effects", "Sound_SFXVolume", "Sound_EnableSFX", 0, 1, 0.01)
-    sfxSlider:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    local sfxSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderSFX", "Effects", "Sound_SFXVolume", "Sound_EnableSFX", 0, 1, 0.01)
+    sfxSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_SFXVolume"] = sfxSlider
 
     -- Music Volume
-    local musicSlider = CreateVerticalSlider(contentFrame, "VolumeSlidersSliderMusic", "Music", "Sound_MusicVolume", "Sound_EnableMusic", 0, 1, 0.01)
-    musicSlider:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 2 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    local musicSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMusic", "Music", "Sound_MusicVolume", "Sound_EnableMusic", 0, 1, 0.01)
+    musicSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 2 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_MusicVolume"] = musicSlider
 
     -- Ambience Volume
-    local ambienceSlider = CreateVerticalSlider(contentFrame, "VolumeSlidersSliderAmbience", "Ambience", "Sound_AmbienceVolume", "Sound_EnableAmbience", 0, 1, 0.01)
-    ambienceSlider:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 3 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    local ambienceSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderAmbience", "Ambience", "Sound_AmbienceVolume", "Sound_EnableAmbience", 0, 1, 0.01)
+    ambienceSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 3 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_AmbienceVolume"] = ambienceSlider
 
     -- Dialog Volume
-    local dialogSlider = CreateVerticalSlider(contentFrame, "VolumeSlidersSliderDialogue", "Dialog", "Sound_DialogVolume", "Sound_EnableDialog", 0, 1, 0.01)
-    dialogSlider:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 4 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    local dialogSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderDialogue", "Dialog", "Sound_DialogVolume", "Sound_EnableDialog", 0, 1, 0.01)
+    dialogSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 4 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_DialogVolume"] = dialogSlider
 
     ---------------------------------------------------------------------------
@@ -701,7 +1221,7 @@ function VS:CreateOptionsFrame()
 
     -- "Sound at Character" checkbox — toggles whether the listener position
     -- is at the player's character or at the camera.
-    VS.characterCheckbox = CreateCheckbox(contentFrame, "VolumeSlidersCheckChar", "Sound at Character", function(checked)
+    VS.characterCheckbox = CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckChar", "Sound at Character", function(checked)
         if checked then
             SetCVar("Sound_ListenerAtCharacter", 1)
         else
@@ -710,7 +1230,7 @@ function VS:CreateOptionsFrame()
     end, function()
         return GetCVar("Sound_ListenerAtCharacter") == "1"
     end)
-    VS.characterCheckbox:SetPoint("BOTTOMLEFT", contentFrame, "BOTTOMLEFT", CONTENT_PADDING_X, CONTENT_PADDING_BOTTOM + 10)
+    VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", CONTENT_PADDING_X, CONTENT_PADDING_BOTTOM + 10)
 
     ---------------------------------------------------------------------------
     -- Sound Output Device Dropdown
@@ -723,13 +1243,13 @@ function VS:CreateOptionsFrame()
     ---------------------------------------------------------------------------
 
     -- "Output:" label
-    local outputLabel = contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    local outputLabel = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     outputLabel:SetPoint("LEFT", VS.characterCheckbox.labelText, "RIGHT", 20, 0)
     outputLabel:SetText("Output:")
     outputLabel:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
 
     -- Dropdown button
-    local dropdown = CreateFrame("Button", "VolumeSlidersOutputDropdown", contentFrame)
+    local dropdown = CreateFrame("Button", "VolumeSlidersOutputDropdown", VS.contentFrame)
     dropdown:SetSize(140, 36)
     dropdown:SetPoint("LEFT", outputLabel, "RIGHT", 5, 0)
 
@@ -790,7 +1310,7 @@ function VS:CreateOptionsFrame()
     local list = CreateFrame("Frame", nil, dropdown)
     list:SetPoint("TOP", dropdown, "BOTTOM", 0, 5)
     list:SetFrameStrata("TOOLTIP")
-    list:SetFrameLevel(vsContainer:GetFrameLevel() + 10)
+    list:SetFrameLevel(VS.container:GetFrameLevel() + 10)
     list:Hide()
     dropdown.list = list
 
@@ -971,15 +1491,18 @@ function VS:CreateOptionsFrame()
             local offsetX = (CONTENT_WIDTH - totalRowWidth) / 2
 
             -- Shifted down 7 pixels to accommodate the taller multi-line dropdown button so it doesn't crowd the sliders
-            VS.characterCheckbox:SetPoint("BOTTOMLEFT", contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 3)
+            VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 3)
         end
     end)
 
     -- Register combat lockdown event and start hidden.
-    vsContainer:RegisterEvent("PLAYER_REGEN_DISABLED")
-    vsContainer:Hide()
+    VS.container:RegisterEvent("PLAYER_REGEN_DISABLED")
+    VS.container:Hide()
 
-    return vsContainer
+    -- Apply current visual settings immediately after construction
+    VS:UpdateAppearance()
+
+    return VS.container
 end
 
 -------------------------------------------------------------------------------
@@ -993,13 +1516,14 @@ function VS:Reposition()
     local frame = VS.brokerFrame
     if not frame then return end
 
-    vsContainer:ClearAllPoints()
+    if not VS.container then return end
+    VS.container:ClearAllPoints()
     local showBelow = select(2, frame:GetCenter()) > UIParent:GetHeight()/2
 
     if showBelow then
-        vsContainer:SetPoint("TOP", frame, "BOTTOM", 0, 0)
+        VS.container:SetPoint("TOP", frame, "BOTTOM", 0, 0)
     else
-        vsContainer:SetPoint("BOTTOM", frame, "TOP", 0, 0)
+        VS.container:SetPoint("BOTTOM", frame, "TOP", 0, 0)
     end
 end
 
@@ -1021,14 +1545,14 @@ VS.VolumeSlidersObject = LDB:NewDataObject("Volume Sliders", {
     --- Right-click: toggle master mute.
     OnClick = function(clickedFrame, button)
         if button == "LeftButton" then
-             if not vsContainer then
+             if not VS.container then
                  VS:CreateOptionsFrame()
              end
 
-             if vsContainer:IsShown() then
-                 vsContainer:Hide()
+             if VS.container:IsShown() then
+                 VS.container:Hide()
              else
-                 vsContainer:Show()
+                 VS.container:Show()
                  VS.brokerFrame = clickedFrame
                  VS:Reposition()
              end
@@ -1126,6 +1650,25 @@ end)
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self, event)
+    -- Enforce saved variable defaults here, as top-level declarations
+    -- are overwritten by the disk database during ADDON_LOADED.
+    VolumeSlidersMMDB.minimapPos = VolumeSlidersMMDB.minimapPos or 180
+    if VolumeSlidersMMDB.hide == nil then VolumeSlidersMMDB.hide = false end
+    VolumeSlidersMMDB.knobStyle = VolumeSlidersMMDB.knobStyle or 1
+    VolumeSlidersMMDB.arrowStyle = VolumeSlidersMMDB.arrowStyle or 1
+    VolumeSlidersMMDB.titleColor = VolumeSlidersMMDB.titleColor or 1
+    VolumeSlidersMMDB.valueColor = VolumeSlidersMMDB.valueColor or 1
+    VolumeSlidersMMDB.highColor = VolumeSlidersMMDB.highColor or 2
+    VolumeSlidersMMDB.lowColor = VolumeSlidersMMDB.lowColor or 2
+    if VolumeSlidersMMDB.showTitle == nil then VolumeSlidersMMDB.showTitle = true end
+    if VolumeSlidersMMDB.showValue == nil then VolumeSlidersMMDB.showValue = true end
+    if VolumeSlidersMMDB.showHigh == nil then VolumeSlidersMMDB.showHigh = true end
+    if VolumeSlidersMMDB.showUpArrow == nil then VolumeSlidersMMDB.showUpArrow = true end
+    if VolumeSlidersMMDB.showSlider == nil then VolumeSlidersMMDB.showSlider = true end
+    if VolumeSlidersMMDB.showDownArrow == nil then VolumeSlidersMMDB.showDownArrow = true end
+    if VolumeSlidersMMDB.showLow == nil then VolumeSlidersMMDB.showLow = true end
+    if VolumeSlidersMMDB.showMute == nil then VolumeSlidersMMDB.showMute = true end
+
     -- Register the minimap icon via LibDBIcon.
     LDBIcon:Register("Volume Sliders", VS.VolumeSlidersObject, VolumeSlidersMMDB)
 
@@ -1153,6 +1696,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- options frame so it's ready for instant display.
     VS:UpdateMiniMapVolumeIcon()
     VS:CreateOptionsFrame()
+    VS:InitializeSettings()
 
     -- This event only needs to fire once.
     self:UnregisterEvent("PLAYER_LOGIN")
@@ -1169,13 +1713,13 @@ end)
 --- Global click handler for the Addon Compartment entry.
 --- Toggles the slider panel visibility.
 function VolumeSliders_OnAddonCompartmentClick(_addonName, menuButtonFrame)
-    if not vsContainer then
+    if not VS.container then
         VS:CreateOptionsFrame()
     end
 
-    if vsContainer:IsShown() then
-        vsContainer:Hide()
+    if VS.container:IsShown() then
+        VS.container:Hide()
     else
-        vsContainer:Show()
+        VS.container:Show()
     end
 end

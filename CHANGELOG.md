@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.3.0
+
+- **New Feature:** Added a full Settings options panel (via Escape -> Options -> AddOns) allowing for deep customization of the slider appearance.
+- **Customization:** Users can now pick between multiple Knob styles (Gold Diamond or Minimal Silver) and Stepper Arrow styles (including new Plus/Minus variations in Silver or Gold).
+- **Customization:** Independently control the text colors (Gold or White) for slider titles, percentage values, and High/Low labels.
+- **Element Visibility:** Toggle any part of the slider on or off, including titles, buttons, tracks, and mute checkboxes.
+- **Dynamic Layout:** The sliders and the main popup window itself now dynamically resize and collapse based on your visibility settings, keeping the UI compact and perfectly tailored.
+- **Under the Hood:** Significant refactor of the internal frame structure for improved stability and performance.
+
+
 ## v1.2.4
 
 - **Visual Update:** The slider thumbs have been replaced with the modern "Boss Abilities" golden diamond.
