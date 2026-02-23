@@ -79,7 +79,7 @@ local SLIDER_COLUMN_SPACING = 15
 local SLIDER_HEIGHT = 160
 
 -- Total number of volume channel sliders displayed.
-local NUM_SLIDERS = 5
+local NUM_SLIDERS = 6
 
 -- Padding around the content area inside the NineSlice border.
 local CONTENT_PADDING_X = 20
@@ -691,8 +691,18 @@ function VS:UpdateAppearance()
 
         -- Header: Padding (15) + Instruction (15) + Gap (10)
         local headerHeight = 40
-        -- Footer: Gap (25) + Output Row (36) + Padding (15)
-        local footerHeight = 76
+        -- Footer height calculation based on visibility
+        local footerHeight = 0
+        local db = VolumeSlidersMMDB
+        if db.showCharacter or db.showBackground or db.showOutput then
+            footerHeight = 15 -- Initial top gap
+            if db.showCharacter and db.showBackground then
+                footerHeight = footerHeight + 55 -- Stacked checkboxes height
+            else
+                footerHeight = footerHeight + 36 -- Single row height (checkbox or dropdown)
+            end
+            footerHeight = footerHeight + 15 -- Bottom padding
+        end
 
         local contentHeight = headerHeight + hTop + hTrack + hBottom + footerHeight
         local frameHeight = contentHeight + TEMPLATE_CONTENT_OFFSET_TOP + TEMPLATE_CONTENT_OFFSET_BOTTOM
@@ -710,18 +720,30 @@ function VS:UpdateAppearance()
             -- We need to maintain the same X-offsets as CreateOptionsFrame
             local cvars = {
                 "Sound_MasterVolume", "Sound_SFXVolume", "Sound_MusicVolume",
-                "Sound_AmbienceVolume", "Sound_DialogVolume"
+                "Sound_AmbienceVolume", "Sound_DialogVolume", "Sound_EncounterWarningsVolume"
             }
 
             for _, cvar in ipairs(cvars) do
                 local slider = VS.sliders[cvar]
                 if slider then
-                    local offsetX = startX + (i * (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING)) + (SLIDER_COLUMN_WIDTH / 2) - 8
-                    slider:ClearAllPoints()
-                    slider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", offsetX, startY)
+                    if (cvar == "Sound_EncounterWarningsVolume" and not VolumeSlidersMMDB.showWarnings) then
+                        slider:Hide()
+                    else
+                        slider:Show()
+                        local offsetX = startX + (i * (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING)) + (SLIDER_COLUMN_WIDTH / 2) - 8
+                        slider:ClearAllPoints()
+                        slider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", offsetX, startY)
+                        i = i + 1
+                    end
                 end
-                i = i + 1
             end
+            
+            -- Dynamically adjust frame width based on visible sliders
+            local visibleWidth = (CONTENT_PADDING_X * 2)
+                + (i * SLIDER_COLUMN_WIDTH)
+                + ((i - 1) * SLIDER_COLUMN_SPACING)
+            local frameWidth = visibleWidth + TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT
+            VS.container:SetWidth(frameWidth)
         end
     end
 end
@@ -835,6 +857,17 @@ function VS:InitializeSettings()
     local titleColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     titleColorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -35)
     titleColorLabel:SetText("Title Text Color")
+
+    local function AddTooltip(frame, text)
+        frame:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(text, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        frame:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+    end
 
     local function IsTitleSelected(value)
         return VolumeSlidersMMDB.titleColor == value
@@ -965,6 +998,14 @@ function VS:InitializeSettings()
     end)
     lowDropdown:GenerateMenu()
 
+    -- Apply tooltips to dropdown labels
+    AddTooltip(titleDropdown, "Change the color of the channel titles (e.g. 'Master') to Gold or White.")
+    AddTooltip(valueDropdown, "Change the color of the volume percentage numbers to Gold or White.")
+    AddTooltip(highDropdown, "Change the color of the '100%' marker to Gold or White.")
+    AddTooltip(lowDropdown, "Change the color of the '0%' marker to Gold or White.")
+    AddTooltip(arrowDropdown, "Select the visual style for the volume increment/decrement buttons.")
+    AddTooltip(knobDropdown, "Select the visual style for the slider handle (knob).")
+
     ---------------------------------------------------------------------------
     -- Live Preview Column
     ---------------------------------------------------------------------------
@@ -1020,14 +1061,18 @@ function VS:InitializeSettings()
     visibilityLabel:SetText("Element Visibility")
 
     local checkboxes = {
-        { name = "Title", var = "showTitle" },
-        { name = "Value (%)", var = "showValue" },
-        { name = "High Label", var = "showHigh" },
-        { name = "Up Arrow", var = "showUpArrow" },
-        { name = "Slider Track", var = "showSlider" },
-        { name = "Down Arrow", var = "showDownArrow" },
-        { name = "Low Label", var = "showLow" },
-        { name = "Mute Button", var = "showMute" },
+        { name = "Title", var = "showTitle", tooltip = "Show or hide the channel name (e.g., 'Master') above each slider." },
+        { name = "Value (%)", var = "showValue", tooltip = "Show or hide the volume percentage text above each slider." },
+        { name = "High Label", var = "showHigh", tooltip = "Show or hide the '100%' label at the top of the slider track." },
+        { name = "Up Arrow", var = "showUpArrow", tooltip = "Show or hide the button for fine-tuning volume increments." },
+        { name = "Slider Track", var = "showSlider", tooltip = "Show or hide the main vertical slider bar and knob." },
+        { name = "Down Arrow", var = "showDownArrow", tooltip = "Show or hide the button for fine-tuning volume decrements." },
+        { name = "Low Label", var = "showLow", tooltip = "Show or hide the '0%' label at the bottom of the slider track." },
+        { name = "Mute Button", var = "showMute", tooltip = "Show or hide the mute checkbox and label below each slider." },
+        { name = "Warnings Slider", var = "showWarnings", tooltip = "Show or hide the dedicated slider for Encounter Warnings (combat alerts)." },
+        { name = "SBG Checkbox", var = "showBackground", tooltip = "Show or hide the 'Sound in Background' toggle in the window footer." },
+        { name = "Char Checkbox", var = "showCharacter", tooltip = "Show or hide the 'Sound at Character' toggle in the window footer." },
+        { name = "Output Selector", var = "showOutput", tooltip = "Show or hide the 'Output:' device selection dropdown in the window footer." },
     }
 
     local previousCheckbox = nil
@@ -1046,6 +1091,16 @@ function VS:InitializeSettings()
         checkbox:SetScript("OnClick", function(self)
             VolumeSlidersMMDB[data.var] = self:GetChecked()
             VS:UpdateAppearance()
+        end)
+        
+        -- Add tooltip support
+        checkbox:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(data.tooltip, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        checkbox:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
         end)
         
         previousCheckbox = checkbox
@@ -1152,6 +1207,11 @@ function VS:CreateOptionsFrame()
              VS.characterCheckbox:SetChecked(GetCVar("Sound_ListenerAtCharacter") == "1")
         end
 
+        -- Refresh the "Sound in Background" checkbox.
+        if VS.backgroundCheckbox then
+             VS.backgroundCheckbox:SetChecked(GetCVar("Sound_EnableSoundWhenGameIsInBG") == "1")
+        end
+
         -- Refresh all mute checkboxes.
         if VS.sliders then
             for _, slider in pairs(VS.sliders) do
@@ -1215,6 +1275,11 @@ function VS:CreateOptionsFrame()
     dialogSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 4 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_DialogVolume"] = dialogSlider
 
+    -- Warnings Volume (Gameplay Sound Effects)
+    local warningsSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderWarnings", "Warnings", "Sound_EncounterWarningsVolume", "Sound_EnableEncounterWarningsSounds", 0, 1, 0.01)
+    warningsSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 5 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    VS.sliders["Sound_EncounterWarningsVolume"] = warningsSlider
+
     ---------------------------------------------------------------------------
     -- Bottom Row Controls
     ---------------------------------------------------------------------------
@@ -1231,6 +1296,18 @@ function VS:CreateOptionsFrame()
         return GetCVar("Sound_ListenerAtCharacter") == "1"
     end)
     VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", CONTENT_PADDING_X, CONTENT_PADDING_BOTTOM + 10)
+
+    VS.backgroundCheckbox = CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckBG", "Sound in Background", function(checked)
+        if checked then
+            SetCVar("Sound_EnableSoundWhenGameIsInBG", 1)
+        else
+            SetCVar("Sound_EnableSoundWhenGameIsInBG", 0)
+        end
+    end, function()
+        return GetCVar("Sound_EnableSoundWhenGameIsInBG") == "1"
+    end)
+    -- Initial anchor, will be refined in the C_Timer block
+    VS.backgroundCheckbox:SetPoint("TOPLEFT", VS.characterCheckbox, "BOTTOMLEFT", 0, -2)
 
     ---------------------------------------------------------------------------
     -- Sound Output Device Dropdown
@@ -1480,18 +1557,72 @@ function VS:CreateOptionsFrame()
     -- their widths, then re-anchor the character checkbox to dynamically center
     -- the entire bottom row within the content width.
     C_Timer.After(0.01, function()
-        if VS.characterCheckbox and VS.characterCheckbox.labelText and outputLabel and dropdown then
-            local checkWidth = VS.characterCheckbox:GetWidth()
-            local checkLabelWidth = VS.characterCheckbox.labelText:GetStringWidth()
-            local outputLabelWidth = outputLabel:GetStringWidth()
-            local dropWidth = dropdown:GetWidth()
+        if VS.characterCheckbox and VS.characterCheckbox.labelText and VS.backgroundCheckbox and outputLabel and dropdown then
+            local db = VolumeSlidersMMDB
+            
+            -- Update visibility
+            VS.characterCheckbox:SetShown(db.showCharacter)
+            VS.characterCheckbox.labelText:SetShown(db.showCharacter)
+            VS.backgroundCheckbox:SetShown(db.showBackground)
+            VS.backgroundCheckbox.labelText:SetShown(db.showBackground)
+            outputLabel:SetShown(db.showOutput)
+            dropdown:SetShown(db.showOutput)
+            
+            local charWidth = 0
+            if db.showCharacter then
+                charWidth = VS.characterCheckbox:GetWidth() + 4 + VS.characterCheckbox.labelText:GetStringWidth()
+            end
+            
+            local bgWidth = 0
+            if db.showBackground then
+                bgWidth = VS.backgroundCheckbox:GetWidth() + 4 + VS.backgroundCheckbox.labelText:GetStringWidth()
+            end
+            
+            local stackWidth = math.max(charWidth, bgWidth)
+            
+            local outputWidth = 0
+            if db.showOutput then
+                outputWidth = outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()
+            end
 
-            -- Sum of all elements and manual horizontal spacing gaps
-            local totalRowWidth = checkWidth + 4 + checkLabelWidth + 20 + outputLabelWidth + 5 + dropWidth
-            local offsetX = (CONTENT_WIDTH - totalRowWidth) / 2
+            -- Gap between stacked column and output selector
+            local gap = (stackWidth > 0 and outputWidth > 0) and 25 or 0
+            
+            -- Sum of all elements and spacing gaps
+            local totalRowWidth = stackWidth + gap + outputWidth
+            local offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - totalRowWidth) / 2
 
-            -- Shifted down 7 pixels to accommodate the taller multi-line dropdown button so it doesn't crowd the sliders
-            VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 3)
+            -- Positioning logic
+            VS.characterCheckbox:ClearAllPoints()
+            VS.backgroundCheckbox:ClearAllPoints()
+            outputLabel:ClearAllPoints()
+            dropdown:ClearAllPoints()
+
+            if db.showCharacter and db.showBackground then
+                -- Stacked vertically
+                VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 30)
+                VS.backgroundCheckbox:SetPoint("TOPLEFT", VS.characterCheckbox, "BOTTOMLEFT", 0, -2)
+                
+                if db.showOutput then
+                    outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 30)
+                end
+            elseif db.showCharacter then
+                VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
+                if db.showOutput then
+                    outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 15)
+                end
+            elseif db.showBackground then
+                VS.backgroundCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
+                if db.showOutput then
+                    outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 15)
+                end
+            elseif db.showOutput then
+                outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
+            end
+            
+            if db.showOutput then
+                dropdown:SetPoint("LEFT", outputLabel, "RIGHT", 5, 0)
+            end
         end
     end)
 
@@ -1668,6 +1799,10 @@ initFrame:SetScript("OnEvent", function(self, event)
     if VolumeSlidersMMDB.showDownArrow == nil then VolumeSlidersMMDB.showDownArrow = true end
     if VolumeSlidersMMDB.showLow == nil then VolumeSlidersMMDB.showLow = true end
     if VolumeSlidersMMDB.showMute == nil then VolumeSlidersMMDB.showMute = true end
+    if VolumeSlidersMMDB.showWarnings == nil then VolumeSlidersMMDB.showWarnings = true end
+    if VolumeSlidersMMDB.showBackground == nil then VolumeSlidersMMDB.showBackground = true end
+    if VolumeSlidersMMDB.showCharacter == nil then VolumeSlidersMMDB.showCharacter = true end
+    if VolumeSlidersMMDB.showOutput == nil then VolumeSlidersMMDB.showOutput = true end
 
     -- Register the minimap icon via LibDBIcon.
     LDBIcon:Register("Volume Sliders", VS.VolumeSlidersObject, VolumeSlidersMMDB)

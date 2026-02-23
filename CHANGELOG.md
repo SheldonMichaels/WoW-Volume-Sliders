@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.3.1
+
+- **New Feature:** Added a sixth slider for **Encounter Warnings** (Gameplay Sound Effects channel).
+- **New Feature:** Added a **Sound in Background** toggle to the main window footer, stacked neatly with "Sound at Character".
+- **Customization:** Added new visibility toggles for the "Sound at Character" checkbox and the "Output Selector" dropdown.
+- **User Experience:** Added helpful tooltips to all items in the Settings options panel to explain their function.
+- **Dynamic Layout:** Significantly improved the window logic to handle any combination of visible sliders and footer elements, with automatic centering and frame resizing.
+
 ## v1.3.0
 
 - **New Feature:** Added a full Settings options panel (via Escape -> Options -> AddOns) allowing for deep customization of the slider appearance.
