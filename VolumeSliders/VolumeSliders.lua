@@ -13,7 +13,7 @@
 --   • Mouse-wheel on the icon adjusts master volume directly.
 --
 -- Author: Sheldon Michaels
--- Version: 1.3.2
+-- Version: 1.3.4
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 
@@ -195,6 +195,24 @@ end
 -- CreateOptionsFrame() and used to sync slider positions when CVars change
 -- externally (e.g., via the Blizzard Sound settings panel).
 VS.sliders = {}
+
+local CVAR_TO_VAR = {
+    ["Sound_MasterVolume"] = "showMaster",
+    ["Sound_SFXVolume"] = "showSFX",
+    ["Sound_MusicVolume"] = "showMusic",
+    ["Sound_AmbienceVolume"] = "showAmbience",
+    ["Sound_DialogVolume"] = "showDialog",
+    ["Sound_EncounterWarningsVolume"] = "showWarnings",
+}
+
+local DEFAULT_CVAR_ORDER = {
+    "Sound_MasterVolume",
+    "Sound_SFXVolume",
+    "Sound_MusicVolume",
+    "Sound_AmbienceVolume",
+    "Sound_DialogVolume",
+    "Sound_EncounterWarningsVolume"
+}
 
 --- Disable the HoverBackgroundTemplate that ships with SettingsCheckboxTemplate.
 ---
@@ -728,28 +746,11 @@ function VS:UpdateAppearance()
             local startX = CONTENT_PADDING_X
             local i = 0
 
-            -- Map CVars to their visibility settings
-            local cvarToVar = {
-                ["Sound_MasterVolume"] = "showMaster",
-                ["Sound_SFXVolume"] = "showSFX",
-                ["Sound_MusicVolume"] = "showMusic",
-                ["Sound_AmbienceVolume"] = "showAmbience",
-                ["Sound_DialogVolume"] = "showDialog",
-                ["Sound_EncounterWarningsVolume"] = "showWarnings",
-            }
-
-            local cvarOrder = VolumeSlidersMMDB.sliderOrder or {
-                "Sound_MasterVolume",
-                "Sound_SFXVolume",
-                "Sound_MusicVolume",
-                "Sound_AmbienceVolume",
-                "Sound_DialogVolume",
-                "Sound_EncounterWarningsVolume"
-            }
+            local cvarOrder = VolumeSlidersMMDB.sliderOrder or DEFAULT_CVAR_ORDER
 
             for _, cvar in ipairs(cvarOrder) do
                 local slider = VS.sliders[cvar]
-                local var = cvarToVar[cvar]
+                local var = CVAR_TO_VAR[cvar]
                 if slider and var then
                     if not VolumeSlidersMMDB[var] then
                         slider:Hide()
@@ -1882,14 +1883,44 @@ function VS:CreateOptionsFrame()
                     
                     -- WoW's sound system restart takes an unpredictable amount of time and will
                     -- forcefully reset the CVar to 1.0 when it finishes.
-                    -- Use a ticker to forcefully apply the volume continuously for 3 seconds to guarantee it overrides the engine reset.
-                    local enforceCount = 0
-                    if dropdown.volTicker then dropdown.volTicker:Cancel() end
-                    dropdown.volTicker = C_Timer.NewTicker(0.5, function()
-                        SetCVar("Sound_MasterVolume", targetVol)
-                        enforceCount = enforceCount + 1
-                        if enforceCount >= 6 then
-                            dropdown.volTicker:Cancel()
+                    -- Create a dedicated listener to catch the engine in the act.
+                    if dropdown.restartListener then
+                        dropdown.restartListener:UnregisterAllEvents()
+                    else
+                        dropdown.restartListener = CreateFrame("Frame")
+                    end
+                    
+                    dropdown.restartListener.isRestartingAudio = true
+                    dropdown.restartListener:RegisterEvent("CVAR_UPDATE")
+                    dropdown.restartListener:SetScript("OnEvent", function(self, event, cvarName, value)
+                        if self.isRestartingAudio and cvarName == "Sound_MasterVolume" then
+                            -- The engine just reset the volume. Slam our saved volume back in.
+                            SetCVar("Sound_MasterVolume", targetVol)
+                            
+                            -- Keep the UI in sync
+                            local slider = VS.sliders and VS.sliders["Sound_MasterVolume"]
+                            if slider then
+                                 slider:SetValue(1 - targetVol)
+                                 slider.valueText:SetText(math.floor(targetVol * 100) .. "%")
+                            end
+                            if VS.VolumeSlidersObject then
+                                VS.VolumeSlidersObject.text = (math.floor(targetVol * 100)) .. "%"
+                            end
+                            
+                            -- Clean up
+                            self.isRestartingAudio = false
+                            self:UnregisterEvent("CVAR_UPDATE")
+                            if dropdown.fallbackTimer then dropdown.fallbackTimer:Cancel() end
+                        end
+                    end)
+                    
+                    -- Safety Net: If the engine behaves unexpectedly and the event never fires,
+                    -- unregister after 5 seconds to avoid permanently intercepting CVAR updates.
+                    if dropdown.fallbackTimer then dropdown.fallbackTimer:Cancel() end
+                    dropdown.fallbackTimer = C_Timer.NewTimer(5.0, function()
+                        if dropdown.restartListener and dropdown.restartListener.isRestartingAudio then
+                            dropdown.restartListener.isRestartingAudio = false
+                            dropdown.restartListener:UnregisterEvent("CVAR_UPDATE")
                         end
                     end)
 
@@ -2116,14 +2147,10 @@ initFrame:SetScript("OnEvent", function(self, event)
     
     -- Slider Order Defaults
     if not VolumeSlidersMMDB.sliderOrder then
-        VolumeSlidersMMDB.sliderOrder = {
-                "Sound_MasterVolume",
-                "Sound_SFXVolume",
-                "Sound_MusicVolume",
-                "Sound_AmbienceVolume",
-                "Sound_DialogVolume",
-                "Sound_EncounterWarningsVolume"
-            }
+        VolumeSlidersMMDB.sliderOrder = {}
+        for _, v in ipairs(DEFAULT_CVAR_ORDER) do
+            table.insert(VolumeSlidersMMDB.sliderOrder, v)
+        end
     end
 
     -- Register the minimap icon via LibDBIcon.

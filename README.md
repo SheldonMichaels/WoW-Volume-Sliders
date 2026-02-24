@@ -6,27 +6,24 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ## Current Features
 
-- **Five vertical sliders** — one for each channel and last used volume values persist between mute/unmute
-- **Per-channel mute toggles** — mute each channel individually
+- **Vertical sliders** — one for each channel and last used volume values persist between mute/unmute
+- **Per-channel mute** — mute each channel individually
 - **Minimap button** — left-click to open the panel, right-click to quick-toggle master mute
-- **Scroll wheel** — over the minimap icon to adjust master volume (hold Ctrl for fine 1% steps)
+- **Scroll wheel** — scroll over the minimap icon to adjust master volume (hold Ctrl for fine 1% steps)
 - **Stepper arrows** (▲/▼) — snap volume to the nearest 5% increment
 - **Sound output device selector** — change your active audio device, with a saved master volume value per device
 - **"Sound at Character" toggle** — positional audio at your character (checked) or at the camera location (unchecked)
 - **Addon Compartment & Data Broker** — works with the built-in compartment menu (tested) and LDB displays like Titan Panel (untested) or ChocolateBar (untested)
 - **Native look & feel** — uses native Blizzard UI assets
+- **Extensive Customization Options** — access via the WoW Interface options to customize slider height, toggle visibility of any channel or UI element, change visual themes (gold/silver, diamond/minimal knobs, text colors), and freely drag-to-reorder the sliders to your preference.
 
 ## Possible Future Features
 
 - Movable slider window
 - Toggle for persistent slider window if desired
 - Hotkey to show/hide the slider window
-- Settings page, to include:
-  - Toggle to show/hide elements in the volume slider window such as output selector
-  - Configure what mouse buttons and modifiers perform which actions on the minimap button and sliders
-  - Change element spacing in the slider window for more or less empty space
-  - Change slider order
-  - Show/hide specific sliders
+- Configure what mouse buttons and modifiers perform which actions on the minimap button and sliders
+- More texture choices
 
 ## Installation
 

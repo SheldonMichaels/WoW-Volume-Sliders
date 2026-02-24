@@ -1,9 +1,12 @@
-## 2026-02-23 — internal-v1.3.2 (On-Demand Loading & Height Adjustments)
+## v1.3.4
 
-- **Optimization:** Implemented **On-Demand Settings Loading**. The settings UI now only loads when first requested, significantly reducing login memory footprint.
-- **Customization:** Users can now customize the vertical **Slider Height** (100px to 250px) via a new text entry in the Settings panel.
 - **Customization:** Added **Channel Visibility** toggles to show or hide individual sliders (Master, SFX, Music, Ambience, Dialog).
+- **Customization:** You can now freely reorder the sliders! Re-implemented the Channel Visibility list to support modern drag-and-drop reordering logic.
+- **Customization:** Users can now customize the vertical **Slider Height** (100px to 250px) via a new text entry in the Settings panel.
+- **UI Improvement:** The main window now dynamically calculates its width and height based on the number and size of visible sliders.
 - **UI Improvement:** Improved the window footer layout to automatically switch "Sound in Background" and "Sound at Character" to a horizontal layout when the output selector is hidden and space permits.
+- **Optimization:** Implemented **On-Demand Settings Loading**. The settings UI now only loads when first requested, significantly reducing login memory footprint.
+- **Bug Fix:** Fixed an issue where the master volume would get stuck at 100% when changing audio output devices.
 - **Bug Fix:** Resolved an issue where the slider height input box would sometimes appear empty on the initial opening of the Settings panel.
 
 ## v1.3.1
