@@ -15,11 +15,11 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 - **"Sound at Character" toggle** — positional audio at your character (checked) or at the camera location (unchecked)
 - **Addon Compartment & Data Broker** — works with the built-in compartment menu (tested) and LDB displays like Titan Panel (untested) or ChocolateBar (untested)
 - **Native look & feel** — uses native Blizzard UI assets
+- **Movable window** — detach the window from the minimap and place it anywhere
 - **Extensive Customization Options** — access via the WoW Interface options to customize slider height, toggle visibility of any channel or UI element, change visual themes (gold/silver, diamond/minimal knobs, text colors), and freely drag-to-reorder the sliders to your preference.
 
 ## Possible Future Features
 
-- Movable slider window
 - Toggle for persistent slider window if desired
 - Hotkey to show/hide the slider window
 - Configure what mouse buttons and modifiers perform which actions on the minimap button and sliders

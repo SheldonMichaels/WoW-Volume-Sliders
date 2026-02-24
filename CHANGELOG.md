@@ -1,3 +1,8 @@
+## v1.3.6
+
+- **New Feature:** The main Volume Sliders window is now movable! Click the "Unlocked" text button in the top right to freely drag the window anywhere on your screen. The window will persist its new position between sessions. Click "Locked" to anchor it back to the minimap button.
+- **UI Improvement:** The minimap button will now reliably close the window if it is already open, regardless of its locked state.
+
 ## v1.3.5
 
 - **Customization:** Refined the settings panel by replacing the basic text inputs with standard horizontal sliders accompanied by manual numeric entry boxes.

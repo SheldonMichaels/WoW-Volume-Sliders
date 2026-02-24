@@ -13,7 +13,7 @@
 --   • Mouse-wheel on the icon adjusts master volume directly.
 --
 -- Author: Sheldon Michaels
--- Version: 1.3.5
+-- Version: 1.3.6
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 
@@ -1707,6 +1707,78 @@ function VS:CreateOptionsFrame()
         closeButton:SetScript("OnClick", function() VS.container:Hide() end)
     end
 
+    -- Lock Toggle Button
+    local lockBtn = CreateFrame("Button", "VolumeSlidersFrameLockButton", VS.container, "UIPanelButtonTemplate")
+    lockBtn:SetSize(85, 22)
+    
+    local btnText = lockBtn:GetFontString()
+    if btnText then
+        btnText:SetFontObject("GameFontNormal")
+    else
+        lockBtn:SetNormalFontObject("GameFontNormal")
+        lockBtn:SetHighlightFontObject("GameFontHighlight")
+    end
+
+    if VS.container.ClosePanelButton then
+        lockBtn:SetPoint("RIGHT", VS.container.ClosePanelButton, "LEFT", -4, 0)
+    else
+        lockBtn:SetPoint("TOPRIGHT", VS.container, "TOPRIGHT", -30, -5)
+    end
+
+    local function UpdateLockIcon()
+        if VolumeSlidersMMDB.isLocked then
+            lockBtn:SetText("Locked")
+        else
+            lockBtn:SetText("Unlocked")
+        end
+    end
+
+    lockBtn:SetScript("OnClick", function()
+        VolumeSlidersMMDB.isLocked = not VolumeSlidersMMDB.isLocked
+        UpdateLockIcon()
+        if VolumeSlidersMMDB.isLocked then
+            VS:Reposition()
+        else
+            VolumeSlidersMMDB.customX = VS.container:GetLeft()
+            VolumeSlidersMMDB.customY = VS.container:GetBottom()
+            VS:Reposition()
+        end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+
+    lockBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        if VolumeSlidersMMDB.isLocked then
+            GameTooltip:SetText("Window Locked\n\nClick to unlock and move freely.", nil, nil, nil, nil, true)
+        else
+            GameTooltip:SetText("Window Unlocked\n\nClick to lock to minimap button.", nil, nil, nil, nil, true)
+        end
+        GameTooltip:Show()
+    end)
+    lockBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    UpdateLockIcon()
+
+    -- Drag functionality for the top bar
+    VS.container:SetMovable(true)
+    local dragFrame = CreateFrame("Frame", nil, VS.container)
+    dragFrame:SetPoint("TOPLEFT", VS.container, "TOPLEFT", 0, 0)
+    dragFrame:SetPoint("BOTTOMRIGHT", VS.container, "TOPRIGHT", 0, -40)
+    dragFrame:EnableMouse(true)
+    dragFrame:RegisterForDrag("LeftButton")
+    
+    dragFrame:SetScript("OnDragStart", function()
+        if not VolumeSlidersMMDB.isLocked then
+            VS.container:StartMoving()
+        end
+    end)
+    dragFrame:SetScript("OnDragStop", function()
+        VS.container:StopMovingOrSizing()
+        if not VolumeSlidersMMDB.isLocked then
+            VolumeSlidersMMDB.customX = VS.container:GetLeft()
+            VolumeSlidersMMDB.customY = VS.container:GetBottom()
+        end
+    end)
+
     -- Replace the template's default light background with a darker one
     -- for better contrast against the volume controls.
     if VS.container.Bg then VS.container.Bg:Hide() end
@@ -1734,6 +1806,13 @@ function VS:CreateOptionsFrame()
                 local ddList = VolumeSlidersOutputDropdown and VolumeSlidersOutputDropdown.list
                 if ddList and ddList:IsShown() and ddList:IsMouseOver() then
                     return -- Don't hide the panel; the click is inside the list.
+                end
+                
+                -- Also check if the click was on the minimap button itself.
+                -- If it was, let the minimap button's OnClick handle the toggling
+                -- instead of instantly hiding it here (which makes OnClick think it's closed and re-open it).
+                if VS.minimapButton and VS.minimapButton:IsMouseOver() then
+                    return
                 end
                 
                 self:Hide()
@@ -2164,11 +2243,17 @@ end
 -- below it; if in the bottom half, it opens above.
 -------------------------------------------------------------------------------
 function VS:Reposition()
+    if not VS.container then return end
+    VS.container:ClearAllPoints()
+
+    if not VolumeSlidersMMDB.isLocked and VolumeSlidersMMDB.customX and VolumeSlidersMMDB.customY then
+        VS.container:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", VolumeSlidersMMDB.customX, VolumeSlidersMMDB.customY)
+        return
+    end
+
     local frame = VS.brokerFrame
     if not frame then return end
 
-    if not VS.container then return end
-    VS.container:ClearAllPoints()
     local showBelow = select(2, frame:GetCenter()) > UIParent:GetHeight()/2
 
     if showBelow then
@@ -2192,7 +2277,7 @@ VS.VolumeSlidersObject = LDB:NewDataObject("Volume Sliders", {
     iconCoords = {0, 1, 0, 1},
     iconR = 1, iconG = 1, iconB = 1,
 
-    --- Left-click: toggle the slider panel.
+    --- Left-click: toggle the slider panel. If it's already open, hide it regardless of whether it was opened from this button.
     --- Right-click: toggle master mute.
     OnClick = function(clickedFrame, button)
         if button == "LeftButton" then
@@ -2305,6 +2390,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- are overwritten by the disk database during ADDON_LOADED.
     VolumeSlidersMMDB.minimapPos = VolumeSlidersMMDB.minimapPos or 180
     if VolumeSlidersMMDB.hide == nil then VolumeSlidersMMDB.hide = false end
+    if VolumeSlidersMMDB.isLocked == nil then VolumeSlidersMMDB.isLocked = true end
     VolumeSlidersMMDB.knobStyle = VolumeSlidersMMDB.knobStyle or 1
     VolumeSlidersMMDB.arrowStyle = VolumeSlidersMMDB.arrowStyle or 1
     VolumeSlidersMMDB.titleColor = VolumeSlidersMMDB.titleColor or 1
@@ -2358,11 +2444,14 @@ initFrame:SetScript("OnEvent", function(self, event)
             VS:AdjustVolume(delta)
         end)
 
+        -- LibDBIcon intercepts OnClick. To enforce our toggle logic we pre-hook it or handle it in OnMouseUp
         -- After any click on the minimap button, refresh the icon texture
         -- in case the mute state changed.
-        minimapButton:HookScript("OnMouseUp", function(self)
+        minimapButton:HookScript("OnMouseUp", function(self, button)
             VS:UpdateMiniMapVolumeIcon()
         end)
+        
+        -- We handle the visual closing in GLOBAL_MOUSE_DOWN instead now.
     end
     VS.minimapButton = minimapButton
 
