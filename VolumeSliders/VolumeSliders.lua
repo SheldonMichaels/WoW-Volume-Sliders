@@ -13,7 +13,7 @@
 --   • Mouse-wheel on the icon adjusts master volume directly.
 --
 -- Author: Sheldon Michaels
--- Version: 1.3.0
+-- Version: 1.3.2
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 
@@ -41,6 +41,7 @@ local LDBIcon = LibStub("LibDBIcon-1.0", true)
 VolumeSlidersMMDB = VolumeSlidersMMDB or {
     minimapPos = 180,   -- Degrees around the minimap (0 = top, 180 = bottom)
     hide = false,       -- Whether the minimap button is hidden
+    sliderHeight = 150, -- Default vertical height
 }
 
 
@@ -277,7 +278,7 @@ end
 local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, maxVal, step)
     local slider = CreateFrame("Slider", name, parent)
     slider:SetOrientation("VERTICAL")
-    slider:SetHeight(SLIDER_HEIGHT)
+    slider:SetHeight(VolumeSlidersMMDB.sliderHeight or SLIDER_HEIGHT)
     slider:SetWidth(20)
 
     -- Expand the clickable area so the user doesn't have to hit the narrow
@@ -555,7 +556,7 @@ function VS:UpdateSliderLayout(slider)
 
     -- Show/hide track textures
     if db.showSlider then
-        slider:SetHeight(160)
+        slider:SetHeight(db.sliderHeight or 160)
         slider:EnableMouse(true)
         slider.trackTop:SetAlpha(1)
         slider.trackMiddle:SetAlpha(1)
@@ -659,7 +660,7 @@ function VS:GetSliderHeightExtent()
     end
     if db.showMute then hBottom = hBottom + 26 + 8 + 15 + 2 end -- Check (26) + Pad (8) + Label (15) + Gap (2)
 
-    local hTrack = db.showSlider and 160 or 0
+    local hTrack = db.showSlider and (db.sliderHeight or 160) or 0
     return hTop, hBottom, hTrack
 end
 
@@ -683,6 +684,16 @@ function VS:UpdateAppearance()
     -- Update the preview slider if it exists
     if VS.previewSlider then
         VS:ApplySliderAppearance(VS.previewSlider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
+
+        -- Update preview backdrop height if it exists
+        if VS.previewBackdrop then
+            local hTop, hBottom, hTrack = VS:GetSliderHeightExtent()
+            local totalSliderHeight = hTop + hTrack + hBottom
+            -- Add some padding (e.g. 60 pixels total for top/bottom margins)
+            -- and account for the 0.9 scale
+            local backdropHeight = (totalSliderHeight * 0.9) + 60
+            VS.previewBackdrop:SetHeight(math.max(150, backdropHeight))
+        end
     end
 
     -- Dynamically resize the main popup frame if it exists
@@ -718,15 +729,19 @@ function VS:UpdateAppearance()
             local i = 0
 
             -- We need to maintain the same X-offsets as CreateOptionsFrame
-            local cvars = {
-                "Sound_MasterVolume", "Sound_SFXVolume", "Sound_MusicVolume",
-                "Sound_AmbienceVolume", "Sound_DialogVolume", "Sound_EncounterWarningsVolume"
+            local cvarMap = {
+                { cvar = "Sound_MasterVolume", var = "showMaster" },
+                { cvar = "Sound_SFXVolume", var = "showSFX" },
+                { cvar = "Sound_MusicVolume", var = "showMusic" },
+                { cvar = "Sound_AmbienceVolume", var = "showAmbience" },
+                { cvar = "Sound_DialogVolume", var = "showDialog" },
+                { cvar = "Sound_EncounterWarningsVolume", var = "showWarnings" },
             }
 
-            for _, cvar in ipairs(cvars) do
-                local slider = VS.sliders[cvar]
+            for _, entry in ipairs(cvarMap) do
+                local slider = VS.sliders[entry.cvar]
                 if slider then
-                    if (cvar == "Sound_EncounterWarningsVolume" and not VolumeSlidersMMDB.showWarnings) then
+                    if not VolumeSlidersMMDB[entry.var] then
                         slider:Hide()
                     else
                         slider:Show()
@@ -744,6 +759,106 @@ function VS:UpdateAppearance()
                 + ((i - 1) * SLIDER_COLUMN_SPACING)
             local frameWidth = visibleWidth + TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT
             VS.container:SetWidth(frameWidth)
+        end
+        
+        -- Update footer elements visibility and layout
+        VS:UpdateFooterLayout()
+    end
+end
+
+function VS:UpdateFooterLayout()
+    if not VS.container then return end
+    
+    local charCheck = VS.characterCheckbox
+    local bgCheck = VS.backgroundCheckbox
+    local outputLabel = VS.outputLabel
+    local dropdown = VS.outputDropdown
+
+    if charCheck and charCheck.labelText and bgCheck and outputLabel and dropdown then
+        local db = VolumeSlidersMMDB
+        
+        -- Update visibility
+        charCheck:SetShown(db.showCharacter)
+        charCheck.labelText:SetShown(db.showCharacter)
+        bgCheck:SetShown(db.showBackground)
+        bgCheck.labelText:SetShown(db.showBackground)
+        outputLabel:SetShown(db.showOutput)
+        dropdown:SetShown(db.showOutput)
+        
+        local charWidth = 0
+        if db.showCharacter then
+            charWidth = charCheck:GetWidth() + 4 + charCheck.labelText:GetStringWidth()
+        end
+        
+        local bgWidth = 0
+        if db.showBackground then
+            bgWidth = bgCheck:GetWidth() + 4 + bgCheck.labelText:GetStringWidth()
+        end
+        
+        local stackWidth = math.max(charWidth, bgWidth)
+        
+        local outputWidth = 0
+        if db.showOutput then
+            outputWidth = outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()
+        end
+
+        local totalRowWidth
+        local offsetX
+        local sideBySide = false
+        
+        -- Gap between stacked column and output selector
+        local gap = (stackWidth > 0 and outputWidth > 0) and 25 or 0
+
+        -- Check if we should switch to side-by-side for the two toggles when output is hidden
+        if not db.showOutput and db.showCharacter and db.showBackground then
+            local combinedWidth = charWidth + 15 + bgWidth -- 15px gap between them
+            local availableWidth = VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - (CONTENT_PADDING_X * 2)
+            if combinedWidth <= availableWidth then
+                sideBySide = true
+                totalRowWidth = combinedWidth
+            else
+                totalRowWidth = stackWidth
+            end
+        else
+            totalRowWidth = stackWidth + gap + outputWidth
+        end
+
+        offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - totalRowWidth) / 2
+
+        -- Positioning logic
+        charCheck:ClearAllPoints()
+        bgCheck:ClearAllPoints()
+        outputLabel:ClearAllPoints()
+        dropdown:ClearAllPoints()
+
+        if sideBySide then
+            -- Position horizontally side-by-side
+            charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
+            bgCheck:SetPoint("LEFT", charCheck.labelText, "RIGHT", 15, 0)
+        elseif db.showCharacter and db.showBackground then
+            -- Stacked vertically
+            charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 30)
+            bgCheck:SetPoint("TOPLEFT", charCheck, "BOTTOMLEFT", 0, -2)
+            
+            if db.showOutput then
+                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 30)
+            end
+        elseif db.showCharacter then
+            charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
+            if db.showOutput then
+                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 15)
+            end
+        elseif db.showBackground then
+            bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
+            if db.showOutput then
+                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 15)
+            end
+        elseif db.showOutput then
+            outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
+        end
+        
+        if db.showOutput then
+            dropdown:SetPoint("LEFT", outputLabel, "RIGHT", 5, 0)
         end
     end
 end
@@ -838,6 +953,25 @@ end
 function VS:InitializeSettings()
     local categoryFrame = CreateFrame("Frame", "VolumeSlidersOptionsFrame", UIParent)
     local category, layout = Settings.RegisterCanvasLayoutCategory(categoryFrame, "Volume Sliders")
+
+    categoryFrame:SetScript("OnShow", function(self)
+        if not VS.settingsCreated then
+            VS:CreateSettingsContents(self)
+            VS.settingsCreated = true
+        end
+
+        -- Ensure height settings are refreshed on show
+        if VS.RefreshHeightSettings then
+            VS:RefreshHeightSettings()
+        end
+    end)
+
+    Settings.RegisterAddOnCategory(category)
+end
+
+--- Internal function to build the actual UI elements of the settings panel.
+--- This is called the first time the settings category is shown.
+function VS:CreateSettingsContents(categoryFrame)
 
     local title = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightHuge")
     title:SetPoint("TOPLEFT", 15, -15)
@@ -1014,9 +1148,10 @@ function VS:InitializeSettings()
     previewLabel:SetText("Live Preview:")
 
     -- Place the preview container in the 2nd column
-    local previewBackdrop = CreateFrame("Frame", nil, categoryFrame, "BackdropTemplate")
-    previewBackdrop:SetPoint("TOP", previewLabel, "BOTTOM", 0, -10)
-    previewBackdrop:SetSize(120, 360)
+    VS.previewBackdrop = CreateFrame("Frame", nil, categoryFrame, "BackdropTemplate")
+    VS.previewBackdrop:SetPoint("TOP", previewLabel, "BOTTOM", 0, -10)
+    VS.previewBackdrop:SetSize(120, 360)
+    local previewBackdrop = VS.previewBackdrop
     previewBackdrop:SetBackdrop({
         bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
         edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -1107,12 +1242,114 @@ function VS:InitializeSettings()
     end
 
     ---------------------------------------------------------------------------
-    -- Final Registration
+    -- 4th Column: Channel Visibility
     ---------------------------------------------------------------------------
+    local channelLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 540, -35)
+    channelLabel:SetText("Channel Visibility")
+
+    local channels = {
+        { name = "Master Slider", var = "showMaster", tooltip = "Show or hide the Master volume slider." },
+        { name = "SFX Slider", var = "showSFX", tooltip = "Show or hide the Sound Effects volume slider." },
+        { name = "Music Slider", var = "showMusic", tooltip = "Show or hide the Music volume slider." },
+        { name = "Ambience Slider", var = "showAmbience", tooltip = "Show or hide the Ambience volume slider." },
+        { name = "Dialog Slider", var = "showDialog", tooltip = "Show or hide the Dialog volume slider." },
+    }
+
+    local previousChannel = nil
+    for _, data in ipairs(channels) do
+        local checkbox = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+        if previousChannel then
+            checkbox:SetPoint("TOPLEFT", previousChannel, "BOTTOMLEFT", 0, 5)
+        else
+            checkbox:SetPoint("TOPLEFT", channelLabel, "BOTTOMLEFT", -5, -5)
+        end
+        
+        checkbox.text:SetText(data.name)
+        checkbox:SetChecked(VolumeSlidersMMDB[data.var])
+        
+        checkbox:SetScript("OnClick", function(self)
+            VolumeSlidersMMDB[data.var] = self:GetChecked()
+            VS:UpdateAppearance()
+        end)
+        
+        -- Add tooltip support
+        checkbox:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(data.tooltip, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        checkbox:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+        
+        previousChannel = checkbox
+    end
+
+    ---------------------------------------------------------------------------
+    -- Slider Height Setting (Text Entry)
+    ---------------------------------------------------------------------------
+    if VolumeSlidersMMDB.sliderHeight == nil then
+        VolumeSlidersMMDB.sliderHeight = 150
+    end
+
+    local heightLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    heightLabel:SetPoint("TOPLEFT", lowDropdown, "BOTTOMLEFT", 15, -25)
+    heightLabel:SetText("Slider Height (100-250)")
+
+    local heightInput = CreateFrame("EditBox", "VolumeSlidersHeightInput", categoryFrame, "InputBoxTemplate")
+    heightInput:SetSize(60, 20)
+    heightInput:SetPoint("TOPLEFT", heightLabel, "BOTTOMLEFT", 0, -10)
+    heightInput:SetAutoFocus(false)
+    heightInput:SetNumeric(true)
+    heightInput:SetMaxLetters(3)
+    heightInput:SetFontObject("GameFontHighlight")
+    heightInput:SetText(tostring(VolumeSlidersMMDB.sliderHeight or 150))
+
+    local function UpdateHeight(value)
+        local num = tonumber(value)
+        if num and num >= 100 and num <= 250 then
+            VolumeSlidersMMDB.sliderHeight = num
+            VS:UpdateAppearance()
+        end
+    end
+
+    heightInput:SetScript("OnTextChanged", function(self, userInput)
+        if userInput then
+            UpdateHeight(self:GetText())
+        end
+    end)
+    heightInput:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+    end)
+    heightInput:SetScript("OnEscapePressed", function(self)
+        self:SetText(tostring(VolumeSlidersMMDB.sliderHeight or 150))
+        self:ClearFocus()
+    end)
+
+    -- Ensure the text field is always populated with the current value when the settings page is opened.
+    -- We use a significant delay (0.2s) because Blizzard's settings menu layout
+    -- can be extremely aggressive in clearing fields during initial construction.
+    function VS:RefreshHeightSettings()
+        if heightInput then
+            local val = VolumeSlidersMMDB and VolumeSlidersMMDB.sliderHeight or 150
+            heightInput:SetText(tostring(val))
+            heightInput:SetCursorPosition(0)
+            -- print("|cff00ff00Volume Sliders:|r Height settings refreshed to " .. tostring(val))
+        end
+    end
+
+    categoryFrame:HookScript("OnShow", function()
+        C_Timer.After(0.1, function() VS:RefreshHeightSettings() end)
+    end)
+
+    -- Pre-warm the EditBox immediately after creation
+    VS:RefreshHeightSettings()
+
+    AddTooltip(heightInput, "Enter a vertical height for the sliders in pixels. Minimum 100, Maximum 250. Changes apply in real-time.")
+
     -- Sync preview appearance to current settings.
     VS:UpdateAppearance()
-
-    Settings.RegisterAddOnCategory(category)
 end
 
 -------------------------------------------------------------------------------
@@ -1320,15 +1557,18 @@ function VS:CreateOptionsFrame()
     ---------------------------------------------------------------------------
 
     -- "Output:" label
-    local outputLabel = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    outputLabel:SetPoint("LEFT", VS.characterCheckbox.labelText, "RIGHT", 20, 0)
-    outputLabel:SetText("Output:")
-    outputLabel:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
+    VS.outputLabel = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    VS.outputLabel:SetPoint("LEFT", VS.characterCheckbox.labelText, "RIGHT", 20, 0)
+    VS.outputLabel:SetText("Output:")
+    VS.outputLabel:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
 
     -- Dropdown button
-    local dropdown = CreateFrame("Button", "VolumeSlidersOutputDropdown", VS.contentFrame)
-    dropdown:SetSize(140, 36)
-    dropdown:SetPoint("LEFT", outputLabel, "RIGHT", 5, 0)
+    VS.outputDropdown = CreateFrame("Button", "VolumeSlidersOutputDropdown", VS.contentFrame)
+    VS.outputDropdown:SetSize(140, 36)
+    VS.outputDropdown:SetPoint("LEFT", VS.outputLabel, "RIGHT", 5, 0)
+    
+    local dropdown = VS.outputDropdown
+    local outputLabel = VS.outputLabel
 
     -- Background texture (Blizzard atlas, extends slightly beyond frame bounds
     -- to match the original template's visual padding).
@@ -1556,75 +1796,8 @@ function VS:CreateOptionsFrame()
     -- Defer layout calculation slightly to ensure font strings have initialized
     -- their widths, then re-anchor the character checkbox to dynamically center
     -- the entire bottom row within the content width.
-    C_Timer.After(0.01, function()
-        if VS.characterCheckbox and VS.characterCheckbox.labelText and VS.backgroundCheckbox and outputLabel and dropdown then
-            local db = VolumeSlidersMMDB
-            
-            -- Update visibility
-            VS.characterCheckbox:SetShown(db.showCharacter)
-            VS.characterCheckbox.labelText:SetShown(db.showCharacter)
-            VS.backgroundCheckbox:SetShown(db.showBackground)
-            VS.backgroundCheckbox.labelText:SetShown(db.showBackground)
-            outputLabel:SetShown(db.showOutput)
-            dropdown:SetShown(db.showOutput)
-            
-            local charWidth = 0
-            if db.showCharacter then
-                charWidth = VS.characterCheckbox:GetWidth() + 4 + VS.characterCheckbox.labelText:GetStringWidth()
-            end
-            
-            local bgWidth = 0
-            if db.showBackground then
-                bgWidth = VS.backgroundCheckbox:GetWidth() + 4 + VS.backgroundCheckbox.labelText:GetStringWidth()
-            end
-            
-            local stackWidth = math.max(charWidth, bgWidth)
-            
-            local outputWidth = 0
-            if db.showOutput then
-                outputWidth = outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()
-            end
-
-            -- Gap between stacked column and output selector
-            local gap = (stackWidth > 0 and outputWidth > 0) and 25 or 0
-            
-            -- Sum of all elements and spacing gaps
-            local totalRowWidth = stackWidth + gap + outputWidth
-            local offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - totalRowWidth) / 2
-
-            -- Positioning logic
-            VS.characterCheckbox:ClearAllPoints()
-            VS.backgroundCheckbox:ClearAllPoints()
-            outputLabel:ClearAllPoints()
-            dropdown:ClearAllPoints()
-
-            if db.showCharacter and db.showBackground then
-                -- Stacked vertically
-                VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 30)
-                VS.backgroundCheckbox:SetPoint("TOPLEFT", VS.characterCheckbox, "BOTTOMLEFT", 0, -2)
-                
-                if db.showOutput then
-                    outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 30)
-                end
-            elseif db.showCharacter then
-                VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
-                if db.showOutput then
-                    outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 15)
-                end
-            elseif db.showBackground then
-                VS.backgroundCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
-                if db.showOutput then
-                    outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 15)
-                end
-            elseif db.showOutput then
-                outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
-            end
-            
-            if db.showOutput then
-                dropdown:SetPoint("LEFT", outputLabel, "RIGHT", 5, 0)
-            end
-        end
-    end)
+    -- Initial layout of the footer.
+    C_Timer.After(0.01, function() VS:UpdateFooterLayout() end)
 
     -- Register combat lockdown event and start hidden.
     VS.container:RegisterEvent("PLAYER_REGEN_DISABLED")
@@ -1803,6 +1976,16 @@ initFrame:SetScript("OnEvent", function(self, event)
     if VolumeSlidersMMDB.showBackground == nil then VolumeSlidersMMDB.showBackground = true end
     if VolumeSlidersMMDB.showCharacter == nil then VolumeSlidersMMDB.showCharacter = true end
     if VolumeSlidersMMDB.showOutput == nil then VolumeSlidersMMDB.showOutput = true end
+    
+    -- Channel Visibility Defaults
+    if VolumeSlidersMMDB.showMaster == nil then VolumeSlidersMMDB.showMaster = true end
+    if VolumeSlidersMMDB.showSFX == nil then VolumeSlidersMMDB.showSFX = true end
+    if VolumeSlidersMMDB.showMusic == nil then VolumeSlidersMMDB.showMusic = true end
+    if VolumeSlidersMMDB.showAmbience == nil then VolumeSlidersMMDB.showAmbience = true end
+    if VolumeSlidersMMDB.showDialog == nil then VolumeSlidersMMDB.showDialog = true end
+
+    -- Layout Defaults
+    VolumeSlidersMMDB.sliderHeight = VolumeSlidersMMDB.sliderHeight or 150
 
     -- Register the minimap icon via LibDBIcon.
     LDBIcon:Register("Volume Sliders", VS.VolumeSlidersObject, VolumeSlidersMMDB)
@@ -1829,10 +2012,9 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Update the minimap icon to the correct mute state and pre-create the
     -- options frame so it's ready for instant display.
-    VS:UpdateMiniMapVolumeIcon()
-    VS:CreateOptionsFrame()
     VS:InitializeSettings()
-
+    VS:UpdateMiniMapVolumeIcon()
+    
     -- This event only needs to fire once.
     self:UnregisterEvent("PLAYER_LOGIN")
 end)
