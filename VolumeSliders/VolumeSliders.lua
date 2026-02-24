@@ -728,20 +728,30 @@ function VS:UpdateAppearance()
             local startX = CONTENT_PADDING_X
             local i = 0
 
-            -- We need to maintain the same X-offsets as CreateOptionsFrame
-            local cvarMap = {
-                { cvar = "Sound_MasterVolume", var = "showMaster" },
-                { cvar = "Sound_SFXVolume", var = "showSFX" },
-                { cvar = "Sound_MusicVolume", var = "showMusic" },
-                { cvar = "Sound_AmbienceVolume", var = "showAmbience" },
-                { cvar = "Sound_DialogVolume", var = "showDialog" },
-                { cvar = "Sound_EncounterWarningsVolume", var = "showWarnings" },
+            -- Map CVars to their visibility settings
+            local cvarToVar = {
+                ["Sound_MasterVolume"] = "showMaster",
+                ["Sound_SFXVolume"] = "showSFX",
+                ["Sound_MusicVolume"] = "showMusic",
+                ["Sound_AmbienceVolume"] = "showAmbience",
+                ["Sound_DialogVolume"] = "showDialog",
+                ["Sound_EncounterWarningsVolume"] = "showWarnings",
             }
 
-            for _, entry in ipairs(cvarMap) do
-                local slider = VS.sliders[entry.cvar]
-                if slider then
-                    if not VolumeSlidersMMDB[entry.var] then
+            local cvarOrder = VolumeSlidersMMDB.sliderOrder or {
+                "Sound_MasterVolume",
+                "Sound_SFXVolume",
+                "Sound_MusicVolume",
+                "Sound_AmbienceVolume",
+                "Sound_DialogVolume",
+                "Sound_EncounterWarningsVolume"
+            }
+
+            for _, cvar in ipairs(cvarOrder) do
+                local slider = VS.sliders[cvar]
+                local var = cvarToVar[cvar]
+                if slider and var then
+                    if not VolumeSlidersMMDB[var] then
                         slider:Hide()
                     else
                         slider:Show()
@@ -986,6 +996,7 @@ function VS:CreateSettingsContents(categoryFrame)
     -- Dropdown Menus
     ---------------------------------------------------------------------------
     local dropdownWidth = 160
+    local dropdownSpacingOffset = -15 -- Reduced spacing between dropdowns
 
     -- Title Color Label & Dropdown
     local titleColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -1012,7 +1023,7 @@ function VS:CreateSettingsContents(categoryFrame)
     end
 
     local titleDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
-    titleDropdown:SetPoint("TOPLEFT", titleColorLabel, "BOTTOMLEFT", -15, -10)
+    titleDropdown:SetPoint("TOPLEFT", titleColorLabel, "BOTTOMLEFT", -15, -8) -- Reduced label-dropdown space
     titleDropdown:SetWidth(dropdownWidth)
     titleDropdown:SetupMenu(function(dropdown, rootDescription)
         rootDescription:CreateRadio("Gold", IsTitleSelected, SetTitleSelected, 1)
@@ -1022,7 +1033,7 @@ function VS:CreateSettingsContents(categoryFrame)
 
     -- Value Color Label & Dropdown
     local valueColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    valueColorLabel:SetPoint("TOPLEFT", titleDropdown, "BOTTOMLEFT", 15, -25)
+    valueColorLabel:SetPoint("TOPLEFT", titleDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset)
     valueColorLabel:SetText("Value Text Color")
 
     local function IsValueSelected(value)
@@ -1034,7 +1045,7 @@ function VS:CreateSettingsContents(categoryFrame)
     end
 
     local valueDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
-    valueDropdown:SetPoint("TOPLEFT", valueColorLabel, "BOTTOMLEFT", -15, -10)
+    valueDropdown:SetPoint("TOPLEFT", valueColorLabel, "BOTTOMLEFT", -15, -8) -- Reduced label-dropdown space
     valueDropdown:SetWidth(dropdownWidth)
     valueDropdown:SetupMenu(function(dropdown, rootDescription)
         rootDescription:CreateRadio("Gold", IsValueSelected, SetValueSelected, 1)
@@ -1044,7 +1055,7 @@ function VS:CreateSettingsContents(categoryFrame)
 
     -- High Color Label & Dropdown
     local highColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    highColorLabel:SetPoint("TOPLEFT", valueDropdown, "BOTTOMLEFT", 15, -25)
+    highColorLabel:SetPoint("TOPLEFT", valueDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset)
     highColorLabel:SetText("High Text Color")
 
     local function IsHighSelected(value)
@@ -1056,7 +1067,7 @@ function VS:CreateSettingsContents(categoryFrame)
     end
 
     local highDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
-    highDropdown:SetPoint("TOPLEFT", highColorLabel, "BOTTOMLEFT", -15, -10)
+    highDropdown:SetPoint("TOPLEFT", highColorLabel, "BOTTOMLEFT", -15, -8) -- Reduced label-dropdown space
     highDropdown:SetWidth(dropdownWidth)
     highDropdown:SetupMenu(function(dropdown, rootDescription)
         rootDescription:CreateRadio("Gold", IsHighSelected, SetHighSelected, 1)
@@ -1066,7 +1077,7 @@ function VS:CreateSettingsContents(categoryFrame)
 
     -- Arrow Style Label & Dropdown
     local arrowLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    arrowLabel:SetPoint("TOPLEFT", highDropdown, "BOTTOMLEFT", 15, -25)
+    arrowLabel:SetPoint("TOPLEFT", highDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset)
     arrowLabel:SetText("Stepper Arrow Style")
 
     local function IsArrowSelected(value)
@@ -1078,19 +1089,19 @@ function VS:CreateSettingsContents(categoryFrame)
     end
 
     local arrowDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
-    arrowDropdown:SetPoint("TOPLEFT", arrowLabel, "BOTTOMLEFT", -15, -10)
+    arrowDropdown:SetPoint("TOPLEFT", arrowLabel, "BOTTOMLEFT", -15, -8) -- Reduced label-dropdown space
     arrowDropdown:SetWidth(dropdownWidth)
     arrowDropdown:SetupMenu(function(dropdown, rootDescription)
         rootDescription:CreateRadio("Gold Plus / Minus", IsArrowSelected, SetArrowSelected, 1)
+        rootDescription:CreateRadio("Silver Plus / Minus", IsArrowSelected, SetArrowSelected, 4)
         rootDescription:CreateRadio("Gold Arrows", IsArrowSelected, SetArrowSelected, 2)
         rootDescription:CreateRadio("Silver Arrows", IsArrowSelected, SetArrowSelected, 3)
-        rootDescription:CreateRadio("Silver Plus / Minus", IsArrowSelected, SetArrowSelected, 4)
     end)
     arrowDropdown:GenerateMenu()
 
     -- Knob Style Label & Dropdown
     local knobLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    knobLabel:SetPoint("TOPLEFT", arrowDropdown, "BOTTOMLEFT", 15, -25)
+    knobLabel:SetPoint("TOPLEFT", arrowDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset)
     knobLabel:SetText("Slider Knob Style")
 
     local function IsKnobSelected(value)
@@ -1102,7 +1113,7 @@ function VS:CreateSettingsContents(categoryFrame)
     end
 
     local knobDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
-    knobDropdown:SetPoint("TOPLEFT", knobLabel, "BOTTOMLEFT", -15, -10)
+    knobDropdown:SetPoint("TOPLEFT", knobLabel, "BOTTOMLEFT", -15, -8) -- Reduced label-dropdown space
     knobDropdown:SetWidth(dropdownWidth)
     knobDropdown:SetupMenu(function(dropdown, rootDescription)
         rootDescription:CreateRadio("Gold Diamond", IsKnobSelected, SetKnobSelected, 1)
@@ -1112,7 +1123,7 @@ function VS:CreateSettingsContents(categoryFrame)
 
     -- Low Color Label & Dropdown
     local lowColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    lowColorLabel:SetPoint("TOPLEFT", knobDropdown, "BOTTOMLEFT", 15, -25)
+    lowColorLabel:SetPoint("TOPLEFT", knobDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset)
     lowColorLabel:SetText("Low Text Color")
 
     local function IsLowSelected(value)
@@ -1124,7 +1135,7 @@ function VS:CreateSettingsContents(categoryFrame)
     end
 
     local lowDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
-    lowDropdown:SetPoint("TOPLEFT", lowColorLabel, "BOTTOMLEFT", -15, -10)
+    lowDropdown:SetPoint("TOPLEFT", lowColorLabel, "BOTTOMLEFT", -15, -8) -- Reduced label-dropdown space
     lowDropdown:SetWidth(dropdownWidth)
     lowDropdown:SetupMenu(function(dropdown, rootDescription)
         rootDescription:CreateRadio("Gold", IsLowSelected, SetLowSelected, 1)
@@ -1144,7 +1155,7 @@ function VS:CreateSettingsContents(categoryFrame)
     -- Live Preview Column
     ---------------------------------------------------------------------------
     local previewLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    previewLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 215, -35)
+    previewLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 185, -35)
     previewLabel:SetText("Live Preview:")
 
     -- Place the preview container in the 2nd column
@@ -1171,6 +1182,9 @@ function VS:CreateSettingsContents(categoryFrame)
     VS.previewSlider:SetScale(0.9)
     VS.previewSlider:EnableMouse(false)
     
+    -- Ensure the slider is drawn in front of the backdrop
+    VS.previewSlider:SetFrameLevel(previewBackdrop:GetFrameLevel() + 5)
+    
     -- Disable functional updates for the preview slider
     VS.previewSlider:SetScript("OnValueChanged", nil)
     VS.previewSlider:SetScript("OnMouseWheel", nil)
@@ -1192,7 +1206,7 @@ function VS:CreateSettingsContents(categoryFrame)
     -- 3rd Column: Visibility Checkboxes
     ---------------------------------------------------------------------------
     local visibilityLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    visibilityLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 380, -35)
+    visibilityLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 325, -35)
     visibilityLabel:SetText("Element Visibility")
 
     local checkboxes = {
@@ -1204,87 +1218,200 @@ function VS:CreateSettingsContents(categoryFrame)
         { name = "Down Arrow", var = "showDownArrow", tooltip = "Show or hide the button for fine-tuning volume decrements." },
         { name = "Low Label", var = "showLow", tooltip = "Show or hide the '0%' label at the bottom of the slider track." },
         { name = "Mute Button", var = "showMute", tooltip = "Show or hide the mute checkbox and label below each slider." },
-        { name = "Warnings Slider", var = "showWarnings", tooltip = "Show or hide the dedicated slider for Encounter Warnings (combat alerts)." },
+        { name = "---Separator---", isSeparator = true },
         { name = "SBG Checkbox", var = "showBackground", tooltip = "Show or hide the 'Sound in Background' toggle in the window footer." },
         { name = "Char Checkbox", var = "showCharacter", tooltip = "Show or hide the 'Sound at Character' toggle in the window footer." },
         { name = "Output Selector", var = "showOutput", tooltip = "Show or hide the 'Output:' device selection dropdown in the window footer." },
     }
 
     local previousCheckbox = nil
+    local checkboxOffset = 5
 
     for _, data in ipairs(checkboxes) do
-        local checkbox = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
-        if previousCheckbox then
-            checkbox:SetPoint("TOPLEFT", previousCheckbox, "BOTTOMLEFT", 0, 5)
+        if data.isSeparator then
+            local separator = categoryFrame:CreateTexture(nil, "ARTWORK")
+            separator:SetHeight(2) -- More pronounced
+            separator:SetPoint("LEFT", visibilityLabel, "LEFT", -15, 0)
+            separator:SetPoint("TOP", previousCheckbox, "BOTTOM", 0, -8)
+            separator:SetWidth(140) -- Constrained width
+            separator:SetColorTexture(1, 1, 1, 0.4) -- Brighter
+            
+            -- Fix dummy anchor to align icons with items above
+            local anchor = CreateFrame("Frame", nil, categoryFrame)
+            anchor:SetSize(1, 1)
+            anchor:SetPoint("TOPLEFT", separator, "BOTTOMLEFT", 10, -5)
+            
+            previousCheckbox = anchor
+            checkboxOffset = -10
         else
-            checkbox:SetPoint("TOPLEFT", visibilityLabel, "BOTTOMLEFT", -5, -5)
+            local checkbox = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+            if previousCheckbox then
+                checkbox:SetPoint("TOPLEFT", previousCheckbox, "BOTTOMLEFT", 0, checkboxOffset or 5)
+            else
+                checkbox:SetPoint("TOPLEFT", visibilityLabel, "BOTTOMLEFT", -5, -5)
+            end
+            checkboxOffset = 5
+            
+            checkbox.text:SetText(data.name)
+            checkbox:SetChecked(VolumeSlidersMMDB[data.var])
+            
+            checkbox:SetScript("OnClick", function(self)
+                VolumeSlidersMMDB[data.var] = self:GetChecked()
+                VS:UpdateAppearance()
+            end)
+            
+            -- Add tooltip support
+            checkbox:SetScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                GameTooltip:SetText(data.tooltip, nil, nil, nil, nil, true)
+                GameTooltip:Show()
+            end)
+            checkbox:SetScript("OnLeave", function(self)
+                GameTooltip:Hide()
+            end)
+            
+            previousCheckbox = checkbox
         end
-        
-        checkbox.text:SetText(data.name)
-        checkbox:SetChecked(VolumeSlidersMMDB[data.var])
-        
-        checkbox:SetScript("OnClick", function(self)
-            VolumeSlidersMMDB[data.var] = self:GetChecked()
-            VS:UpdateAppearance()
-        end)
-        
-        -- Add tooltip support
-        checkbox:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText(data.tooltip, nil, nil, nil, nil, true)
-            GameTooltip:Show()
-        end)
-        checkbox:SetScript("OnLeave", function(self)
-            GameTooltip:Hide()
-        end)
-        
-        previousCheckbox = checkbox
     end
 
     ---------------------------------------------------------------------------
     -- 4th Column: Channel Visibility
     ---------------------------------------------------------------------------
     local channelLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 540, -35)
+    channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 475, -35)
     channelLabel:SetText("Channel Visibility")
 
-    local channels = {
-        { name = "Master Slider", var = "showMaster", tooltip = "Show or hide the Master volume slider." },
-        { name = "SFX Slider", var = "showSFX", tooltip = "Show or hide the Sound Effects volume slider." },
-        { name = "Music Slider", var = "showMusic", tooltip = "Show or hide the Music volume slider." },
-        { name = "Ambience Slider", var = "showAmbience", tooltip = "Show or hide the Ambience volume slider." },
-        { name = "Dialog Slider", var = "showDialog", tooltip = "Show or hide the Dialog volume slider." },
+    local channelSubLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    channelSubLabel:SetPoint("TOP", channelLabel, "BOTTOM", 0, -2)
+    channelSubLabel:SetText("(Drag to Reorder)")
+    channelSubLabel:SetAlpha(0.6)
+
+    local channelMap = {
+        ["Sound_MasterVolume"] = { name = "Master Slider", var = "showMaster", tooltip = "Show or hide the Master volume slider." },
+        ["Sound_SFXVolume"] = { name = "SFX Slider", var = "showSFX", tooltip = "Show or hide the Sound Effects volume slider." },
+        ["Sound_MusicVolume"] = { name = "Music Slider", var = "showMusic", tooltip = "Show or hide the Music volume slider." },
+        ["Sound_AmbienceVolume"] = { name = "Ambience Slider", var = "showAmbience", tooltip = "Show or hide the Ambience volume slider." },
+        ["Sound_DialogVolume"] = { name = "Dialog Slider", var = "showDialog", tooltip = "Show or hide the Dialog volume slider." },
+        ["Sound_EncounterWarningsVolume"] = { name = "Warnings Slider", var = "showWarnings", tooltip = "Show or hide the dedicated slider for Encounter Warnings (combat alerts)." },
     }
 
-    local previousChannel = nil
-    for _, data in ipairs(channels) do
-        local checkbox = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
-        if previousChannel then
-            checkbox:SetPoint("TOPLEFT", previousChannel, "BOTTOMLEFT", 0, 5)
-        else
-            checkbox:SetPoint("TOPLEFT", channelLabel, "BOTTOMLEFT", -5, -5)
+    local scrollBox = CreateFrame("Frame", nil, categoryFrame, "WowScrollBoxList")
+    scrollBox:SetSize(170, 230)
+    scrollBox:SetPoint("TOPLEFT", channelSubLabel, "BOTTOMLEFT", -5, -8) -- Anchor to the new sublabel
+
+    local dragBehavior -- Forward declare for access in RowInitializer
+
+    local function RowInitializer(frame, elementData)
+        local data = channelMap[elementData]
+        if not data then return end
+
+        if not frame.initialized then
+            frame:SetBackdrop({
+                bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                tile = true, tileSize = 16, edgeSize = 1,
+                insets = { left = 1, right = 1, top = 1, bottom = 1 }
+            })
+            frame:SetBackdropColor(0, 0, 0, 0.4)
+            frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.3)
+
+            local drag = frame:CreateTexture(nil, "ARTWORK")
+            drag:SetAtlas("ReagentWizards-ReagentRow-Grabber")
+            drag:SetSize(12, 18)
+            drag:SetPoint("LEFT", 6, 0)
+            frame.drag = drag
+
+            local checkbox = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+            checkbox:SetPoint("LEFT", drag, "RIGHT", 4, 0)
+            checkbox:SetSize(24, 24)
+            frame.checkbox = checkbox
+
+            frame.initialized = true
         end
-        
-        checkbox.text:SetText(data.name)
-        checkbox:SetChecked(VolumeSlidersMMDB[data.var])
-        
-        checkbox:SetScript("OnClick", function(self)
+
+        frame.checkbox.text:SetText(data.name)
+        frame.checkbox:SetChecked(VolumeSlidersMMDB[data.var])
+        frame.checkbox:SetScript("OnClick", function(self)
             VolumeSlidersMMDB[data.var] = self:GetChecked()
             VS:UpdateAppearance()
         end)
-        
-        -- Add tooltip support
-        checkbox:SetScript("OnEnter", function(self)
+
+        frame:SetScript("OnEnter", function(self)
+            if dragBehavior and dragBehavior:GetDragging() then return end
+            self:SetBackdropBorderColor(1, 0.8, 0, 0.5)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText(data.tooltip, nil, nil, nil, nil, true)
+            GameTooltip:SetText(data.tooltip .. "\n\n|cff00ff00Drag to reorder|r", nil, nil, nil, nil, true)
             GameTooltip:Show()
         end)
-        checkbox:SetScript("OnLeave", function(self)
+        frame:SetScript("OnLeave", function(self)
+            self:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.3)
             GameTooltip:Hide()
         end)
-        
-        previousChannel = checkbox
     end
+
+    local view = CreateScrollBoxListLinearView()
+    view:SetElementInitializer("VolumeSlidersChannelRowTemplate", RowInitializer)
+    view:SetPadding(0, 0, 0, 0, 4)
+
+    scrollBox:Init(view)
+
+    dragBehavior = ScrollUtil.AddLinearDragBehavior(scrollBox)
+    dragBehavior:SetReorderable(true)
+    dragBehavior:SetDragRelativeToCursor(true)
+
+    dragBehavior:SetCursorFactory(function(elementData)
+        return "VolumeSlidersChannelRowTemplate", function(frame)
+            RowInitializer(frame, elementData)
+            frame:SetAlpha(0.6)
+            frame:SetBackdropBorderColor(1, 0.8, 0, 0.8)
+        end
+    end)
+
+    dragBehavior:SetDropPredicate(function(sourceElementData, intersectData)
+        if intersectData.area == DragIntersectionArea.Inside then
+            local cursorParent = FrameUtil.GetRootParent(scrollBox)
+            local _, cy = InputUtil.GetCursorPosition(cursorParent)
+            local frame = intersectData.frame
+            local centerY = frame:GetBottom() + (frame:GetHeight() / 2)
+            if cy > centerY then
+                intersectData.area = DragIntersectionArea.Above
+            else
+                intersectData.area = DragIntersectionArea.Below
+            end
+        end
+        return true
+    end)
+
+    dragBehavior:SetDropEnter(function(factory, candidate)
+        local frame = factory("VolumeSlidersDropIndicatorTemplate")
+        frame:SetSize(150, 3)
+        if candidate.area == DragIntersectionArea.Above then
+            frame:SetPoint("BOTTOMLEFT", candidate.frame, "TOPLEFT", 0, 1)
+            frame:SetPoint("BOTTOMRIGHT", candidate.frame, "TOPRIGHT", 0, 1)
+        elseif candidate.area == DragIntersectionArea.Below then
+            frame:SetPoint("TOPLEFT", candidate.frame, "BOTTOMLEFT", 0, -1)
+            frame:SetPoint("TOPRIGHT", candidate.frame, "BOTTOMRIGHT", 0, -1)
+        end
+    end)
+
+    dragBehavior:SetPostDrop(function(contextData)
+        local dp = contextData.dataProvider
+        wipe(VolumeSlidersMMDB.sliderOrder)
+        for _, cvar in dp:EnumerateEntireRange() do
+            table.insert(VolumeSlidersMMDB.sliderOrder, cvar)
+        end
+        VS:UpdateAppearance()
+    end)
+
+    local function RefreshDataProvider()
+        local dataProvider = CreateDataProvider()
+        for _, cvar in ipairs(VolumeSlidersMMDB.sliderOrder) do
+            dataProvider:Insert(cvar)
+        end
+        scrollBox:SetDataProvider(dataProvider)
+    end
+
+    RefreshDataProvider()
 
     ---------------------------------------------------------------------------
     -- Slider Height Setting (Text Entry)
@@ -1299,7 +1426,7 @@ function VS:CreateSettingsContents(categoryFrame)
 
     local heightInput = CreateFrame("EditBox", "VolumeSlidersHeightInput", categoryFrame, "InputBoxTemplate")
     heightInput:SetSize(60, 20)
-    heightInput:SetPoint("TOPLEFT", heightLabel, "BOTTOMLEFT", 0, -10)
+    heightInput:SetPoint("TOPLEFT", heightLabel, "BOTTOMLEFT", 10, -10)
     heightInput:SetAutoFocus(false)
     heightInput:SetNumeric(true)
     heightInput:SetMaxLetters(3)
@@ -1986,6 +2113,18 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Layout Defaults
     VolumeSlidersMMDB.sliderHeight = VolumeSlidersMMDB.sliderHeight or 150
+    
+    -- Slider Order Defaults
+    if not VolumeSlidersMMDB.sliderOrder then
+        VolumeSlidersMMDB.sliderOrder = {
+                "Sound_MasterVolume",
+                "Sound_SFXVolume",
+                "Sound_MusicVolume",
+                "Sound_AmbienceVolume",
+                "Sound_DialogVolume",
+                "Sound_EncounterWarningsVolume"
+            }
+    end
 
     -- Register the minimap icon via LibDBIcon.
     LDBIcon:Register("Volume Sliders", VS.VolumeSlidersObject, VolumeSlidersMMDB)

@@ -74,9 +74,19 @@ read_globals = {
     "tinsert",
     "Sound_GameSystem_GetOutputDriverNameByIndex",
     "Sound_GameSystem_GetNumOutputDrivers",
-    "Sound_GameSystem_RestartSoundSystem",
+    "Sound_GameSystem_GetRestartSoundSystem",
     "WOW_PROJECT_ID",
-    "WOW_PROJECT_MAINLINE"
+    "WOW_PROJECT_MAINLINE",
+    
+    -- Modern ScrollBox / DataProvider API
+    "Mixin",
+    "BackdropTemplate",
+    "CreateDataProvider",
+    "CreateScrollBoxListLinearView",
+    "ScrollUtil",
+    "DragIntersectionArea",
+    "FrameUtil",
+    "InputUtil"
 }
 
 -- Globals that the addon creates and assigns values to
