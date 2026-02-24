@@ -1,3 +1,10 @@
+## v1.3.5
+
+- **Customization:** Refined the settings panel by replacing the basic text inputs with standard horizontal sliders accompanied by manual numeric entry boxes.
+- **Customization:** Added the ability to adjust the horizontal spacing between slider columns (from 5px to 40px).
+- **UI Improvement:** Greatly enhanced the main window footer layout logic to intelligently align, stack, and unstack "Sound at Character", "Sound in Background", and the "Output Selector" based on the available window width and your current visibility settings.
+- **UI Improvement:** Removed unused padding and tightened the overall visual balance of the Settings panel.
+
 ## v1.3.4
 
 - **Customization:** Added **Channel Visibility** toggles to show or hide individual sliders (Master, SFX, Music, Ambience, Dialog).

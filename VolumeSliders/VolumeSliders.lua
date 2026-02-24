@@ -2,18 +2,18 @@
 -- VolumeSliders.lua
 --
 -- A World of Warcraft addon that provides quick-access vertical volume sliders
--- for all five sound channels (Master, Effects, Music, Ambience, Dialog),
+-- for all sound channels,
 -- along with per-channel mute toggles, a sound output device selector, and
 -- minimap / LDB / Addon Compartment integration.
 --
 -- Architecture Overview:
 --   • Uses LibDataBroker and LibDBIcon for minimap/broker integration.
---   • A single popup frame hosts five vertical sliders using Blizzard templates.
+--   • A single popup frame hosts vertical sliders using Blizzard templates.
 --   • Toggled via minimap button, broker frame, or Addon Compartment.
 --   • Mouse-wheel on the icon adjusts master volume directly.
 --
 -- Author: Sheldon Michaels
--- Version: 1.3.4
+-- Version: 1.3.5
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 
@@ -72,9 +72,8 @@ local TEMPLATE_CONTENT_OFFSET_RIGHT = 3
 local TEMPLATE_CONTENT_OFFSET_TOP = 18
 local TEMPLATE_CONTENT_OFFSET_BOTTOM = 3
 
--- Each slider occupies a column of this width, with this spacing between them.
+-- Each slider occupies a column of this width.
 local SLIDER_COLUMN_WIDTH = 60
-local SLIDER_COLUMN_SPACING = 15
 
 -- Fixed height of the slider track itself (excludes labels and buttons).
 local SLIDER_HEIGHT = 160
@@ -88,9 +87,8 @@ local CONTENT_PADDING_TOP = 15
 local CONTENT_PADDING_BOTTOM = 15
 
 -- Derived dimensions — automatically adjust if the constants above change.
-local CONTENT_WIDTH = (CONTENT_PADDING_X * 2)
-    + (NUM_SLIDERS * SLIDER_COLUMN_WIDTH)
-    + ((NUM_SLIDERS - 1) * SLIDER_COLUMN_SPACING)
+-- Note: CONTENT_WIDTH is dynamically calculated in VS:UpdateAppearance()
+-- based on the number of active columns and current slider spacing.
 
 -- Content height breakdown:
 --   CONTENT_PADDING_TOP + 95 (instruction text + slider titles + percentages) +
@@ -98,8 +96,7 @@ local CONTENT_WIDTH = (CONTENT_PADDING_X * 2)
 --   CONTENT_PADDING_BOTTOM
 local CONTENT_HEIGHT = CONTENT_PADDING_TOP + 95 + SLIDER_HEIGHT + 100 + 35 + CONTENT_PADDING_BOTTOM
 
--- Full frame size including NineSlice border insets.
-local FRAME_WIDTH = CONTENT_WIDTH + TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT
+-- Default full frame size including NineSlice border insets (width is dynamic).
 local FRAME_HEIGHT = CONTENT_HEIGHT + TEMPLATE_CONTENT_OFFSET_TOP + TEMPLATE_CONTENT_OFFSET_BOTTOM
 
 -----------------------------------------
@@ -376,7 +373,7 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     --   SetAtlasRotated90CW(upTex, "Minimal_SliderBar_Button_Left")
     --   Old gold up arrow layout:
     --   upTex:SetAtlas("ui-hud-actionbar-pageuparrow-up")
-    local upBtn = CreateFrame("Button", name .. "StepUp", parent)
+    local upBtn = CreateFrame("Button", name .. "StepUp", slider)
     upBtn:SetSize(20, 20) -- Explicitly size the button hit-box so it doesn't collapse to 0x0
     local upTex = upBtn:CreateTexture(nil, "BACKGROUND")
     upTex:SetAtlas("ui-hud-minimap-zoom-in")
@@ -403,7 +400,7 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     --   SetAtlasRotated90CW(downTex, "Minimal_SliderBar_Button_Right")
     --   Old gold down arrow layout:
     --   downTex:SetAtlas("ui-hud-actionbar-pagedownarrow-up")
-    local downBtn = CreateFrame("Button", name .. "StepDown", parent)
+    local downBtn = CreateFrame("Button", name .. "StepDown", slider)
     downBtn:SetSize(20, 20) -- Explicitly size the button hit-box
     local downTex = downBtn:CreateTexture(nil, "BACKGROUND")
     downTex:SetAtlas("ui-hud-minimap-zoom-out")
@@ -496,13 +493,13 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     -- This inversion matches the "mute" semantic: ticking the box silences
     -- the channel.
     ---------------------------------------------------------------------------
-    local muteCheck = CreateFrame("CheckButton", name .. "Mute", parent, "SettingsCheckboxTemplate")
+    local muteCheck = CreateFrame("CheckButton", name .. "Mute", slider, "SettingsCheckboxTemplate")
     muteCheck:SetSize(26, 26)
     muteCheck:SetPoint("TOP", slider, "BOTTOM", 0, -42)
     DisableCheckboxHoverBackground(muteCheck)
 
     -- "Mute" label below the checkbox.
-    local muteLabel = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local muteLabel = slider:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     muteLabel:SetPoint("TOP", muteCheck, "BOTTOM", 0, -2)
     muteLabel:SetText("Mute")
     muteCheck.muteLabel = muteLabel
@@ -714,22 +711,81 @@ function VS:UpdateAppearance()
         end
     end
 
-    -- Dynamically resize the main popup frame if it exists
+        -- Dynamically resize the main popup frame if it exists
     if VS.container then
         local hTop, hBottom, hTrack = VS:GetSliderHeightExtent()
 
         -- Header: Padding (15) + Instruction (15) + Gap (10)
         local headerHeight = 40
-        -- Footer height calculation based on visibility
+        -- Footer height calculation based on visibility and layout stacking
         local footerHeight = 0
         local db = VolumeSlidersMMDB
         if db.showCharacter or db.showBackground or db.showOutput then
             footerHeight = 15 -- Initial top gap
-            if db.showCharacter and db.showBackground then
-                footerHeight = footerHeight + 55 -- Stacked checkboxes height
-            else
-                footerHeight = footerHeight + 36 -- Single row height (checkbox or dropdown)
+            local charCheck = VS.characterCheckbox
+            local bgCheck = VS.backgroundCheckbox
+            local outputLabel = VS.outputLabel
+            local dropdown = VS.outputDropdown
+            
+            local charWidth = (db.showCharacter and charCheck and charCheck.labelText) and (charCheck:GetWidth() + 4 + charCheck.labelText:GetStringWidth()) or 0
+            local bgWidth = (db.showBackground and bgCheck and bgCheck.labelText) and (bgCheck:GetWidth() + 4 + bgCheck.labelText:GetStringWidth()) or 0
+            local outputWidth = (db.showOutput and outputLabel and dropdown) and (outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()) or 0
+            
+            -- Estimate layout state before applying it
+            -- We need to know the width first
+            -- Start with the X positions of active sliders
+            local startX = CONTENT_PADDING_X
+            local i = 0
+            local spacing = db.sliderSpacing or 10
+
+            local cvarOrder = VolumeSlidersMMDB.sliderOrder or DEFAULT_CVAR_ORDER
+
+            -- Find how many sliders are active to determine the container's inner width
+            for _, cvar in ipairs(cvarOrder) do
+                local var = CVAR_TO_VAR[cvar]
+                if var and VolumeSlidersMMDB[var] then
+                    i = i + 1
+                end
             end
+            
+            local visibleWidth = (CONTENT_PADDING_X * 2) + (i * SLIDER_COLUMN_WIDTH) + (math.max(0, i - 1) * spacing)
+            local availableWidth = visibleWidth - (CONTENT_PADDING_X * 2)
+            
+            local stackWidth = math.max(charWidth, bgWidth)
+            local combinedWidth = charWidth + 15 + bgWidth -- unstacked gap
+            local partiallyStackedWidth = stackWidth + 25 + outputWidth
+            local unstackedWidth = combinedWidth + 25 + outputWidth
+
+            -- Assess layout state for height calc
+            if unstackedWidth <= availableWidth and db.showCharacter and db.showBackground and db.showOutput then
+                -- All fit side-by-side
+                footerHeight = footerHeight + 36
+            elseif not db.showOutput and db.showCharacter and db.showBackground and combinedWidth <= availableWidth then
+                -- Side-by-side toggles, no output
+                footerHeight = footerHeight + 36
+            elseif partiallyStackedWidth <= availableWidth and ((db.showCharacter and db.showBackground) or (db.showCharacter and db.showOutput) or (db.showBackground and db.showOutput)) then
+                -- Partially stacked (toggles stacked on left, output on right) OR (toggles stacked, no output)
+                if db.showCharacter and db.showBackground then
+                    footerHeight = footerHeight + 55
+                else
+                    footerHeight = footerHeight + 36
+                end
+            else
+                -- Fully stacked vertically OR single column
+                local activeRows = 0
+                if db.showCharacter then activeRows = activeRows + 1 end
+                if db.showBackground then activeRows = activeRows + 1 end
+                if db.showOutput then activeRows = activeRows + 1 end
+                
+                if activeRows == 3 then
+                    footerHeight = footerHeight + 90
+                elseif activeRows == 2 then
+                    footerHeight = footerHeight + 55
+                else
+                    footerHeight = footerHeight + 36
+                end
+            end
+            
             footerHeight = footerHeight + 15 -- Bottom padding
         end
 
@@ -745,6 +801,7 @@ function VS:UpdateAppearance()
         if VS.sliders then
             local startX = CONTENT_PADDING_X
             local i = 0
+            local spacing = db.sliderSpacing or 10
 
             local cvarOrder = VolumeSlidersMMDB.sliderOrder or DEFAULT_CVAR_ORDER
 
@@ -756,7 +813,7 @@ function VS:UpdateAppearance()
                         slider:Hide()
                     else
                         slider:Show()
-                        local offsetX = startX + (i * (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING)) + (SLIDER_COLUMN_WIDTH / 2) - 8
+                        local offsetX = startX + (i * (SLIDER_COLUMN_WIDTH + spacing)) + (SLIDER_COLUMN_WIDTH / 2) - 8
                         slider:ClearAllPoints()
                         slider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", offsetX, startY)
                         i = i + 1
@@ -767,8 +824,9 @@ function VS:UpdateAppearance()
             -- Dynamically adjust frame width based on visible sliders
             local visibleWidth = (CONTENT_PADDING_X * 2)
                 + (i * SLIDER_COLUMN_WIDTH)
-                + ((i - 1) * SLIDER_COLUMN_SPACING)
-            local frameWidth = visibleWidth + TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT
+                + (math.max(0, i - 1) * spacing)
+            -- A minimum width to guarantee elements like the footer don't clip drastically
+            local frameWidth = math.max(300, visibleWidth + TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT)
             VS.container:SetWidth(frameWidth)
         end
         
@@ -813,28 +871,32 @@ function VS:UpdateFooterLayout()
             outputWidth = outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()
         end
 
-        local totalRowWidth
+        local combinedTogglesWidth = charWidth + 15 + bgWidth -- if toggles are side-by-side
+        local unstackedWidth = combinedTogglesWidth + 25 + outputWidth -- everything side-by-side
+        local partiallyStackedWidth = stackWidth + 25 + outputWidth -- toggles stacked, output on right
+
+        local availableWidth = VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - (CONTENT_PADDING_X * 2)
         local offsetX
-        local sideBySide = false
         
-        -- Gap between stacked column and output selector
-        local gap = (stackWidth > 0 and outputWidth > 0) and 25 or 0
-
-        -- Check if we should switch to side-by-side for the two toggles when output is hidden
-        if not db.showOutput and db.showCharacter and db.showBackground then
-            local combinedWidth = charWidth + 15 + bgWidth -- 15px gap between them
-            local availableWidth = VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - (CONTENT_PADDING_X * 2)
-            if combinedWidth <= availableWidth then
-                sideBySide = true
-                totalRowWidth = combinedWidth
-            else
-                totalRowWidth = stackWidth
+        -- State determination
+        local layoutState = "STACKED" -- fully stacked vertically
+        
+        if db.showCharacter and db.showBackground and db.showOutput then
+            if unstackedWidth <= availableWidth then
+                layoutState = "UNSTACKED"
+            elseif partiallyStackedWidth <= availableWidth then
+                layoutState = "PARTIAL"
             end
-        else
-            totalRowWidth = stackWidth + gap + outputWidth
+        elseif db.showCharacter and db.showBackground and not db.showOutput then
+            if combinedTogglesWidth <= availableWidth then
+                layoutState = "UNSTACKED" -- effectively just side-by-side toggles
+            end
+        elseif db.showOutput and (db.showCharacter or db.showBackground) then
+            local w = (db.showCharacter and charWidth or bgWidth) + 25 + outputWidth
+            if w <= availableWidth then
+                layoutState = "UNSTACKED"
+            end
         end
-
-        offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - totalRowWidth) / 2
 
         -- Positioning logic
         charCheck:ClearAllPoints()
@@ -842,30 +904,76 @@ function VS:UpdateFooterLayout()
         outputLabel:ClearAllPoints()
         dropdown:ClearAllPoints()
 
-        if sideBySide then
+        if layoutState == "UNSTACKED" then
             -- Position horizontally side-by-side
-            charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
-            bgCheck:SetPoint("LEFT", charCheck.labelText, "RIGHT", 15, 0)
-        elseif db.showCharacter and db.showBackground then
-            -- Stacked vertically
-            charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 30)
-            bgCheck:SetPoint("TOPLEFT", charCheck, "BOTTOMLEFT", 0, -2)
+            local totalRowWidth = 0
+            if db.showCharacter and db.showBackground and db.showOutput then
+                totalRowWidth = unstackedWidth
+            elseif db.showCharacter and db.showBackground and not db.showOutput then
+                totalRowWidth = combinedTogglesWidth
+            elseif db.showOutput and db.showCharacter then
+                totalRowWidth = charWidth + 25 + outputWidth
+            elseif db.showOutput and db.showBackground then
+                totalRowWidth = bgWidth + 25 + outputWidth
+            end
+            
+            offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - totalRowWidth) / 2
+            
+            local currentX = offsetX
+            if db.showCharacter then
+                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", currentX, CONTENT_PADDING_BOTTOM + 15)
+                currentX = currentX + charWidth + 15
+            end
+            if db.showBackground then
+                bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", currentX, CONTENT_PADDING_BOTTOM + 15)
+                currentX = currentX + bgWidth + 25
+            elseif db.showCharacter then
+                currentX = currentX + 10 -- adjust gap if bg is hidden
+            end
+            if db.showOutput then
+                -- Vertically center outputLabel with the checkboxes by adding half of charCheck's height (13) to the Y offset
+                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", currentX, CONTENT_PADDING_BOTTOM + 28)
+            end
+
+        elseif layoutState == "PARTIAL" then
+            -- Toggles stacked vertically on left, output on right
+            local totalRowWidth = partiallyStackedWidth
+            offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - totalRowWidth) / 2
+            
+            if db.showCharacter then
+                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 30)
+            end
+            if db.showBackground then
+                if db.showCharacter then
+                    bgCheck:SetPoint("TOPLEFT", charCheck, "BOTTOMLEFT", 0, -2)
+                else
+                    bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
+                end
+            end
+            if db.showOutput then
+                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + 25, CONTENT_PADDING_BOTTOM + 30)
+            end
+
+        else
+            -- FULLY STACKED (Centered Vertically)
+            -- Stack order from top to bottom: Char -> BG -> Output
+            local activeRows = 0
+            local currentY = CONTENT_PADDING_BOTTOM + 15
             
             if db.showOutput then
-                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 30)
+                offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - outputWidth) / 2
+                outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
+                currentY = currentY + 36
             end
-        elseif db.showCharacter then
-            charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
-            if db.showOutput then
-                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 15)
+            if db.showBackground then
+                offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - bgWidth) / 2
+                bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
+                currentY = currentY + 26
             end
-        elseif db.showBackground then
-            bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
-            if db.showOutput then
-                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + gap, CONTENT_PADDING_BOTTOM + 15)
+            if db.showCharacter then
+                offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - charWidth) / 2
+                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
             end
-        elseif db.showOutput then
-            outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
         end
         
         if db.showOutput then
@@ -972,8 +1080,8 @@ function VS:InitializeSettings()
         end
 
         -- Ensure height settings are refreshed on show
-        if VS.RefreshHeightSettings then
-            VS:RefreshHeightSettings()
+        if VS.RefreshTextInputs then
+            VS:RefreshTextInputs()
         end
     end)
 
@@ -1156,13 +1264,13 @@ function VS:CreateSettingsContents(categoryFrame)
     -- Live Preview Column
     ---------------------------------------------------------------------------
     local previewLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    previewLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 185, -35)
-    previewLabel:SetText("Live Preview:")
+    previewLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 210, -35)
+    previewLabel:SetText("Preview")
 
     -- Place the preview container in the 2nd column
     VS.previewBackdrop = CreateFrame("Frame", nil, categoryFrame, "BackdropTemplate")
     VS.previewBackdrop:SetPoint("TOP", previewLabel, "BOTTOM", 0, -10)
-    VS.previewBackdrop:SetSize(120, 360)
+    VS.previewBackdrop:SetSize(90, 360)
     local previewBackdrop = VS.previewBackdrop
     previewBackdrop:SetBackdrop({
         bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
@@ -1279,7 +1387,7 @@ function VS:CreateSettingsContents(categoryFrame)
     -- 4th Column: Channel Visibility
     ---------------------------------------------------------------------------
     local channelLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 475, -35)
+    channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 450, -35)
     channelLabel:SetText("Channel Visibility")
 
     local channelSubLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -1415,36 +1523,47 @@ function VS:CreateSettingsContents(categoryFrame)
     RefreshDataProvider()
 
     ---------------------------------------------------------------------------
-    -- Slider Height Setting (Text Entry)
+    -- Slider Height & Spacing Settings (Sliders)
     ---------------------------------------------------------------------------
     if VolumeSlidersMMDB.sliderHeight == nil then
         VolumeSlidersMMDB.sliderHeight = 150
     end
+    if VolumeSlidersMMDB.sliderSpacing == nil then
+        VolumeSlidersMMDB.sliderSpacing = 10
+    end
 
+    -- Height Slider
     local heightLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     heightLabel:SetPoint("TOPLEFT", lowDropdown, "BOTTOMLEFT", 15, -25)
-    heightLabel:SetText("Slider Height (100-250)")
+    heightLabel:SetText("Slider Height")
 
     local heightInput = CreateFrame("EditBox", "VolumeSlidersHeightInput", categoryFrame, "InputBoxTemplate")
-    heightInput:SetSize(60, 20)
-    heightInput:SetPoint("TOPLEFT", heightLabel, "BOTTOMLEFT", 10, -10)
+    heightInput:SetSize(40, 20)
+    heightInput:SetPoint("LEFT", heightLabel, "RIGHT", 10, 0)
     heightInput:SetAutoFocus(false)
     heightInput:SetNumeric(true)
     heightInput:SetMaxLetters(3)
     heightInput:SetFontObject("GameFontHighlight")
     heightInput:SetText(tostring(VolumeSlidersMMDB.sliderHeight or 150))
 
-    local function UpdateHeight(value)
-        local num = tonumber(value)
-        if num and num >= 100 and num <= 250 then
-            VolumeSlidersMMDB.sliderHeight = num
-            VS:UpdateAppearance()
-        end
-    end
+    local heightSlider = CreateFrame("Slider", "VolumeSlidersHeightSlider", categoryFrame, "OptionsSliderTemplate")
+    heightSlider:SetPoint("TOPLEFT", heightLabel, "BOTTOMLEFT", 0, -15)
+    heightSlider:SetWidth(150)
+    heightSlider:SetMinMaxValues(100, 250)
+    heightSlider:SetValueStep(1)
+    heightSlider:SetObeyStepOnDrag(true)
+    heightSlider:SetValue(VolumeSlidersMMDB.sliderHeight or 150)
+    if _G["VolumeSlidersHeightSliderLow"] then _G["VolumeSlidersHeightSliderLow"]:Hide() end
+    if _G["VolumeSlidersHeightSliderHigh"] then _G["VolumeSlidersHeightSliderHigh"]:Hide() end
+    if _G["VolumeSlidersHeightSliderText"] then _G["VolumeSlidersHeightSliderText"]:Hide() end
 
+    -- Sync Input -> Slider
     heightInput:SetScript("OnTextChanged", function(self, userInput)
         if userInput then
-            UpdateHeight(self:GetText())
+            local num = tonumber(self:GetText())
+            if num and num >= 100 and num <= 250 then
+                heightSlider:SetValue(num)
+            end
         end
     end)
     heightInput:SetScript("OnEnterPressed", function(self)
@@ -1455,26 +1574,95 @@ function VS:CreateSettingsContents(categoryFrame)
         self:ClearFocus()
     end)
 
-    -- Ensure the text field is always populated with the current value when the settings page is opened.
-    -- We use a significant delay (0.2s) because Blizzard's settings menu layout
-    -- can be extremely aggressive in clearing fields during initial construction.
-    function VS:RefreshHeightSettings()
-        if heightInput then
+    -- Sync Slider -> Input & Apply Settings
+    heightSlider:SetScript("OnValueChanged", function(self, value)
+        local num = math.floor(value + 0.5)
+        self:SetValue(num) -- snap to integer
+        heightInput:SetText(tostring(num))
+        if VolumeSlidersMMDB.sliderHeight ~= num then
+            VolumeSlidersMMDB.sliderHeight = num
+            VS:UpdateAppearance()
+        end
+    end)
+
+    -- Spacing Slider
+    local spacingLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    spacingLabel:SetPoint("TOPLEFT", heightSlider, "BOTTOMLEFT", 0, -25)
+    spacingLabel:SetText("Slider Spacing")
+
+    local spacingInput = CreateFrame("EditBox", "VolumeSlidersSpacingInput", categoryFrame, "InputBoxTemplate")
+    spacingInput:SetSize(40, 20)
+    spacingInput:SetPoint("LEFT", spacingLabel, "RIGHT", 10, 0)
+    spacingInput:SetAutoFocus(false)
+    spacingInput:SetNumeric(true)
+    spacingInput:SetMaxLetters(2)
+    spacingInput:SetFontObject("GameFontHighlight")
+    spacingInput:SetText(tostring(VolumeSlidersMMDB.sliderSpacing or 10))
+
+    local spacingSlider = CreateFrame("Slider", "VolumeSlidersSpacingSlider", categoryFrame, "OptionsSliderTemplate")
+    spacingSlider:SetPoint("TOPLEFT", spacingLabel, "BOTTOMLEFT", 0, -15)
+    spacingSlider:SetWidth(150)
+    spacingSlider:SetMinMaxValues(5, 40)
+    spacingSlider:SetValueStep(1)
+    spacingSlider:SetObeyStepOnDrag(true)
+    spacingSlider:SetValue(VolumeSlidersMMDB.sliderSpacing or 10)
+    if _G["VolumeSlidersSpacingSliderLow"] then _G["VolumeSlidersSpacingSliderLow"]:Hide() end
+    if _G["VolumeSlidersSpacingSliderHigh"] then _G["VolumeSlidersSpacingSliderHigh"]:Hide() end
+    if _G["VolumeSlidersSpacingSliderText"] then _G["VolumeSlidersSpacingSliderText"]:Hide() end
+
+    -- Sync Input -> Slider
+    spacingInput:SetScript("OnTextChanged", function(self, userInput)
+        if userInput then
+            local num = tonumber(self:GetText())
+            if num and num >= 5 and num <= 40 then
+                spacingSlider:SetValue(num)
+            end
+        end
+    end)
+    spacingInput:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+    end)
+    spacingInput:SetScript("OnEscapePressed", function(self)
+        self:SetText(tostring(VolumeSlidersMMDB.sliderSpacing or 10))
+        self:ClearFocus()
+    end)
+
+    -- Sync Slider -> Input & Apply Settings
+    spacingSlider:SetScript("OnValueChanged", function(self, value)
+        local num = math.floor(value + 0.5)
+        self:SetValue(num) -- snap to integer
+        spacingInput:SetText(tostring(num))
+        if VolumeSlidersMMDB.sliderSpacing ~= num then
+            VolumeSlidersMMDB.sliderSpacing = num
+            VS:UpdateAppearance()
+        end
+    end)
+
+    -- Ensure slider values are always populated correctly upon opening settings
+    function VS:RefreshTextInputs()
+        if heightSlider and heightInput then
             local val = VolumeSlidersMMDB and VolumeSlidersMMDB.sliderHeight or 150
+            heightSlider:SetValue(val)
             heightInput:SetText(tostring(val))
             heightInput:SetCursorPosition(0)
-            -- print("|cff00ff00Volume Sliders:|r Height settings refreshed to " .. tostring(val))
+        end
+        if spacingSlider and spacingInput then
+            local val = VolumeSlidersMMDB and VolumeSlidersMMDB.sliderSpacing or 10
+            spacingSlider:SetValue(val)
+            spacingInput:SetText(tostring(val))
+            spacingInput:SetCursorPosition(0)
         end
     end
 
     categoryFrame:HookScript("OnShow", function()
-        C_Timer.After(0.1, function() VS:RefreshHeightSettings() end)
+        C_Timer.After(0.1, function() VS:RefreshTextInputs() end)
     end)
 
-    -- Pre-warm the EditBox immediately after creation
-    VS:RefreshHeightSettings()
+    -- Pre-warm the UI elements immediately after creation
+    VS:RefreshTextInputs()
 
-    AddTooltip(heightInput, "Enter a vertical height for the sliders in pixels. Minimum 100, Maximum 250. Changes apply in real-time.")
+    AddTooltip(heightSlider, "Adjust the vertical height for the sliders in pixels. Changes apply in real-time.")
+    AddTooltip(spacingSlider, "Adjust the horizontal spacing between the slider columns in pixels. Changes apply in real-time.")
 
     -- Sync preview appearance to current settings.
     VS:UpdateAppearance()
@@ -1493,7 +1681,7 @@ function VS:CreateOptionsFrame()
 
     -- Create the popup using the modern settings frame template.
     VS.container = CreateFrame("Frame", "VolumeSlidersFrame", UIParent, "SettingsFrameTemplate")
-    VS.container:SetSize(FRAME_WIDTH, FRAME_HEIGHT)
+    VS.container:SetSize(300, FRAME_HEIGHT)
     VS.container:SetPoint("CENTER")
     VS.container:SetFrameStrata("DIALOG")
     VS.container:SetFrameLevel(100)
@@ -1610,10 +1798,11 @@ function VS:CreateOptionsFrame()
     -- Volume Sliders
     --
     -- Five sliders are laid out in a horizontal row.  Each column is
-    -- SLIDER_COLUMN_WIDTH wide with SLIDER_COLUMN_SPACING between them.
+    -- SLIDER_COLUMN_WIDTH wide with a dynamic spacing between them.
     ---------------------------------------------------------------------------
     local startX = CONTENT_PADDING_X
     local startY = -(CONTENT_PADDING_TOP + 95)
+    local spacing = VolumeSlidersMMDB and VolumeSlidersMMDB.sliderSpacing or 10
 
     -- Master Volume
     local masterSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMaster", "Master", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01)
@@ -1622,27 +1811,27 @@ function VS:CreateOptionsFrame()
 
     -- Effects Volume
     local sfxSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderSFX", "Effects", "Sound_SFXVolume", "Sound_EnableSFX", 0, 1, 0.01)
-    sfxSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    sfxSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_SFXVolume"] = sfxSlider
 
     -- Music Volume
     local musicSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMusic", "Music", "Sound_MusicVolume", "Sound_EnableMusic", 0, 1, 0.01)
-    musicSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 2 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    musicSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 2 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_MusicVolume"] = musicSlider
 
     -- Ambience Volume
     local ambienceSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderAmbience", "Ambience", "Sound_AmbienceVolume", "Sound_EnableAmbience", 0, 1, 0.01)
-    ambienceSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 3 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    ambienceSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 3 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_AmbienceVolume"] = ambienceSlider
 
     -- Dialog Volume
     local dialogSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderDialogue", "Dialog", "Sound_DialogVolume", "Sound_EnableDialog", 0, 1, 0.01)
-    dialogSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 4 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    dialogSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 4 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_DialogVolume"] = dialogSlider
 
     -- Warnings Volume (Gameplay Sound Effects)
     local warningsSlider = CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderWarnings", "Warnings", "Sound_EncounterWarningsVolume", "Sound_EnableEncounterWarningsSounds", 0, 1, 0.01)
-    warningsSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + SLIDER_COLUMN_SPACING) * 5 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    warningsSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 5 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_EncounterWarningsVolume"] = warningsSlider
 
     ---------------------------------------------------------------------------
@@ -2144,6 +2333,7 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Layout Defaults
     VolumeSlidersMMDB.sliderHeight = VolumeSlidersMMDB.sliderHeight or 150
+    VolumeSlidersMMDB.sliderSpacing = VolumeSlidersMMDB.sliderSpacing or 10
     
     -- Slider Order Defaults
     if not VolumeSlidersMMDB.sliderOrder then
