@@ -1,3 +1,10 @@
+## v2.0.0
+
+- **Under the Hood:** Complete internal restructure of the addon codebase into seven focused modules for improved maintainability and performance. No user-facing features were removed or changed.
+- **Performance:** Applied multiple optimizations including deduplicated slider construction, localized global lookups, and cached database references.
+- **UI Improvement:** When switching audio output devices, the Master slider now briefly displays a "Switching..." indicator while the sound system restarts, giving clear visual feedback instead of silently correcting the volume in the background.
+- **Bug Fix:** Fixed inconsistent volume restoration when switching between audio output devices.
+
 ## v1.4.0
 
 - **New Feature:** Added four new Voice Chat sliders (Voice Chat Volume, Voice Chat Ducking, Microphone Volume, and Microphone Sensitivity) directly to the main volume control! Voice Chat Volume and Ducking are enabled by default.
