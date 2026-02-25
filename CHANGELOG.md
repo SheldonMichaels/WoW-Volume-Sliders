@@ -1,5 +1,11 @@
-## v1.3.6
+## v1.4.0
 
+- **New Feature:** Added four new Voice Chat sliders (Voice Chat Volume, Voice Chat Ducking, Microphone Volume, and Microphone Sensitivity) directly to the main volume control! Voice Chat Volume and Ducking are enabled by default.
+- **New Feature:** Added a Voice Chat Mode button (Push to Talk / Open Mic) to the window footer to quickly toggle between speaking modes.
+- **Customization:** You can now toggle the visibility of the new Voice Chat sliders from the AddOn Settings tab.
+- **UI Improvement:** Added a Settings icon next to the Lock window button to quickly open the AddOn configuration panel.
+
+## v1.3.6
 - **New Feature:** The main Volume Sliders window is now movable! Click the "Unlocked" text button in the top right to freely drag the window anywhere on your screen. The window will persist its new position between sessions. Click "Locked" to anchor it back to the minimap button.
 - **UI Improvement:** The minimap button will now reliably close the window if it is already open, regardless of its locked state.
 

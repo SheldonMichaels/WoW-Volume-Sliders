@@ -86,7 +86,9 @@ read_globals = {
     "ScrollUtil",
     "DragIntersectionArea",
     "FrameUtil",
-    "InputUtil"
+    "InputUtil",
+    "C_VoiceChat",
+    "Enum"
 }
 
 -- Globals that the addon creates and assigns values to
@@ -95,3 +97,4 @@ globals = {
     "VolumeSliders_OnAddonCompartmentClick",
     "VolumeSlidersOutputDropdown"
 }
+

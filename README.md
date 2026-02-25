@@ -6,12 +6,13 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ## Current Features
 
-- **Vertical sliders** — one for each channel and last used volume values persist between mute/unmute
+- **Nine vertical volume sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Voice Chat Volume, Voice Ducking, Mic Volume, and Mic Sensitivity. Last used volume values persist between mute/unmute
 - **Per-channel mute** — mute each channel individually
 - **Minimap button** — left-click to open the panel, right-click to quick-toggle master mute
 - **Scroll wheel** — scroll over the minimap icon to adjust master volume (hold Ctrl for fine 1% steps)
 - **Stepper arrows** (▲/▼) — snap volume to the nearest 5% increment
 - **Sound output device selector** — change your active audio device, with a saved master volume value per device
+- **Voice Chat mode toggle** — change between Push to Talk and Open Mic modes on the fly
 - **"Sound at Character" toggle** — positional audio at your character (checked) or at the camera location (unchecked)
 - **Addon Compartment & Data Broker** — works with the built-in compartment menu (tested) and LDB displays like Titan Panel (untested) or ChocolateBar (untested)
 - **Native look & feel** — uses native Blizzard UI assets

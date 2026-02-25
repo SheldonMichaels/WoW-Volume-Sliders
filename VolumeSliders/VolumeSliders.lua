@@ -13,7 +13,7 @@
 --   • Mouse-wheel on the icon adjusts master volume directly.
 --
 -- Author: Sheldon Michaels
--- Version: 1.3.6
+-- Version: internal-v1.4.0
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 
@@ -200,6 +200,10 @@ local CVAR_TO_VAR = {
     ["Sound_AmbienceVolume"] = "showAmbience",
     ["Sound_DialogVolume"] = "showDialog",
     ["Sound_EncounterWarningsVolume"] = "showWarnings",
+    ["Voice_ChatVolume"] = "showVoiceChat",
+    ["Voice_ChatDucking"] = "showVoiceDucking",
+    ["Voice_MicVolume"] = "showMicVolume",
+    ["Voice_MicSensitivity"] = "showMicSensitivity",
 }
 
 local DEFAULT_CVAR_ORDER = {
@@ -208,7 +212,11 @@ local DEFAULT_CVAR_ORDER = {
     "Sound_MusicVolume",
     "Sound_AmbienceVolume",
     "Sound_DialogVolume",
-    "Sound_EncounterWarningsVolume"
+    "Sound_EncounterWarningsVolume",
+    "Voice_ChatVolume",
+    "Voice_ChatDucking",
+    "Voice_MicVolume",
+    "Voice_MicSensitivity"
 }
 
 --- Disable the HoverBackgroundTemplate that ships with SettingsCheckboxTemplate.
@@ -457,6 +465,8 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     slider.valueText:SetText(math.floor(currentVolume * 100) .. "%")
 
     slider:SetScript("OnValueChanged", function(self, value)
+        if self.isRefreshing then return end
+
         -- Un-invert the slider value to get the actual volume level.
         local invertedValue = 1 - value
         invertedValue = math.max(0, math.min(1, invertedValue))
@@ -526,6 +536,237 @@ local function CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal,
     -- Attach mute references to the slider for external sync access.
     slider.muteCheck = muteCheck
     slider.muteCvar = muteCvar
+
+    slider.RefreshValue = function(self)
+        local currentVolume = tonumber(GetCVar(cvar)) or 1
+        self.isRefreshing = true
+        self:SetValue(1 - currentVolume)
+        self.valueText:SetText(math.floor(currentVolume * 100) .. "%")
+        self.isRefreshing = false
+    end
+
+    slider.RefreshMute = function(self)
+        if self.muteCheck and self.muteCvar then
+            local isEnabled = GetCVar(self.muteCvar) == "1"
+            self.muteCheck:SetChecked(not isEnabled)
+        end
+    end
+
+    return slider
+end
+
+-------------------------------------------------------------------------------
+-- CreateVoiceSlider
+--
+-- Similar to CreateVerticalSlider, but specifically designed for the
+-- C_VoiceChat API which uses custom getter/setter functions and a 0-100 scale,
+-- and lacks direct CVar checkboxes for muting.
+-------------------------------------------------------------------------------
+local function CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displayInverted, tooltipText, muteKey)
+    local slider = CreateFrame("Slider", name, parent)
+    slider:SetOrientation("VERTICAL")
+    slider:SetHeight(VolumeSlidersMMDB.sliderHeight or SLIDER_HEIGHT)
+    slider:SetWidth(20)
+
+    slider:SetHitRectInsets(-15, -15, 0, 0)
+    slider:SetMinMaxValues(0, 1)
+    slider:SetValueStep(0.01)
+    slider:SetObeyStepOnDrag(true)
+    slider:EnableMouseWheel(true)
+
+    -- Track Construction
+    local trackTop = slider:CreateTexture(nil, "BACKGROUND")
+    SetAtlasRotated90CW(trackTop, "Minimal_SliderBar_Left")
+    trackTop:SetPoint("TOP", slider, "TOP", 0, 0)
+    slider.trackTop = trackTop
+
+    local trackBottom = slider:CreateTexture(nil, "BACKGROUND")
+    SetAtlasRotated90CW(trackBottom, "Minimal_SliderBar_Right")
+    trackBottom:SetPoint("BOTTOM", slider, "BOTTOM", 0, 0)
+    slider.trackBottom = trackBottom
+
+    local trackMiddle = slider:CreateTexture(nil, "BACKGROUND")
+    local midInfo = C_Texture.GetAtlasInfo("_Minimal_SliderBar_Middle")
+    if midInfo then
+        trackMiddle:SetTexture(midInfo.file)
+        local L, R = midInfo.leftTexCoord, midInfo.rightTexCoord
+        local T, B = midInfo.topTexCoord, midInfo.bottomTexCoord
+        trackMiddle:SetTexCoord(L, B, R, B, L, T, R, T)
+        trackMiddle:SetWidth(midInfo.height)
+    end
+    trackMiddle:SetPoint("TOP", trackTop, "BOTTOM", 0, 0)
+    trackMiddle:SetPoint("BOTTOM", trackBottom, "TOP", 0, 0)
+    slider.trackMiddle = trackMiddle
+
+    local thumb = slider:CreateTexture(name .. "Thumb", "OVERLAY")
+    thumb:SetAtlas("combattimeline-pip", true)
+    slider.thumb = thumb
+    slider:SetThumbTexture(thumb)
+
+    C_Timer.After(0.05, function()
+        local t = slider:GetThumbTexture()
+        if t and not t:IsShown() then t:Show() end
+    end)
+
+    -- Stepper Arrow Buttons
+    local STEP_PERCENT = 5
+
+    local upBtn = CreateFrame("Button", name .. "StepUp", slider)
+    upBtn:SetSize(20, 20)
+    local upTex = upBtn:CreateTexture(nil, "BACKGROUND")
+    upTex:SetAtlas("ui-hud-minimap-zoom-in")
+    upTex:SetSize(20, 20)
+    upTex:SetPoint("CENTER", upBtn, "CENTER", 0, 0)
+    slider.upTex = upTex
+    upBtn:SetPoint("BOTTOM", slider, "TOP", 0, 4)
+    upBtn:SetScript("OnClick", function()
+        local currentPct = (1 - slider:GetValue()) * 100
+        local newPct = math.ceil((currentPct + 0.5) / STEP_PERCENT) * STEP_PERCENT
+        newPct = math.min(100, math.max(0, newPct))
+        slider:SetValue(1 - (newPct / 100))
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+
+    local downBtn = CreateFrame("Button", name .. "StepDown", slider)
+    downBtn:SetSize(20, 20)
+    local downTex = downBtn:CreateTexture(nil, "BACKGROUND")
+    downTex:SetAtlas("ui-hud-minimap-zoom-out")
+    downTex:SetSize(20, 20)
+    downTex:SetPoint("CENTER", downBtn, "CENTER", 0, 0)
+    slider.downTex = downTex
+    downBtn:SetPoint("TOP", slider, "BOTTOM", 0, -4)
+    downBtn:SetScript("OnClick", function()
+        local currentPct = (1 - slider:GetValue()) * 100
+        local newPct = math.floor((currentPct - 0.5) / STEP_PERCENT) * STEP_PERCENT
+        newPct = math.min(100, math.max(0, newPct))
+        slider:SetValue(1 - (newPct / 100))
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+
+    slider.upBtn = upBtn
+    slider.downBtn = downBtn
+
+    -- Labels & Value Text
+    slider.highLabel = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    slider.highLabel:SetPoint("BOTTOM", slider, "TOP", 0, 26)
+    slider.highLabel:SetText("High")
+
+    slider.lowLabel = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    slider.lowLabel:SetPoint("TOP", slider, "BOTTOM", 0, -26)
+    slider.lowLabel:SetText("Low")
+
+    slider.valueText = slider:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    slider.valueText:SetPoint("BOTTOM", slider.highLabel, "TOP", 0, 10)
+    slider.valueText:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
+
+    slider.label = slider:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    slider.label:SetPoint("BOTTOM", slider.valueText, "TOP", 0, 4)
+    slider.label:SetText(label)
+    slider.label:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
+
+    if tooltipText then
+        slider.label:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText(tooltipText, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        slider.label:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        slider.label:EnableMouse(true)
+    end
+
+    if muteKey then
+        local muteCheck = CreateFrame("CheckButton", name .. "Mute", slider, "SettingsCheckboxTemplate")
+        muteCheck:SetSize(26, 26)
+        muteCheck:SetPoint("TOP", slider, "BOTTOM", 0, -42)
+        if DisableCheckboxHoverBackground then DisableCheckboxHoverBackground(muteCheck) end
+
+        local muteLabel = slider:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        muteLabel:SetPoint("TOP", muteCheck, "BOTTOM", 0, -2)
+        muteLabel:SetText("Mute")
+        muteCheck.muteLabel = muteLabel
+
+        slider.muteCheck = muteCheck
+
+        slider.RefreshMute = function(self)
+            muteCheck:SetChecked(VolumeSlidersMMDB["MuteState_"..muteKey] == true)
+        end
+        
+        muteCheck:SetScript("OnClick", function(self)
+            local isMuted = self:GetChecked()
+            VolumeSlidersMMDB["MuteState_"..muteKey] = isMuted
+            
+            if isMuted then
+                local currentRaw = getterFunc() or 100
+                if currentRaw > 0 then
+                   VolumeSlidersMMDB["SavedVol_"..muteKey] = currentRaw
+                end
+                setterFunc(0)
+            else
+                local savedRaw = VolumeSlidersMMDB["SavedVol_"..muteKey] or 100
+                setterFunc(savedRaw)
+            end
+            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+        end)
+    end
+    
+    -- Initial Value
+    slider.RefreshValue = function(self)
+        local currentRaw
+        if muteKey and VolumeSlidersMMDB["MuteState_"..muteKey] then
+            currentRaw = VolumeSlidersMMDB["SavedVol_"..muteKey] or 100
+        else
+            currentRaw = getterFunc() or 100
+        end
+        
+        local currentVol = currentRaw / 100
+        if displayInverted then
+            currentVol = 1.0 - currentVol
+        end
+
+        self.isRefreshing = true
+        self:SetValue(1 - currentVol)
+        self.valueText:SetText(math.floor(currentVol * 100) .. "%")
+        self.isRefreshing = false
+    end
+
+    slider:SetScript("OnValueChanged", function(self, invertedValue)
+        local val = 1 - invertedValue
+        val = math.max(0, math.min(1, val))
+        
+        self.valueText:SetText(math.floor(val * 100) .. "%")
+
+        if self.isRefreshing then return end
+
+        local rawValue = val
+        if displayInverted then
+            rawValue = 1.0 - rawValue
+        end
+        
+        if muteKey and slider.muteCheck and slider.muteCheck:GetChecked() then
+             slider.muteCheck:SetChecked(false)
+             VolumeSlidersMMDB["MuteState_"..muteKey] = false
+        end
+        
+        setterFunc(rawValue * 100)
+        
+        if muteKey then
+            VolumeSlidersMMDB["SavedVol_"..muteKey] = rawValue * 100
+        end
+    end)
+
+    slider.isRefreshing = true
+    if slider.RefreshMute then slider:RefreshMute() end
+    slider:RefreshValue()
+    slider.isRefreshing = false
+
+    slider:SetScript("OnMouseWheel", function(self, delta)
+        local val = self:GetValue()
+        if delta > 0 then
+            self:SetValue(val - 0.01)
+        else
+            self:SetValue(val + 0.01)
+        end
+    end)
 
     return slider
 end
@@ -720,7 +961,7 @@ function VS:UpdateAppearance()
         -- Footer height calculation based on visibility and layout stacking
         local footerHeight = 0
         local db = VolumeSlidersMMDB
-        if db.showCharacter or db.showBackground or db.showOutput then
+        if db.showCharacter or db.showBackground or db.showOutput or db.showVoiceMode then
             footerHeight = 15 -- Initial top gap
             local charCheck = VS.characterCheckbox
             local bgCheck = VS.backgroundCheckbox
@@ -730,17 +971,28 @@ function VS:UpdateAppearance()
             local charWidth = (db.showCharacter and charCheck and charCheck.labelText) and (charCheck:GetWidth() + 4 + charCheck.labelText:GetStringWidth()) or 0
             local bgWidth = (db.showBackground and bgCheck and bgCheck.labelText) and (bgCheck:GetWidth() + 4 + bgCheck.labelText:GetStringWidth()) or 0
             local outputWidth = (db.showOutput and outputLabel and dropdown) and (outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()) or 0
+            local voiceWidth = (db.showVoiceMode and VS.voiceModeLabel and VS.voiceModeBtn) and (VS.voiceModeLabel:GetStringWidth() + 5 + VS.voiceModeBtn:GetWidth()) or 0
+            
+            local leftWidth = math.max(charWidth, bgWidth)
+            local rightWidth = math.max(outputWidth, voiceWidth)
+            local hasLeft = db.showCharacter or db.showBackground
+            local hasRight = db.showOutput or db.showVoiceMode
+            
+            local leftHeight = 0
+            if db.showCharacter and db.showBackground then leftHeight = 55
+            elseif db.showCharacter or db.showBackground then leftHeight = 25 end
+            
+            local rightHeight = 0
+            if db.showOutput and db.showVoiceMode then rightHeight = 72
+            elseif db.showOutput or db.showVoiceMode then rightHeight = 36 end
             
             -- Estimate layout state before applying it
-            -- We need to know the width first
-            -- Start with the X positions of active sliders
             local startX = CONTENT_PADDING_X
             local i = 0
             local spacing = db.sliderSpacing or 10
 
             local cvarOrder = VolumeSlidersMMDB.sliderOrder or DEFAULT_CVAR_ORDER
 
-            -- Find how many sliders are active to determine the container's inner width
             for _, cvar in ipairs(cvarOrder) do
                 local var = CVAR_TO_VAR[cvar]
                 if var and VolumeSlidersMMDB[var] then
@@ -751,38 +1003,19 @@ function VS:UpdateAppearance()
             local visibleWidth = (CONTENT_PADDING_X * 2) + (i * SLIDER_COLUMN_WIDTH) + (math.max(0, i - 1) * spacing)
             local availableWidth = visibleWidth - (CONTENT_PADDING_X * 2)
             
-            local stackWidth = math.max(charWidth, bgWidth)
-            local combinedWidth = charWidth + 15 + bgWidth -- unstacked gap
-            local partiallyStackedWidth = stackWidth + 25 + outputWidth
-            local unstackedWidth = combinedWidth + 25 + outputWidth
+            local stackedWidth
+            if hasLeft and hasRight then stackedWidth = leftWidth + 25 + rightWidth
+            elseif hasLeft then stackedWidth = leftWidth
+            else stackedWidth = rightWidth end
 
-            -- Assess layout state for height calc
-            if unstackedWidth <= availableWidth and db.showCharacter and db.showBackground and db.showOutput then
-                -- All fit side-by-side
-                footerHeight = footerHeight + 36
-            elseif not db.showOutput and db.showCharacter and db.showBackground and combinedWidth <= availableWidth then
-                -- Side-by-side toggles, no output
-                footerHeight = footerHeight + 36
-            elseif partiallyStackedWidth <= availableWidth and ((db.showCharacter and db.showBackground) or (db.showCharacter and db.showOutput) or (db.showBackground and db.showOutput)) then
-                -- Partially stacked (toggles stacked on left, output on right) OR (toggles stacked, no output)
-                if db.showCharacter and db.showBackground then
-                    footerHeight = footerHeight + 55
-                else
-                    footerHeight = footerHeight + 36
-                end
+            if hasLeft and hasRight and stackedWidth <= availableWidth then
+                -- Partial (blocks side-by-side)
+                footerHeight = footerHeight + math.max(leftHeight, rightHeight)
             else
                 -- Fully stacked vertically OR single column
-                local activeRows = 0
-                if db.showCharacter then activeRows = activeRows + 1 end
-                if db.showBackground then activeRows = activeRows + 1 end
-                if db.showOutput then activeRows = activeRows + 1 end
-                
-                if activeRows == 3 then
-                    footerHeight = footerHeight + 90
-                elseif activeRows == 2 then
-                    footerHeight = footerHeight + 55
-                else
-                    footerHeight = footerHeight + 36
+                footerHeight = footerHeight + leftHeight + rightHeight
+                if hasLeft and hasRight then
+                    footerHeight = footerHeight + 10 -- gap between blocks
                 end
             end
             
@@ -853,6 +1086,11 @@ function VS:UpdateFooterLayout()
         bgCheck.labelText:SetShown(db.showBackground)
         outputLabel:SetShown(db.showOutput)
         dropdown:SetShown(db.showOutput)
+
+        if VS.voiceModeLabel and VS.voiceModeBtn then
+            VS.voiceModeLabel:SetShown(db.showVoiceMode)
+            VS.voiceModeBtn:SetShown(db.showVoiceMode)
+        end
         
         local charWidth = 0
         if db.showCharacter then
@@ -864,120 +1102,98 @@ function VS:UpdateFooterLayout()
             bgWidth = bgCheck:GetWidth() + 4 + bgCheck.labelText:GetStringWidth()
         end
         
-        local stackWidth = math.max(charWidth, bgWidth)
-        
         local outputWidth = 0
         if db.showOutput then
-            outputWidth = outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()
+            outputWidth = outputLabel:GetWidth() + 5 + dropdown:GetWidth()
         end
 
-        local combinedTogglesWidth = charWidth + 15 + bgWidth -- if toggles are side-by-side
-        local unstackedWidth = combinedTogglesWidth + 25 + outputWidth -- everything side-by-side
-        local partiallyStackedWidth = stackWidth + 25 + outputWidth -- toggles stacked, output on right
+        local voiceModeWidth = 0
+        if db.showVoiceMode and VS.voiceModeLabel and VS.voiceModeBtn then
+            voiceModeWidth = VS.voiceModeLabel:GetWidth() + 5 + VS.voiceModeBtn:GetWidth()
+        end
+
+        local leftWidth = math.max(charWidth, bgWidth)
+        local rightWidth = math.max(outputWidth, voiceModeWidth)
+        local hasLeft = db.showCharacter or db.showBackground
+        local hasRight = db.showOutput or db.showVoiceMode
+
+        local stackedWidth
+        if hasLeft and hasRight then stackedWidth = leftWidth + 25 + rightWidth
+        elseif hasLeft then stackedWidth = leftWidth
+        else stackedWidth = rightWidth end
 
         local availableWidth = VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - (CONTENT_PADDING_X * 2)
-        local offsetX
-        
-        -- State determination
-        local layoutState = "STACKED" -- fully stacked vertically
-        
-        if db.showCharacter and db.showBackground and db.showOutput then
-            if unstackedWidth <= availableWidth then
-                layoutState = "UNSTACKED"
-            elseif partiallyStackedWidth <= availableWidth then
-                layoutState = "PARTIAL"
-            end
-        elseif db.showCharacter and db.showBackground and not db.showOutput then
-            if combinedTogglesWidth <= availableWidth then
-                layoutState = "UNSTACKED" -- effectively just side-by-side toggles
-            end
-        elseif db.showOutput and (db.showCharacter or db.showBackground) then
-            local w = (db.showCharacter and charWidth or bgWidth) + 25 + outputWidth
-            if w <= availableWidth then
-                layoutState = "UNSTACKED"
-            end
-        end
 
         -- Positioning logic
         charCheck:ClearAllPoints()
         bgCheck:ClearAllPoints()
         outputLabel:ClearAllPoints()
         dropdown:ClearAllPoints()
+        if VS.voiceModeLabel then
+            VS.voiceModeLabel:ClearAllPoints()
+            VS.voiceModeBtn:ClearAllPoints()
+        end
 
-        if layoutState == "UNSTACKED" then
-            -- Position horizontally side-by-side
-            local totalRowWidth = 0
-            if db.showCharacter and db.showBackground and db.showOutput then
-                totalRowWidth = unstackedWidth
-            elseif db.showCharacter and db.showBackground and not db.showOutput then
-                totalRowWidth = combinedTogglesWidth
-            elseif db.showOutput and db.showCharacter then
-                totalRowWidth = charWidth + 25 + outputWidth
-            elseif db.showOutput and db.showBackground then
-                totalRowWidth = bgWidth + 25 + outputWidth
-            end
+        if hasLeft and hasRight and stackedWidth <= availableWidth then
+            -- Partial: Side-by-side blocks
+            local offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - stackedWidth) / 2
             
-            offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - totalRowWidth) / 2
-            
-            local currentX = offsetX
-            if db.showCharacter then
-                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", currentX, CONTENT_PADDING_BOTTOM + 15)
-                currentX = currentX + charWidth + 15
-            end
-            if db.showBackground then
-                bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", currentX, CONTENT_PADDING_BOTTOM + 15)
-                currentX = currentX + bgWidth + 25
-            elseif db.showCharacter then
-                currentX = currentX + 10 -- adjust gap if bg is hidden
+            -- Right block aligns relative to bottom left, starting higher up if it has two elements
+            -- Shift rightY up by 10px to account for the visual midline difference between a 32x32 Checkbox and a FontString
+            local rightY = CONTENT_PADDING_BOTTOM + 25
+            if db.showVoiceMode then
+                VS.voiceModeLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + leftWidth + 25, rightY)
+                rightY = rightY + 26
             end
             if db.showOutput then
-                -- Vertically center outputLabel with the checkboxes by adding half of charCheck's height (13) to the Y offset
-                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", currentX, CONTENT_PADDING_BOTTOM + 28)
+                outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + leftWidth + 25, rightY)
             end
-
-        elseif layoutState == "PARTIAL" then
-            -- Toggles stacked vertically on left, output on right
-            local totalRowWidth = partiallyStackedWidth
-            offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - totalRowWidth) / 2
+            
+            -- Left block aligns relative to bottom left
+            local leftY = CONTENT_PADDING_BOTTOM + 15
             
             if db.showCharacter then
-                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 30)
+                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, leftY)
+                leftY = leftY + 26
             end
             if db.showBackground then
-                if db.showCharacter then
-                    bgCheck:SetPoint("TOPLEFT", charCheck, "BOTTOMLEFT", 0, -2)
-                else
-                    bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, CONTENT_PADDING_BOTTOM + 15)
-                end
+                bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, leftY)
             end
-            if db.showOutput then
-                outputLabel:SetPoint("LEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + stackWidth + 25, CONTENT_PADDING_BOTTOM + 30)
-            end
-
         else
-            -- FULLY STACKED (Centered Vertically)
-            -- Stack order from top to bottom: Char -> BG -> Output
-            local activeRows = 0
+            -- Stacked: blocks are vertically stacked building upward
             local currentY = CONTENT_PADDING_BOTTOM + 15
             
-            if db.showOutput then
-                offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - outputWidth) / 2
-                outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
-                currentY = currentY + 36
+            if db.showCharacter then
+                local offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - charWidth) / 2
+                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
+                currentY = currentY + 26
             end
             if db.showBackground then
-                offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - bgWidth) / 2
+                local offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - bgWidth) / 2
                 bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
                 currentY = currentY + 26
             end
-            if db.showCharacter then
-                offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - charWidth) / 2
-                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
+            
+            if hasLeft and hasRight then
+                currentY = currentY + 10
+            end
+            
+            if db.showVoiceMode then
+                local offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - voiceModeWidth) / 2
+                VS.voiceModeLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
+                currentY = currentY + 26
+            end
+            if db.showOutput then
+                local offsetX = (VS.container:GetWidth() - (TEMPLATE_CONTENT_OFFSET_LEFT + TEMPLATE_CONTENT_OFFSET_RIGHT) - outputWidth) / 2
+                outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
             end
         end
         
         if db.showOutput then
             dropdown:SetPoint("LEFT", outputLabel, "RIGHT", 5, 0)
+        end
+        if db.showVoiceMode and VS.voiceModeBtn then
+            VS.voiceModeBtn:SetPoint("LEFT", VS.voiceModeLabel, "RIGHT", 5, 0)
         end
     end
 end
@@ -1086,6 +1302,7 @@ function VS:InitializeSettings()
     end)
 
     Settings.RegisterAddOnCategory(category)
+    VS.settingsCategory = category
 end
 
 --- Internal function to build the actual UI elements of the settings panel.
@@ -1331,6 +1548,7 @@ function VS:CreateSettingsContents(categoryFrame)
         { name = "SBG Checkbox", var = "showBackground", tooltip = "Show or hide the 'Sound in Background' toggle in the window footer." },
         { name = "Char Checkbox", var = "showCharacter", tooltip = "Show or hide the 'Sound at Character' toggle in the window footer." },
         { name = "Output Selector", var = "showOutput", tooltip = "Show or hide the 'Output:' device selection dropdown in the window footer." },
+        { name = "Voice Mode Toggle", var = "showVoiceMode", tooltip = "Show or hide the Voice Chat Mode (Push to Talk / Open Mic) toggle in the window footer." },
     }
 
     local previousCheckbox = nil
@@ -1402,10 +1620,14 @@ function VS:CreateSettingsContents(categoryFrame)
         ["Sound_AmbienceVolume"] = { name = "Ambience Slider", var = "showAmbience", tooltip = "Show or hide the Ambience volume slider." },
         ["Sound_DialogVolume"] = { name = "Dialog Slider", var = "showDialog", tooltip = "Show or hide the Dialog volume slider." },
         ["Sound_EncounterWarningsVolume"] = { name = "Warnings Slider", var = "showWarnings", tooltip = "Show or hide the dedicated slider for Encounter Warnings (combat alerts)." },
+        ["Voice_ChatVolume"] = { name = "Voice Volume Slider", var = "showVoiceChat", tooltip = "Show or hide the Voice Chat Volume slider." },
+        ["Voice_ChatDucking"] = { name = "Voice Ducking Slider", var = "showVoiceDucking", tooltip = "Show or hide the Voice Chat Ducking slider." },
+        ["Voice_MicVolume"] = { name = "Mic Volume Slider", var = "showMicVolume", tooltip = "Show or hide the Microphone Volume slider." },
+        ["Voice_MicSensitivity"] = { name = "Mic Sensitivity Slider", var = "showMicSensitivity", tooltip = "Show or hide the Microphone Sensitivity slider." },
     }
 
     local scrollBox = CreateFrame("Frame", nil, categoryFrame, "WowScrollBoxList")
-    scrollBox:SetSize(170, 230)
+    scrollBox:SetSize(170, 360)
     scrollBox:SetPoint("TOPLEFT", channelSubLabel, "BOTTOMLEFT", -5, -8) -- Anchor to the new sublabel
 
     local dragBehavior -- Forward declare for access in RowInitializer
@@ -1758,6 +1980,37 @@ function VS:CreateOptionsFrame()
     lockBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     UpdateLockIcon()
 
+    -- Settings Button
+    local settingsBtn = CreateFrame("Button", "VolumeSlidersFrameSettingsButton", VS.container, "UIPanelButtonTemplate")
+    settingsBtn:SetSize(85, 22)
+    settingsBtn:SetText("Settings")
+    
+    local settingsBtnText = settingsBtn:GetFontString()
+    if settingsBtnText then
+        settingsBtnText:SetFontObject("GameFontNormal")
+    else
+        settingsBtn:SetNormalFontObject("GameFontNormal")
+        settingsBtn:SetHighlightFontObject("GameFontHighlight")
+    end
+
+    settingsBtn:SetPoint("TOPLEFT", VS.container, "TOPLEFT", 6, -1)
+
+    settingsBtn:SetScript("OnClick", function()
+        if VS.settingsCategory and VS.settingsCategory.ID then
+            Settings.OpenToCategory(VS.settingsCategory.ID)
+        else
+            Settings.OpenToCategory("Volume Sliders") -- Fallback for older API versions
+        end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+
+    settingsBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Settings\n\nClick to open the Volume Sliders configuration page.", nil, nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    settingsBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     -- Drag functionality for the top bar
     VS.container:SetMovable(true)
     local dragFrame = CreateFrame("Frame", nil, VS.container)
@@ -1827,10 +2080,8 @@ function VS:CreateOptionsFrame()
         -- Refresh all slider positions from current CVar values in case
         -- they were changed externally (e.g., via Blizzard Sound settings).
         if VS.sliders then
-            for cvar, slider in pairs(VS.sliders) do
-                 local currentVolume = tonumber(GetCVar(cvar)) or 1
-                 slider:SetValue(1 - currentVolume)
-                 slider.valueText:SetText(math.floor(currentVolume * 100) .. "%")
+            for _, slider in pairs(VS.sliders) do
+                 if slider.RefreshValue then slider:RefreshValue() end
             end
         end
 
@@ -1847,10 +2098,7 @@ function VS:CreateOptionsFrame()
         -- Refresh all mute checkboxes.
         if VS.sliders then
             for _, slider in pairs(VS.sliders) do
-                 if slider.muteCheck and slider.muteCvar then
-                     local isEnabled = GetCVar(slider.muteCvar) == "1"
-                     slider.muteCheck:SetChecked(not isEnabled)
-                 end
+                 if slider.RefreshMute then slider:RefreshMute() end
             end
         end
     end)
@@ -1913,6 +2161,26 @@ function VS:CreateOptionsFrame()
     warningsSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 5 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_EncounterWarningsVolume"] = warningsSlider
 
+    -- Voice Chat Volume
+    local voiceChatSlider = CreateVoiceSlider(VS.contentFrame, "VolumeSlidersSliderVoiceChat", "Voice", C_VoiceChat.GetOutputVolume, C_VoiceChat.SetOutputVolume, false, "Voice Chat Output Volume", "Voice_ChatVolume")
+    voiceChatSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 6 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    VS.sliders["Voice_ChatVolume"] = voiceChatSlider
+
+    -- Voice Chat Ducking (Inverted: Game value is ducking 0-1 scale. UI value is 'ducking strength%')
+    local duckingSlider = CreateVoiceSlider(VS.contentFrame, "VolumeSlidersSliderVoiceDucking", "Voice BG", function() return C_VoiceChat.GetMasterVolumeScale() * 100 end, function(val) C_VoiceChat.SetMasterVolumeScale(val / 100) end, true, "Voice Chat Ducking\nLow = Game sound mutes entirely when players speak.\nHigh = Game sound ignores speaking players.", nil)
+    duckingSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 7 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    VS.sliders["Voice_ChatDucking"] = duckingSlider
+
+    -- Microphone Volume
+    local micVolSlider = CreateVoiceSlider(VS.contentFrame, "VolumeSlidersSliderMicVolume", "Mic Vol", C_VoiceChat.GetInputVolume, C_VoiceChat.SetInputVolume, false, "Microphone Input Volume", "Voice_MicVolume")
+    micVolSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 8 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    VS.sliders["Voice_MicVolume"] = micVolSlider
+
+    -- Microphone Sensitivity (Inverted)
+    local micSensSlider = CreateVoiceSlider(VS.contentFrame, "VolumeSlidersSliderMicSensitivity", "Mic Sens", C_VoiceChat.GetVADSensitivity, C_VoiceChat.SetVADSensitivity, true, "Microphone Activation Sensitivity", nil)
+    micSensSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (SLIDER_COLUMN_WIDTH + spacing) * 9 + (SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    VS.sliders["Voice_MicSensitivity"] = micSensSlider
+
     ---------------------------------------------------------------------------
     -- Bottom Row Controls
     ---------------------------------------------------------------------------
@@ -1957,10 +2225,12 @@ function VS:CreateOptionsFrame()
     VS.outputLabel:SetPoint("LEFT", VS.characterCheckbox.labelText, "RIGHT", 20, 0)
     VS.outputLabel:SetText("Output:")
     VS.outputLabel:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
+    VS.outputLabel:SetWidth(85)
+    VS.outputLabel:SetJustifyH("RIGHT")
 
     -- Dropdown button
     VS.outputDropdown = CreateFrame("Button", "VolumeSlidersOutputDropdown", VS.contentFrame)
-    VS.outputDropdown:SetSize(140, 36)
+    VS.outputDropdown:SetSize(140, 26)
     VS.outputDropdown:SetPoint("LEFT", VS.outputLabel, "RIGHT", 5, 0)
     
     local dropdown = VS.outputDropdown
@@ -1987,8 +2257,8 @@ function VS:CreateOptionsFrame()
     ddText:SetPoint("RIGHT", dropdown, "RIGHT", -13, 0)
     ddText:SetJustifyH("CENTER")
     ddText:SetJustifyV("MIDDLE")
-    ddText:SetWordWrap(true)
-    ddText:SetMaxLines(2)
+    ddText:SetWordWrap(false)
+    ddText:SetMaxLines(1)
     ddText:SetSpacing(2)
     ddText:SetText("System Default")
     dropdown.text = ddText
@@ -2217,6 +2487,67 @@ function VS:CreateOptionsFrame()
     dropdown:HookScript("OnShow", RefreshDropdownText)
 
     ---------------------------------------------------------------------------
+    -- Voice Chat Mode Toggle
+    ---------------------------------------------------------------------------
+
+    VS.voiceModeLabel = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    VS.voiceModeLabel:SetText("Voice Mode:")
+    VS.voiceModeLabel:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
+    VS.voiceModeLabel:SetWidth(85)
+    VS.voiceModeLabel:SetJustifyH("RIGHT")
+
+    VS.voiceModeBtn = CreateFrame("Button", "VolumeSlidersVoiceModeButton", VS.contentFrame)
+    VS.voiceModeBtn:SetSize(140, 26)
+
+    -- Use the same standard dropdown/button styling as the output selector
+    local vmBg = VS.voiceModeBtn:CreateTexture(nil, "BACKGROUND")
+    vmBg:SetAtlas("common-dropdown-c-button")
+    vmBg:SetPoint("TOPLEFT", -7, 7)
+    vmBg:SetPoint("BOTTOMRIGHT", 7, -7)
+    VS.voiceModeBtn.Background = vmBg
+
+    local vmText = VS.voiceModeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    vmText:SetPoint("CENTER", VS.voiceModeBtn, "CENTER", 0, 0)
+    VS.voiceModeBtn.text = vmText
+
+    local function RefreshVoiceModeText()
+        if C_VoiceChat then
+            local mode = C_VoiceChat.GetCommunicationMode()
+            if mode == Enum.CommunicationMode.PushToTalk then
+                vmText:SetText("Push to Talk")
+            elseif mode == Enum.CommunicationMode.OpenMic then
+                vmText:SetText("Open Mic")
+            else
+                vmText:SetText("Unknown")
+            end
+        end
+    end
+    VS.voiceModeBtn.RefreshText = RefreshVoiceModeText
+
+    VS.voiceModeBtn:SetScript("OnEnter", function(self)
+        vmBg:SetAtlas("common-dropdown-c-button-hover-1", true)
+    end)
+    VS.voiceModeBtn:SetScript("OnLeave", function(self)
+        vmBg:SetAtlas("common-dropdown-c-button", true)
+    end)
+
+    VS.voiceModeBtn:SetScript("OnClick", function(self)
+        if C_VoiceChat then
+            local currentMode = C_VoiceChat.GetCommunicationMode()
+            if currentMode == Enum.CommunicationMode.PushToTalk then
+                C_VoiceChat.SetCommunicationMode(Enum.CommunicationMode.OpenMic)
+            else
+                C_VoiceChat.SetCommunicationMode(Enum.CommunicationMode.PushToTalk)
+            end
+            RefreshVoiceModeText()
+            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+        end
+    end)
+
+    VS.voiceModeBtn:HookScript("OnShow", RefreshVoiceModeText)
+
+
+    ---------------------------------------------------------------------------
     -- Bottom Row Centering
     ---------------------------------------------------------------------------
     -- Defer layout calculation slightly to ensure font strings have initialized
@@ -2414,8 +2745,13 @@ initFrame:SetScript("OnEvent", function(self, event)
     if VolumeSlidersMMDB.showMaster == nil then VolumeSlidersMMDB.showMaster = true end
     if VolumeSlidersMMDB.showSFX == nil then VolumeSlidersMMDB.showSFX = true end
     if VolumeSlidersMMDB.showMusic == nil then VolumeSlidersMMDB.showMusic = true end
-    if VolumeSlidersMMDB.showAmbience == nil then VolumeSlidersMMDB.showAmbience = true end
+    if VolumeSlidersMMDB.showAmbience == nil then VolumeSlidersMMDB.showAmbience = false end
     if VolumeSlidersMMDB.showDialog == nil then VolumeSlidersMMDB.showDialog = true end
+    if VolumeSlidersMMDB.showVoiceChat == nil then VolumeSlidersMMDB.showVoiceChat = true end
+    if VolumeSlidersMMDB.showVoiceDucking == nil then VolumeSlidersMMDB.showVoiceDucking = false end
+    if VolumeSlidersMMDB.showMicVolume == nil then VolumeSlidersMMDB.showMicVolume = false end
+    if VolumeSlidersMMDB.showMicSensitivity == nil then VolumeSlidersMMDB.showMicSensitivity = false end
+    if VolumeSlidersMMDB.showVoiceMode == nil then VolumeSlidersMMDB.showVoiceMode = true end
 
     -- Layout Defaults
     VolumeSlidersMMDB.sliderHeight = VolumeSlidersMMDB.sliderHeight or 150
@@ -2426,6 +2762,20 @@ initFrame:SetScript("OnEvent", function(self, event)
         VolumeSlidersMMDB.sliderOrder = {}
         for _, v in ipairs(DEFAULT_CVAR_ORDER) do
             table.insert(VolumeSlidersMMDB.sliderOrder, v)
+        end
+    else
+        -- Ensure dynamically added CVARs to DEFAULT_CVAR_ORDER don't get orphaned from existing databases
+        for _, defaultCvar in ipairs(DEFAULT_CVAR_ORDER) do
+            local found = false
+            for _, existingCvar in ipairs(VolumeSlidersMMDB.sliderOrder) do
+                if existingCvar == defaultCvar then
+                    found = true
+                    break
+                end
+            end
+            if not found then
+                table.insert(VolumeSlidersMMDB.sliderOrder, defaultCvar)
+            end
         end
     end
 
