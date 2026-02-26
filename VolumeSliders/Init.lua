@@ -41,13 +41,17 @@ initFrame:SetScript("OnEvent", function(self, event)
     db.valueColor = db.valueColor or 1
     db.highColor = db.highColor or 2
     db.lowColor = db.lowColor or 2
+    
+    if db.bindToMinimap == nil then db.bindToMinimap = true end
+    if db.minimalistOffsetX == nil then db.minimalistOffsetX = -35 end
+    if db.minimalistOffsetY == nil then db.minimalistOffsetY = -5 end
     if db.showTitle == nil then db.showTitle = true end
     if db.showValue == nil then db.showValue = true end
-    if db.showHigh == nil then db.showHigh = true end
+    if db.showHigh == nil then db.showHigh = false end
     if db.showUpArrow == nil then db.showUpArrow = true end
     if db.showSlider == nil then db.showSlider = true end
     if db.showDownArrow == nil then db.showDownArrow = true end
-    if db.showLow == nil then db.showLow = true end
+    if db.showLow == nil then db.showLow = false end
     if db.showMute == nil then db.showMute = true end
     if db.showWarnings == nil then db.showWarnings = true end
     if db.showBackground == nil then db.showBackground = true end
@@ -121,7 +125,24 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- Update the minimap icon to the correct mute state and pre-create the
     -- options frame so it's ready for instant display.
     VS:InitializeSettings()
-    VS:UpdateMiniMapVolumeIcon()
+    
+    -- Smart Auto-Detection for Minimalist Minimap Icon
+    if db.minimalistMinimap == nil then
+        local useStandardIcon = false
+        local mapAddOns = {"SexyMap", "ElvUI", "Leatrix_Plus", "BasicMinimap", "HidingBar", "MBB"}
+        for _, addonName in ipairs(mapAddOns) do
+            if C_AddOns.IsAddOnLoaded(addonName) then
+                useStandardIcon = true
+                break
+            end
+        end
+        
+        -- If a minimap manager is found, default to standard ringed icon.
+        -- Otherwise default to the new Minimalist aesthetic.
+        db.minimalistMinimap = not useStandardIcon
+    end
+    
+    VS:UpdateMiniMapButtonVisibility()
 
     -- This event only needs to fire once.
     self:UnregisterEvent("PLAYER_LOGIN")

@@ -8,7 +8,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 - **Nine vertical volume sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Voice Chat Volume, Voice Ducking, Mic Volume, and Mic Sensitivity. Last used volume values persist between mute/unmute
 - **Per-channel mute** — mute each channel individually
-- **Minimap button** — left-click to open the panel, right-click to quick-toggle master mute
+- **Two Minimap styles** — choose between the classic ringed minimap button or a "minimalist" bare gold speaker icon that gracefully fades out when your mouse leaves the minimap.
 - **Scroll wheel** — scroll over the minimap icon to adjust master volume (hold Ctrl for fine 1% steps)
 - **Stepper arrows** (▲/▼) — snap volume to the nearest 5% increment
 - **Sound output device selector** — change your active audio device, with a saved master volume value per device

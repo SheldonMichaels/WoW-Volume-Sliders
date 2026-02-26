@@ -1,6 +1,13 @@
-## v2.0.0
+## v2.1.0
 
-- **Under the Hood:** Complete internal restructure of the addon codebase into seven focused modules for improved maintainability and performance. No user-facing features were removed or changed.
+- **New Feature:** Added a modern, "Minimalist" minimap icon! This alternative style uses a clean gold speaker icon and seamlessly integrates with the native minimap zoom controls.
+- **New Feature:** The Minimalist icon features an intelligent hover engine — it completely fades out when your mouse leaves the minimap, keeping your UI clean and uncluttered.
+- **Customization:** The new Minimalist icon is enabled by default for users without heavy minimap overhauls. You can switch back to the classic ringed button at any time in the AddOn Settings.
+- **Customization:** The Minimalist icon can be completely detached from the minimap using the new "Bind to Minimap" toggle, allowing you to SHIFT-drag it anywhere on your screen.
+- **UI Improvement:** Added a dark, readable background to the Volume Sliders Settings menu to vastly improve text contrast against the game world.
+- **UI Improvement:** The 'High' and 'Low' text labels on the top and bottom of sliders are now hidden by default for a cleaner look. You can re-enable them in the Settings.
+
+## v2.0.0
 - **Performance:** Applied multiple optimizations including deduplicated slider construction, localized global lookups, and cached database references.
 - **UI Improvement:** When switching audio output devices, the Master slider now briefly displays a "Switching..." indicator while the sound system restarts, giving clear visual feedback instead of silently correcting the volume in the background.
 - **Bug Fix:** Fixed inconsistent volume restoration when switching between audio output devices.

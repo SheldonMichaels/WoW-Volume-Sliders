@@ -52,8 +52,26 @@ end
 -- Internal function to build the actual UI elements of the settings panel.
 -- This is called the first time the settings category is shown.
 -------------------------------------------------------------------------------
-function VS:CreateSettingsContents(categoryFrame)
+function VS:CreateSettingsContents(parentFrame)
     local db = VolumeSlidersMMDB
+
+    local scrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 10, -10)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
+    
+    -- Add a dark backdrop to improve contrast for settings elements
+    local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
+
+    local categoryFrame = CreateFrame("Frame", "VolumeSlidersSettingsContentFrame", scrollFrame)
+    -- We'll set a tall height for the content, and dynamically match the scrollFrame's width
+    categoryFrame:SetSize(600, 750) 
+    scrollFrame:SetScrollChild(categoryFrame)
+
+    scrollFrame:SetScript("OnSizeChanged", function(self, width, height)
+        categoryFrame:SetWidth(width)
+    end)
 
     local title = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightHuge")
     title:SetPoint("TOPLEFT", 15, -15)
@@ -70,11 +88,6 @@ function VS:CreateSettingsContents(categoryFrame)
     local dropdownWidth = 160
     local dropdownSpacingOffset = -15 -- Reduced spacing between dropdowns
 
-    -- Title Color Label & Dropdown
-    local titleColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    titleColorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -35)
-    titleColorLabel:SetText("Title Text Color")
-
     local function AddTooltip(frame, text)
         frame:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -85,6 +98,70 @@ function VS:CreateSettingsContents(categoryFrame)
             GameTooltip:Hide()
         end)
     end
+
+    -- Custom Icon Toggle (Moved to top of Col 1)
+    local customIconLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    customIconLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -35)
+    customIconLabel:SetText("Minimap Icon")
+
+    local customIconCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    customIconCheck:SetPoint("TOPLEFT", customIconLabel, "BOTTOMLEFT", -5, -5)
+    customIconCheck.text:SetText("Custom")
+    customIconCheck:SetChecked(db.minimalistMinimap)
+
+    local resetBtn = CreateFrame("Button", nil, categoryFrame, "UIPanelButtonTemplate")
+    resetBtn:SetSize(70, 22)
+    resetBtn:SetPoint("LEFT", customIconCheck.text, "RIGHT", 10, 0)
+    resetBtn:SetText("Reset")
+    
+    local bindMinimapCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    bindMinimapCheck:SetPoint("TOPLEFT", customIconCheck, "BOTTOMLEFT", 0, 5)
+    bindMinimapCheck.text:SetText("Bind to Minimap")
+    
+    local function UpdateBindMinimapState()
+        if db.minimalistMinimap then
+            bindMinimapCheck:Enable()
+            bindMinimapCheck.text:SetFontObject("GameFontNormalSmall")
+            bindMinimapCheck:SetChecked(db.bindToMinimap)
+        else
+            bindMinimapCheck:Disable()
+            bindMinimapCheck.text:SetFontObject("GameFontDisableSmall")
+            bindMinimapCheck:SetChecked(true)
+        end
+    end
+    -- Set initial state
+    UpdateBindMinimapState()
+
+    customIconCheck:SetScript("OnClick", function(self)
+        db.minimalistMinimap = self:GetChecked()
+        UpdateBindMinimapState()
+        if VS.UpdateMiniMapButtonVisibility then
+            VS:UpdateMiniMapButtonVisibility()
+        end
+    end)
+    AddTooltip(customIconCheck, "Show a minimalist speaker near the zoom controls instead of the standard ringed minimap button.")
+    
+    bindMinimapCheck:SetScript("OnClick", function(self)
+        db.bindToMinimap = self:GetChecked()
+        if VS.UpdateMiniMapButtonVisibility then
+            VS:UpdateMiniMapButtonVisibility()
+        end
+    end)
+    AddTooltip(bindMinimapCheck, "If checked, the custom icon fades in when hovering the Minimap and scales with it.\nIf unchecked, it remains permanently visible and uses standard UI scaling.")
+
+    resetBtn:SetScript("OnClick", function()
+        VolumeSlidersMMDB.minimalistOffsetX = -35
+        VolumeSlidersMMDB.minimalistOffsetY = -5
+        if VS.minimalistButton then
+            VS.minimalistButton:ClearAllPoints()
+            VS.minimalistButton:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", -35, -5)
+        end
+    end)
+
+    -- Title Color Label & Dropdown
+    local titleColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    titleColorLabel:SetPoint("TOPLEFT", bindMinimapCheck, "BOTTOMLEFT", 0, dropdownSpacingOffset)
+    titleColorLabel:SetText("Title Text Color")
 
     local function IsTitleSelected(value)
         return db.titleColor == value
@@ -278,7 +355,7 @@ function VS:CreateSettingsContents(categoryFrame)
     -- 3rd Column: Visibility Checkboxes
     ---------------------------------------------------------------------------
     local visibilityLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    visibilityLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 325, -35)
+    visibilityLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 310, -35)
     visibilityLabel:SetText("Element Visibility")
 
     local checkboxes = {
@@ -290,7 +367,7 @@ function VS:CreateSettingsContents(categoryFrame)
         { name = "Down Arrow", var = "showDownArrow", tooltip = "Show or hide the button for fine-tuning volume decrements." },
         { name = "Low Label", var = "showLow", tooltip = "Show or hide the '0%' label at the bottom of the slider track." },
         { name = "Mute Button", var = "showMute", tooltip = "Show or hide the mute checkbox and label below each slider." },
-        { name = "---Separator---", isSeparator = true },
+        { name = "-Separator-", isSeparator = true },
         { name = "SBG Checkbox", var = "showBackground", tooltip = "Show or hide the 'Sound in Background' toggle in the window footer." },
         { name = "Char Checkbox", var = "showCharacter", tooltip = "Show or hide the 'Sound at Character' toggle in the window footer." },
         { name = "Output Selector", var = "showOutput", tooltip = "Show or hide the 'Output:' device selection dropdown in the window footer." },
@@ -373,7 +450,7 @@ function VS:CreateSettingsContents(categoryFrame)
     }
 
     local scrollBox = CreateFrame("Frame", nil, categoryFrame, "WowScrollBoxList")
-    scrollBox:SetSize(170, 360)
+    scrollBox:SetSize(145, 360)
     scrollBox:SetPoint("TOPLEFT", channelSubLabel, "BOTTOMLEFT", -5, -8)
 
     local dragBehavior -- Forward declare for access in RowInitializer
@@ -392,16 +469,17 @@ function VS:CreateSettingsContents(categoryFrame)
             frame:SetBackdropColor(0, 0, 0, 0.4)
             frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.3)
 
+            local checkbox = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+            checkbox:SetPoint("LEFT", 0, 0)
+            checkbox:SetSize(24, 24)
+            frame.checkbox = checkbox
+
             local drag = frame:CreateTexture(nil, "ARTWORK")
             drag:SetAtlas("ReagentWizards-ReagentRow-Grabber")
             drag:SetSize(12, 18)
-            drag:SetPoint("LEFT", 6, 0)
+            drag:SetPoint("RIGHT", -6, 0)
+            drag:SetAlpha(0.5)
             frame.drag = drag
-
-            local checkbox = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
-            checkbox:SetPoint("LEFT", drag, "RIGHT", 4, 0)
-            checkbox:SetSize(24, 24)
-            frame.checkbox = checkbox
 
             frame.initialized = true
         end
@@ -570,7 +648,7 @@ function VS:CreateSettingsContents(categoryFrame)
     local spacingSlider = CreateFrame("Slider", "VolumeSlidersSpacingSlider", categoryFrame, "OptionsSliderTemplate")
     spacingSlider:SetPoint("TOPLEFT", spacingLabel, "BOTTOMLEFT", 0, -15)
     spacingSlider:SetWidth(150)
-    spacingSlider:SetMinMaxValues(5, 40)
+    spacingSlider:SetMinMaxValues(0, 40)
     spacingSlider:SetValueStep(1)
     spacingSlider:SetObeyStepOnDrag(true)
     spacingSlider:SetValue(db.sliderSpacing or 10)
@@ -582,7 +660,7 @@ function VS:CreateSettingsContents(categoryFrame)
     spacingInput:SetScript("OnTextChanged", function(self, userInput)
         if userInput then
             local num = tonumber(self:GetText())
-            if num and num >= 5 and num <= 40 then
+            if num and num >= 0 and num <= 40 then
                 spacingSlider:SetValue(num)
             end
         end

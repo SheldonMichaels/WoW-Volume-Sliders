@@ -54,6 +54,10 @@ VolumeSlidersMMDB = VolumeSlidersMMDB or {
     minimapPos   = 180,   -- Degrees around the minimap (0 = top, 180 = bottom)
     hide         = false, -- Whether the minimap button is hidden
     sliderHeight = 150,   -- Default vertical height
+    minimalistMinimap = nil, -- Smart auto-detect if nil
+    bindToMinimap     = true,
+    minimalistOffsetX = -35, -- Default X offset for minimalist drag
+    minimalistOffsetY = -5,  -- Default Y offset for minimalist drag
 }
 
 -------------------------------------------------------------------------------
