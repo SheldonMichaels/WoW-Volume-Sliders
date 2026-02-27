@@ -1,3 +1,7 @@
+## v2.1.1
+
+- **Bug Fix:** Fixed a floating-point calculation error where clicking the up or down arrows on a volume slider would sometimes cause the volume to get stuck at 44% or other incorrect percentage values.
+
 ## v2.1.0
 
 - **New Feature:** Added a modern, "Minimalist" minimap icon! This alternative style uses a clean gold speaker icon and seamlessly integrates with the native minimap zoom controls.

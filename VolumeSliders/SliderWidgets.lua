@@ -244,7 +244,7 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
     ---------------------------------------------------------------------------
     local currentVolume = tonumber(GetCVar(cvar)) or 1
     slider:SetValue(1 - currentVolume)
-    slider.valueText:SetText(math_floor(currentVolume * 100) .. "%")
+    slider.valueText:SetText(math_floor(currentVolume * 100 + 0.5) .. "%")
 
     slider:SetScript("OnValueChanged", function(self, value)
         if self.isRefreshing then return end
@@ -253,10 +253,10 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
         local invertedValue = 1 - value
         invertedValue = math_max(0, math_min(1, invertedValue))
         -- Round to two decimal places to avoid floating-point noise in CVars.
-        local val = math_floor(invertedValue * 100) / 100
+        local val = math_floor(invertedValue * 100 + 0.5) / 100
 
         SetCVar(cvar, val)
-        self.valueText:SetText(math_floor(val * 100) .. "%")
+        self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
 
         -- Keep the broker text in sync when the Master slider moves.
         if cvar == "Sound_MasterVolume" then
@@ -312,7 +312,7 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
         local currentVol = tonumber(GetCVar(cvar)) or 1
         self.isRefreshing = true
         self:SetValue(1 - currentVol)
-        self.valueText:SetText(math_floor(currentVol * 100) .. "%")
+        self.valueText:SetText(math_floor(currentVol * 100 + 0.5) .. "%")
         self.isRefreshing = false
     end
 
@@ -416,7 +416,7 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
 
         self.isRefreshing = true
         self:SetValue(1 - currentVol)
-        self.valueText:SetText(math_floor(currentVol * 100) .. "%")
+        self.valueText:SetText(math_floor(currentVol * 100 + 0.5) .. "%")
         self.isRefreshing = false
     end
 
@@ -424,7 +424,7 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
         local val = 1 - invertedValue
         val = math_max(0, math_min(1, val))
 
-        self.valueText:SetText(math_floor(val * 100) .. "%")
+        self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
 
         if self.isRefreshing then return end
 

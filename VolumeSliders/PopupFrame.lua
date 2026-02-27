@@ -611,12 +611,12 @@ function VS:CreateOptionsFrame()
                              masterSlider.isRefreshing = true
                              masterSlider:SetValue(1 - targetVol)
                              if not masterSlider.isSwitching then
-                                 masterSlider.valueText:SetText(math_floor(targetVol * 100) .. "%")
+                                 masterSlider.valueText:SetText(math_floor(targetVol * 100 + 0.5) .. "%")
                              end
                              masterSlider.isRefreshing = false
                         end
                         if VS.VolumeSlidersObject then
-                            VS.VolumeSlidersObject.text = (math_floor(targetVol * 100)) .. "%"
+                            VS.VolumeSlidersObject.text = (math_floor(targetVol * 100 + 0.5)) .. "%"
                         end
                     end
 

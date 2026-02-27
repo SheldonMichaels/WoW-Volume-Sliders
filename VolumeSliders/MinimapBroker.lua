@@ -391,7 +391,7 @@ eventFrame:SetScript("OnEvent", function(self, event, cvarName, value)
         if VS.sliders and VS.sliders["Sound_MasterVolume"] then
              local val = tonumber(value) or 0
              VS.sliders["Sound_MasterVolume"]:SetValue(1 - val)
-             VS.sliders["Sound_MasterVolume"].valueText:SetText(math_floor(val * 100) .. "%")
+             VS.sliders["Sound_MasterVolume"].valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
         end
     end
 end)

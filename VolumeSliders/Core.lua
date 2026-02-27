@@ -171,7 +171,7 @@ end
 function VS:GetVolumeText()
     local vol = self:GetMasterVolume()
     vol = vol * 100
-    return tostring(math_floor(vol)) .. "%"
+    return tostring(math_floor(vol + 0.5)) .. "%"
 end
 
 --- Adjust the master volume by one increment in the given direction.
@@ -214,7 +214,7 @@ function VS:AdjustVolume(delta)
     if VS.sliders and VS.sliders["Sound_MasterVolume"] then
          local sliderVal = 1 - current
          VS.sliders["Sound_MasterVolume"]:SetValue(sliderVal)
-         VS.sliders["Sound_MasterVolume"].valueText:SetText(math_floor(current * 100) .. "%")
+         VS.sliders["Sound_MasterVolume"].valueText:SetText(math_floor(current * 100 + 0.5) .. "%")
     end
 end
 
