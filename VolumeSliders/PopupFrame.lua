@@ -267,32 +267,32 @@ function VS:CreateOptionsFrame()
     local spacing = VolumeSlidersMMDB and VolumeSlidersMMDB.sliderSpacing or 10
 
     -- Master Volume
-    local masterSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMaster", "Master", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01)
+    local masterSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMaster", "Master", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01, "Master Volume")
     masterSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_MasterVolume"] = masterSlider
 
     -- Effects Volume
-    local sfxSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderSFX", "Effects", "Sound_SFXVolume", "Sound_EnableSFX", 0, 1, 0.01)
+    local sfxSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderSFX", "Effects", "Sound_SFXVolume", "Sound_EnableSFX", 0, 1, 0.01, "Sound Effects Volume")
     sfxSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_SFXVolume"] = sfxSlider
 
     -- Music Volume
-    local musicSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMusic", "Music", "Sound_MusicVolume", "Sound_EnableMusic", 0, 1, 0.01)
+    local musicSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMusic", "Music", "Sound_MusicVolume", "Sound_EnableMusic", 0, 1, 0.01, "Music Volume")
     musicSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 2 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_MusicVolume"] = musicSlider
 
     -- Ambience Volume
-    local ambienceSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderAmbience", "Ambience", "Sound_AmbienceVolume", "Sound_EnableAmbience", 0, 1, 0.01)
+    local ambienceSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderAmbience", "Ambience", "Sound_AmbienceVolume", "Sound_EnableAmbience", 0, 1, 0.01, "Ambience Volume")
     ambienceSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 3 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_AmbienceVolume"] = ambienceSlider
 
     -- Dialog Volume
-    local dialogSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderDialogue", "Dialog", "Sound_DialogVolume", "Sound_EnableDialog", 0, 1, 0.01)
+    local dialogSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderDialogue", "Dialog", "Sound_DialogVolume", "Sound_EnableDialog", 0, 1, 0.01, "Dialog Volume")
     dialogSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 4 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_DialogVolume"] = dialogSlider
 
     -- Warnings Volume (Gameplay Sound Effects)
-    local warningsSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderWarnings", "Warnings", "Sound_EncounterWarningsVolume", "Sound_EnableEncounterWarningsSounds", 0, 1, 0.01)
+    local warningsSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderWarnings", "Warnings", "Sound_EncounterWarningsVolume", "Sound_EnableEncounterWarningsSounds", 0, 1, 0.01, "Encounter Warnings Volume")
     warningsSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 5 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_EncounterWarningsVolume"] = warningsSlider
 
@@ -333,6 +333,18 @@ function VS:CreateOptionsFrame()
     end)
     VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", VS.CONTENT_PADDING_X, VS.CONTENT_PADDING_BOTTOM + 10)
 
+    local function AddTooltip(frame, text)
+        frame:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(text, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        frame:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+    end
+    AddTooltip(VS.characterCheckbox, "Toggle whether 3D sound is positioned at your character or at the camera.")
+
     VS.backgroundCheckbox = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckBG", "Sound in Background", function(checked)
         if checked then
             SetCVar("Sound_EnableSoundWhenGameIsInBG", 1)
@@ -344,6 +356,7 @@ function VS:CreateOptionsFrame()
     end)
     -- Initial anchor, will be refined in the C_Timer block
     VS.backgroundCheckbox:SetPoint("TOPLEFT", VS.characterCheckbox, "BOTTOMLEFT", 0, -2)
+    AddTooltip(VS.backgroundCheckbox, "Continue playing audio even when the game is minimized or not the active window.")
 
     ---------------------------------------------------------------------------
     -- Sound Output Device Dropdown
@@ -421,8 +434,16 @@ function VS:CreateOptionsFrame()
         end
     end
 
-    dropdown:SetScript("OnEnter", function(self) UpdateDropdownState(true) end)
-    dropdown:SetScript("OnLeave", function(self) UpdateDropdownState(false) end)
+    dropdown:SetScript("OnEnter", function(self)
+        UpdateDropdownState(true)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Select the audio playback device.", nil, nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    dropdown:SetScript("OnLeave", function(self)
+        UpdateDropdownState(false)
+        GameTooltip:Hide()
+    end)
 
     -- Dropdown list frame (appears below the button when clicked).
     local list = CreateFrame("Frame", nil, dropdown)
@@ -744,9 +765,13 @@ function VS:CreateOptionsFrame()
 
     VS.voiceModeBtn:SetScript("OnEnter", function(self)
         vmBg:SetAtlas("common-dropdown-c-button-hover-1", true)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Switch between Push to Talk and Open Mic for Voice Chat.", nil, nil, nil, nil, true)
+        GameTooltip:Show()
     end)
     VS.voiceModeBtn:SetScript("OnLeave", function(self)
         vmBg:SetAtlas("common-dropdown-c-button", true)
+        GameTooltip:Hide()
     end)
 
     VS.voiceModeBtn:SetScript("OnClick", function(self)

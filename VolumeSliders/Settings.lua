@@ -157,6 +157,7 @@ function VS:CreateSettingsContents(parentFrame)
             VS.minimalistButton:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", -35, -5)
         end
     end)
+    AddTooltip(resetBtn, "Reset the custom minimap icon position to its default location.")
 
     -- Title Color Label & Dropdown
     local titleColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")

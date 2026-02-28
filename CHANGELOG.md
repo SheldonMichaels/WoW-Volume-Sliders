@@ -1,3 +1,7 @@
+## v2.1.2
+
+- **UI Improvement:** Added descriptive tooltips to almost all UI elements, including slider tracks, stepper arrows, and footer toggles, explaining their function on hover.
+
 ## v2.1.1
 
 - **Bug Fix:** Fixed a floating-point calculation error where clicking the up or down arrows on a volume slider would sometimes cause the volume to get stuck at 44% or other incorrect percentage values.

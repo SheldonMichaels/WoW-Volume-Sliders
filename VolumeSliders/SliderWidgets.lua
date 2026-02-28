@@ -45,9 +45,10 @@ local SetCVar    = SetCVar
 -- @param parent    Frame    Parent frame to attach child elements to.
 -- @param name      string   Global frame name for the slider.
 -- @param label     string   Display text above the slider (e.g., "Master").
+-- @param tooltipText string   Optional tooltip text for the slider title.
 -- @return Slider            The created slider widget (with sub-elements attached).
 -------------------------------------------------------------------------------
-local function CreateSliderBase(parent, name, label)
+local function CreateSliderBase(parent, name, label, tooltipText)
     local db = VolumeSlidersMMDB
 
     local slider = CreateFrame("Slider", name, parent)
@@ -142,6 +143,12 @@ local function CreateSliderBase(parent, name, label)
         slider:SetValue(1 - (newPct / 100))
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
+    upBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Increase Volume 5%", nil, nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    upBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     -- Down arrow (decrease volume)
     local downBtn = CreateFrame("Button", name .. "StepDown", slider)
@@ -160,6 +167,12 @@ local function CreateSliderBase(parent, name, label)
         slider:SetValue(1 - (newPct / 100))
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
+    downBtn:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Decrease Volume 5%", nil, nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    downBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     -- Store references for external repositioning if needed.
     slider.upBtn = upBtn
@@ -188,6 +201,16 @@ local function CreateSliderBase(parent, name, label)
     slider.label:SetPoint("BOTTOM", slider.valueText, "TOP", 0, 4)
     slider.label:SetText(label)
     slider.label:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
+
+    if tooltipText then
+        slider.label:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetText(tooltipText, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        slider.label:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        slider.label:EnableMouse(true)
+    end
 
     ---------------------------------------------------------------------------
     -- Mouse Wheel
@@ -224,13 +247,14 @@ end
 -- @param label     string   Display text (e.g., "Master").
 -- @param cvar      string   Sound CVar to bind (e.g., "Sound_MasterVolume").
 -- @param muteCvar  string   Enable/disable CVar for muting (e.g., "Sound_EnableAllSound").
--- @param minVal    number   Minimum slider value (typically 0).
--- @param maxVal    number   Maximum slider value (typically 1).
--- @param step      number   Slider step increment (typically 0.01 = 1%).
+-- @param minVal      number   Minimum slider value (typically 0).
+-- @param maxVal      number   Maximum slider value (typically 1).
+-- @param step        number   Slider step increment (typically 0.01 = 1%).
+-- @param tooltipText string   Optional text for hovering over the volume title
 -- @return Slider            The created slider widget (with extra fields attached).
 -------------------------------------------------------------------------------
-function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, maxVal, step)
-    local slider = CreateSliderBase(parent, name, label)
+function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, maxVal, step, tooltipText)
+    local slider = CreateSliderBase(parent, name, label, tooltipText)
 
     -- Override min/max/step if the caller provides non-default values.
     slider:SetMinMaxValues(minVal, maxVal)
@@ -344,21 +368,8 @@ end
 -- @return Slider
 -------------------------------------------------------------------------------
 function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displayInverted, tooltipText, muteKey)
-    local slider = CreateSliderBase(parent, name, label)
+    local slider = CreateSliderBase(parent, name, label, tooltipText)
     local db = VolumeSlidersMMDB
-
-    ---------------------------------------------------------------------------
-    -- Tooltip (optional — voice sliders have descriptive tooltips)
-    ---------------------------------------------------------------------------
-    if tooltipText then
-        slider.label:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText(tooltipText, nil, nil, nil, nil, true)
-            GameTooltip:Show()
-        end)
-        slider.label:SetScript("OnLeave", function() GameTooltip:Hide() end)
-        slider.label:EnableMouse(true)
-    end
 
     ---------------------------------------------------------------------------
     -- Mute Checkbox (optional — only if muteKey is provided)
