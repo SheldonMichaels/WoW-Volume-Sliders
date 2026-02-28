@@ -1,0 +1,86 @@
+{
+    "workspace": {
+        "library": [
+            "C:/Users/Stephen/Dev/vscode-wow-api/Annotations"
+        ],
+        "ignoreDir": [
+            "VolumeSliders/Libs"
+        ],
+        "checkThirdParty": false
+    },
+    "diagnostics": {
+        "globals": [
+            "VolumeSlidersMMDB",
+            "VolumeSliders_OnAddonCompartmentClick",
+            "VolumeSlidersOutputDropdown",
+            "CreateFrame",
+            "UIParent",
+            "hooksecurefunc",
+            "GetCursorPosition",
+            "PlaySound",
+            "SOUNDKIT",
+            "GameTooltip",
+            "ScriptErrorsFrame",
+            "C_Sound",
+            "Sound_GameSystem_GetOutputDevices",
+            "Sound_GameSystem_RestartSoundSystem",
+            "Settings",
+            "SettingsPanel",
+            "SLASH_VOLSLIDERS1",
+            "SlashCmdList",
+            "LibStub",
+            "VolumeSlidersDB",
+            "print",
+            "pairs",
+            "ipairs",
+            "tonumber",
+            "tostring",
+            "type",
+            "unpack",
+            "math",
+            "string",
+            "table",
+            "bit",
+            "wipe",
+            "GetBuildInfo",
+            "GetCVar",
+            "SetCVar",
+            "IsControlKeyDown",
+            "C_Texture",
+            "C_Timer",
+            "NORMAL_FONT_COLOR",
+            "HIGHLIGHT_FONT_COLOR",
+            "VERY_LIGHT_GRAY_COLOR",
+            "UISpecialFrames",
+            "tinsert",
+            "Sound_GameSystem_GetOutputDriverNameByIndex",
+            "Sound_GameSystem_GetNumOutputDrivers",
+            "Sound_GameSystem_GetRestartSoundSystem",
+            "WOW_PROJECT_ID",
+            "WOW_PROJECT_MAINLINE",
+            "Mixin",
+            "BackdropTemplate",
+            "CreateDataProvider",
+            "CreateScrollBoxListLinearView",
+            "ScrollUtil",
+            "DragIntersectionArea",
+            "FrameUtil",
+            "InputUtil",
+            "C_VoiceChat",
+            "Enum",
+            "IsShiftKeyDown",
+            "Minimap",
+            "MinimapZoomIn",
+            "MinimapZoomOut",
+            "Sound_GameSystem_GetOutputDriverNameByIndex",
+            "GetMinimapShape"
+        ],
+        "disable": [
+            "undefined-doc-name",
+            "undefined-field"
+        ]
+    },
+    "runtime": {
+        "version": "Lua 5.1"
+    }
+}

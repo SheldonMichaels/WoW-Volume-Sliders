@@ -13,3 +13,6 @@ ignore:
   - dev_changelog.md
   - TODO.md
   - GEMINI.md
+  - spec
+  - .luarc.json
+  - .busted

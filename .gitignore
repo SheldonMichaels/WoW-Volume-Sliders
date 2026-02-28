@@ -14,5 +14,14 @@ Thumbs.db
 # Internal docs
 dev_changelog.md
 TODO.md
-GEMINI.md
 luacheck_output.txt
+
+# Testing & Logs
+*.log
+log*.txt
+luac.out
+.luac
+
+# Agents
+GEMINI.md
+.agent/

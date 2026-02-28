@@ -522,7 +522,7 @@ function VS:CreateOptionsFrame()
 
                     -- Subtle highlight on hover.
                     local highlight = btn:CreateTexture(nil, "HIGHLIGHT")
-                    highlight:SetAllPoints(true)
+                    highlight:SetAllPoints()
                     highlight:SetColorTexture(1, 1, 1, 0.15)
 
                     btn:SetScript("OnEnter", function(b)

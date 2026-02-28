@@ -404,7 +404,7 @@ function VS:CreateSettingsContents(parentFrame)
             checkboxOffset = 5
 
             checkbox.text:SetText(data.name)
-            checkbox:SetChecked(db[data.var])
+            checkbox:SetChecked(db[data.var] == true)
 
             checkbox:SetScript("OnClick", function(self)
                 db[data.var] = self:GetChecked()
@@ -486,7 +486,7 @@ function VS:CreateSettingsContents(parentFrame)
         end
 
         frame.checkbox.text:SetText(data.name)
-        frame.checkbox:SetChecked(db[data.var])
+        frame.checkbox:SetChecked(db[data.var] == true)
         frame.checkbox:SetScript("OnClick", function(self)
             db[data.var] = self:GetChecked()
             VS:UpdateAppearance()
