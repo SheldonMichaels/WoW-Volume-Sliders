@@ -96,6 +96,26 @@ initFrame:SetScript("OnEvent", function(self, event)
         end
     end
 
+    -- Trigger Profile Defaults
+    if not db.triggers then
+        db.triggers = {
+            {
+                name = "Sunwell Silencer",
+                priority = 5,
+                zones = {"Isle of Quel'Danas"},
+                volumes = {
+                    ["Sound_AmbienceVolume"] = 0
+                },
+                ignored = {
+                    ["Sound_MasterVolume"] = true,
+                    ["Sound_SFXVolume"] = true,
+                    ["Sound_MusicVolume"] = true,
+                    ["Sound_DialogVolume"] = true
+                }
+            }
+        }
+    end
+
     -- Register the minimap icon via LibDBIcon.
     VS.LDBIcon:Register("Volume Sliders", VS.VolumeSlidersObject, db)
 
@@ -140,6 +160,10 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- If a minimap manager is found, default to standard ringed icon.
         -- Otherwise default to the new Minimalist aesthetic.
         db.minimalistMinimap = not useStandardIcon
+    end
+    
+    if VS.Triggers and VS.Triggers.RefreshEventState then
+        VS.Triggers:RefreshEventState()
     end
     
     VS:UpdateMiniMapButtonVisibility()

@@ -58,6 +58,7 @@ VolumeSlidersMMDB = VolumeSlidersMMDB or {
     bindToMinimap     = true,
     minimalistOffsetX = -35, -- Default X offset for minimalist drag
     minimalistOffsetY = -5,  -- Default Y offset for minimalist drag
+    enableTriggers    = true,-- Global master toggle for zone triggers
 }
 
 -------------------------------------------------------------------------------

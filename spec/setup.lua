@@ -240,6 +240,11 @@ _G.GetCVar = function(name) return cvars[name] end
 _G.GetCVarDefault = function(name) return "1" end
 _G.SetCVar = function(name, val) cvars[name] = tostring(val) end
 
+_G.C_AddOns = {
+    GetAddOnMetadata = function(addon, field) return "2.2.0" end
+}
+_G.GetAddOnMetadata = function(addon, field) return "2.2.0" end
+
 -- Utilities & Constants
 _G.SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 1 }
 _G.PlaySound = function(id) end
@@ -333,6 +338,9 @@ _G.CreateScrollBoxListLinearView = function() return { SetElementInitializer = f
 _G.DragIntersectionArea = { Inside = 1, Above = 2, Below = 3 }
 _G.FrameUtil = { GetRootParent = function() return _G.UIParent end }
 _G.InputUtil = { GetCursorPosition = function() return 0, 0 end }
+
+_G.StaticPopupDialogs = {}
+_G.StaticPopup_Show = function() end
 
 -- LibStub Mock
 _G.LibStub = setmetatable({

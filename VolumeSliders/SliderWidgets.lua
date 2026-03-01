@@ -496,3 +496,94 @@ function VS:CreateCheckbox(parent, name, label, onClick, initialValueFunc)
     end)
     return check
 end
+-------------------------------------------------------------------------------
+-- CreateTriggerSlider
+--
+-- Builds a faux vertical slider for the Trigger Settings page.
+-- Modifies a provided working Lua table instead of directly changing CVars.
+-- Includes an "Ignore" checkbox at the top to disable the channel for the trigger.
+-------------------------------------------------------------------------------
+function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, minVal, maxVal, step, tooltipText)
+    local slider = CreateSliderBase(parent, name, label, tooltipText)
+
+    slider:SetMinMaxValues(minVal, maxVal)
+    slider:SetValueStep(step)
+
+    ---------------------------------------------------------------------------
+    -- Ignore Checkbox
+    ---------------------------------------------------------------------------
+    local ignoreCheck = CreateFrame("CheckButton", name .. "Ignore", slider, "SettingsCheckboxTemplate")
+    ignoreCheck:SetSize(26, 26)
+    ignoreCheck:SetPoint("BOTTOM", slider.label, "TOP", 0, 10)
+    VS:DisableCheckboxHoverBackground(ignoreCheck)
+
+    local ignoreLabel = slider:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    ignoreLabel:SetPoint("BOTTOM", ignoreCheck, "TOP", 0, 2)
+    ignoreLabel:SetText("Ignore")
+    ignoreCheck.ignoreLabel = ignoreLabel
+
+    local function UpdateIgnoreState(ignored)
+        if ignored then
+            slider:SetAlpha(0.5)
+            slider:EnableMouseWheel(false)
+            slider.upBtn:EnableMouse(false)
+            slider.downBtn:EnableMouse(false)
+            slider:EnableMouse(false)
+        else
+            slider:SetAlpha(1.0)
+            slider:EnableMouseWheel(true)
+            slider.upBtn:EnableMouse(true)
+            slider.downBtn:EnableMouse(true)
+            slider:EnableMouse(true)
+        end
+    end
+
+    local isIgnored = workingTable.ignored and workingTable.ignored[channelKey]
+    ignoreCheck:SetChecked(isIgnored)
+
+    ignoreCheck:SetScript("OnClick", function(self)
+        local ignored = self:GetChecked()
+        if not workingTable.ignored then workingTable.ignored = {} end
+        workingTable.ignored[channelKey] = ignored
+        UpdateIgnoreState(ignored)
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+
+    UpdateIgnoreState(isIgnored)
+
+    ---------------------------------------------------------------------------
+    -- Initial Value & OnValueChanged
+    ---------------------------------------------------------------------------
+    if workingTable.volumes[channelKey] == nil then
+        workingTable.volumes[channelKey] = tonumber(GetCVar(channelKey)) or 1
+    end
+
+    local currentObjVol = workingTable.volumes[channelKey]
+    slider:SetValue(1 - currentObjVol)
+    slider.valueText:SetText(math_floor(currentObjVol * 100 + 0.5) .. "%")
+
+    slider:SetScript("OnValueChanged", function(self, value)
+        if self.isRefreshing then return end
+
+        local invertedValue = 1 - value
+        invertedValue = math_max(0, math_min(1, invertedValue))
+        local val = math_floor(invertedValue * 100 + 0.5) / 100
+
+        workingTable.volumes[channelKey] = val
+        self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
+    end)
+
+    slider.RefreshValue = function(self)
+        local currentVol = workingTable.volumes[channelKey] or 1
+        self.isRefreshing = true
+        self:SetValue(1 - currentVol)
+        self.valueText:SetText(math_floor(currentVol * 100 + 0.5) .. "%")
+        self.isRefreshing = false
+        
+        local ignored = workingTable.ignored and workingTable.ignored[channelKey]
+        ignoreCheck:SetChecked(ignored)
+        UpdateIgnoreState(ignored)
+    end
+
+    return slider
+end

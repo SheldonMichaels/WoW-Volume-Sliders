@@ -8,9 +8,7 @@
 -- Author:  Sheldon Michaels
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
-
-local _, VS = ...
-
+local addonName, VS = ...
 -------------------------------------------------------------------------------
 -- Localized Globals
 -------------------------------------------------------------------------------
@@ -24,18 +22,16 @@ local pairs      = pairs
 -- InitializeSettings
 --
 -- Registers the native WoW Options Settings page using a Canvas Layout.
--- The actual UI elements are created lazily on first show.
+-- The actual UI elements are created synchronously during login so that the
+-- Blizzard layout engine can properly calculate bounding boxes on the first view.
 -------------------------------------------------------------------------------
 function VS:InitializeSettings()
     local categoryFrame = CreateFrame("Frame", "VolumeSlidersOptionsFrame", UIParent)
     local category, layout = Settings.RegisterCanvasLayoutCategory(categoryFrame, "Volume Sliders")
 
-    categoryFrame:SetScript("OnShow", function(self)
-        if not VS.settingsCreated then
-            VS:CreateSettingsContents(self)
-            VS.settingsCreated = true
-        end
+    VS:CreateSettingsContents(categoryFrame)
 
+    categoryFrame:SetScript("OnShow", function(self)
         -- Ensure height settings are refreshed on show
         if VS.RefreshTextInputs then
             VS:RefreshTextInputs()
@@ -44,6 +40,19 @@ function VS:InitializeSettings()
 
     Settings.RegisterAddOnCategory(category)
     VS.settingsCategory = category
+    
+    -- Subcategory: Zone Triggers
+    local triggerFrame = CreateFrame("Frame", "VolumeSlidersTriggerOptionsFrame", UIParent)
+    local triggerCategory, triggerLayout = Settings.RegisterCanvasLayoutSubcategory(category, triggerFrame, "Zone Triggers")
+    Settings.RegisterAddOnCategory(triggerCategory)
+    
+    VS:CreateTriggerSettingsContents(triggerFrame)
+
+    triggerFrame:SetScript("OnShow", function(self)
+        if VS.RefreshTriggerSettings then
+            VS:RefreshTriggerSettings()
+        end
+    end)
 end
 
 -------------------------------------------------------------------------------
@@ -75,7 +84,8 @@ function VS:CreateSettingsContents(parentFrame)
 
     local title = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightHuge")
     title:SetPoint("TOPLEFT", 15, -15)
-    title:SetText("Volume Sliders Settings")
+    local versionStr = C_AddOns and C_AddOns.GetAddOnMetadata(addonName, "Version") or GetAddOnMetadata(addonName, "Version") or ""
+    title:SetText("Volume Sliders Settings " .. (versionStr ~= "" and ("v" .. versionStr) or ""))
 
     local desc = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
@@ -714,3 +724,427 @@ function VS:CreateSettingsContents(parentFrame)
     -- Sync preview appearance to current settings.
     VS:UpdateAppearance()
 end
+
+-------------------------------------------------------------------------------
+-- CreateTriggerSettingsContents
+--
+-- Internal function to build the actual UI elements of the trigger settings
+-- panel. Called lazily open first show.
+-------------------------------------------------------------------------------
+function VS:CreateTriggerSettingsContents(parentFrame)
+    local db = VolumeSlidersMMDB
+    db.triggers = db.triggers or {}
+
+    local scrollFrame = CreateFrame("ScrollFrame", "VSTriggerSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 10, -10)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
+    
+    local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
+
+    local contentFrame = CreateFrame("Frame", "VSTriggerSettingsContentFrame", scrollFrame)
+    contentFrame:SetSize(600, 800) 
+    scrollFrame:SetScrollChild(contentFrame)
+
+    scrollFrame:SetScript("OnSizeChanged", function(self, width, height)
+        contentFrame:SetWidth(width)
+    end)
+
+    local title = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightHuge")
+    title:SetPoint("TOPLEFT", 15, -15)
+    title:SetText("Zone Specific Triggers")
+
+    local desc = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
+    desc:SetWidth(560)
+    desc:SetText("Configure volume settings to apply automatically when entering specific zones. Your original volume levels will be seamlessly restored when you leave the area.")
+    desc:SetJustifyH("LEFT")
+
+    ---------------------------------------------------------------------------
+    -- Master Toggle
+    ---------------------------------------------------------------------------
+    local enableCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    enableCheck:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -15)
+    enableCheck.text:SetFontObject("GameFontNormalLarge")
+    enableCheck.text:SetText("Enable Zone Triggers")
+    enableCheck:SetChecked(db.enableTriggers == true)
+
+    enableCheck:SetScript("OnClick", function(self)
+        db.enableTriggers = self:GetChecked()
+        if VS.Triggers and VS.Triggers.RefreshEventState then
+            VS.Triggers:RefreshEventState()
+        end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+
+    local separatorTop = contentFrame:CreateTexture(nil, "ARTWORK")
+    separatorTop:SetHeight(2)
+    separatorTop:SetPoint("LEFT", enableCheck, "LEFT", -10, 0)
+    separatorTop:SetPoint("TOP", enableCheck, "BOTTOM", 0, -10)
+    separatorTop:SetWidth(540)
+    separatorTop:SetColorTexture(1, 1, 1, 0.2)
+
+    ---------------------------------------------------------------------------
+    -- State & Management
+    ---------------------------------------------------------------------------
+    -- We need a working state for the currently selected/edited trigger
+    VS.TriggerWorkingState = {
+        name = "New Trigger",
+        priority = 10,
+        zones = {},
+        volumes = {},
+        ignored = {},
+        index = nil -- The index in db.triggers if it already exists
+    }
+
+    local currentSelectedIndex = nil
+    local triggerSliders = {}
+
+    local triggerDropdown = CreateFrame("DropdownButton", nil, contentFrame, "WowStyle1DropdownTemplate")
+    triggerDropdown:SetPoint("TOPLEFT", separatorTop, "BOTTOMLEFT", 10, -35)
+    triggerDropdown:SetWidth(200)
+
+    local priorityLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    priorityLabel:SetPoint("BOTTOMLEFT", triggerDropdown, "TOPLEFT", 0, 5)
+    priorityLabel:SetText("Select Trigger Profile")
+
+    local btnSave = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnSave:SetSize(90, 22)
+    btnSave:SetPoint("LEFT", triggerDropdown, "RIGHT", 15, 0)
+    btnSave:SetText("Save")
+
+    local btnCopy = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnCopy:SetSize(90, 22)
+    btnCopy:SetPoint("LEFT", btnSave, "RIGHT", 10, 0)
+    btnCopy:SetText("Copy")
+
+    local btnDelete = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnDelete:SetSize(90, 22)
+    btnDelete:SetPoint("LEFT", btnCopy, "RIGHT", 10, 0)
+    btnDelete:SetText("Delete")
+
+    ---------------------------------------------------------------------------
+    -- Zone List & Priority Edit
+    ---------------------------------------------------------------------------
+    local nameLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    nameLabel:SetPoint("TOPLEFT", triggerDropdown, "BOTTOMLEFT", 0, -20)
+    nameLabel:SetText("Trigger Name")
+
+    local inputName = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
+    inputName:SetSize(380, 20)
+    inputName:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", 5, -5)
+    inputName:SetAutoFocus(false)
+
+    local priorityEditLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    priorityEditLabel:SetPoint("BOTTOMLEFT", nameLabel, "BOTTOMRIGHT", 310, 0)
+    priorityEditLabel:SetText("Priority")
+
+    -- Add Tooltip for Priority
+    priorityEditLabel:EnableMouse(true)
+    priorityEditLabel:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Priority Level", 1, 1, 1)
+        GameTooltip:AddLine("Determines which trigger wins if multiple zones overlap at the same time.", nil, nil, nil, true)
+        GameTooltip:AddLine("Lower numbers have higher priority (e.g., Priority 1 will override Priority 10).", 1, 0.82, 0, true)
+        GameTooltip:Show()
+    end)
+    priorityEditLabel:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    local inputPriority = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
+    inputPriority:SetSize(40, 20)
+    inputPriority:SetPoint("TOPLEFT", priorityEditLabel, "BOTTOMLEFT", 5, -5)
+    inputPriority:SetNumeric(true)
+    inputPriority:SetAutoFocus(false)
+
+    local zonesLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    zonesLabel:SetPoint("TOPLEFT", inputName, "BOTTOMLEFT", -5, -20)
+    zonesLabel:SetText("Monitored Zones (semicolon separated)")
+
+    local btnAddCurrent = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnAddCurrent:SetSize(140, 22)
+    btnAddCurrent:SetPoint("LEFT", zonesLabel, "RIGHT", 15, 0)
+    btnAddCurrent:SetText("Add Current Zone")
+
+    local scrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersZoneScrollFrame", contentFrame, "UIPanelScrollFrameTemplate")
+    local INPUT_WIDTH = 500
+    scrollFrame:SetSize(INPUT_WIDTH, 70) 
+    scrollFrame:SetPoint("TOPLEFT", zonesLabel, "BOTTOMLEFT", 10, -20)
+    
+    -- Add a visual backing frame so it looks like an input box
+    local scrollBg = CreateFrame("Frame", nil, scrollFrame, "BackdropTemplate")
+    scrollBg:SetPoint("TOPLEFT", -7, 7)
+    scrollBg:SetPoint("BOTTOMRIGHT", 30, -7)
+    scrollBg:SetBackdrop({
+        bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tileSize = 16, edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    scrollBg:SetBackdropColor(0.05, 0.05, 0.05, 0.8)
+    scrollBg:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+    scrollBg:SetFrameLevel(scrollFrame:GetFrameLevel() - 1)
+    
+    local inputZones = CreateFrame("EditBox", nil, scrollFrame)
+    inputZones:SetMultiLine(true)
+    inputZones:SetFontObject("ChatFontNormal")
+    inputZones:SetWidth(INPUT_WIDTH)
+    inputZones:SetAutoFocus(false)
+    scrollFrame:SetScrollChild(inputZones)
+
+    -- Hook cursor movement to standard scrolling logic
+    inputZones:SetScript("OnCursorChanged", ScrollingEdit_OnCursorChanged)
+    inputZones:SetScript("OnUpdate", function(self, elapsed)
+        ScrollingEdit_OnUpdate(self, elapsed, self:GetParent())
+    end)
+    inputZones:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+
+    btnAddCurrent:SetScript("OnClick", function()
+        local zone = GetRealZoneText()
+        if zone and zone ~= "" then
+            local t = inputZones:GetText()
+            if t == "" then
+                inputZones:SetText(zone)
+            else
+                inputZones:SetText(t .. "; " .. zone)
+            end
+        end
+    end)
+
+    local separatorMid = contentFrame:CreateTexture(nil, "ARTWORK")
+    separatorMid:SetHeight(1)
+    separatorMid:SetPoint("TOPLEFT", scrollFrame, "BOTTOMLEFT", -15, -35)
+    separatorMid:SetWidth(540)
+    separatorMid:SetColorTexture(1, 1, 1, 0.2)
+    
+    ---------------------------------------------------------------------------
+    -- Faux Sliders Display Area
+    ---------------------------------------------------------------------------
+    local slidersContainer = CreateFrame("Frame", nil, contentFrame)
+    slidersContainer:SetPoint("TOPLEFT", separatorMid, "BOTTOMLEFT", 0, -10)
+    slidersContainer:SetSize(540, 380)
+
+    -- Define the channels we want faux sliders for
+    local channels = {
+        { key="Sound_MasterVolume", label="Master"},
+        { key="Sound_SFXVolume", label="SFX"},
+        { key="Sound_MusicVolume", label="Music"},
+        { key="Sound_AmbienceVolume", label="Ambience"},
+        { key="Sound_DialogVolume", label="Dialog"}
+    }
+    
+    local sliderWidth = VS.SLIDER_COLUMN_WIDTH or 60
+    local sliderSpacing = 20
+    local totalWidth = (#channels * sliderWidth) + ((#channels - 1) * sliderSpacing)
+    local startX = (540 - totalWidth) / 2
+    
+    for i, chan in ipairs(channels) do
+        local slider = VS:CreateTriggerSlider(slidersContainer, "VSTriggerSlider"..chan.label, chan.label, chan.key, VS.TriggerWorkingState, 0, 1, 0.01)
+        
+        -- Start hidden
+        slider:Hide()
+        slider:SetPoint("TOPLEFT", slidersContainer, "TOPLEFT", startX + (i-1) * (sliderWidth + sliderSpacing), -130)
+        table.insert(triggerSliders, slider)
+    end
+
+    ---------------------------------------------------------------------------
+    -- Interaction Logic
+    ---------------------------------------------------------------------------
+
+    local function RefreshSliderUI()
+        for _, slider in ipairs(triggerSliders) do
+            slider:Show()
+            if slider.RefreshValue then
+                slider:RefreshValue()
+            end
+        end
+    end
+
+    local function UpdateFormFromWorkingState()
+        inputName:SetText(VS.TriggerWorkingState.name)
+        inputPriority:SetText(tostring(VS.TriggerWorkingState.priority))
+        
+        local zStr = ""
+            zStr = table.concat(VS.TriggerWorkingState.zones, "; ")
+        inputZones:SetText(zStr)
+
+        RefreshSliderUI()
+        
+        if currentSelectedIndex then
+            btnSave:Enable()
+            btnCopy:Enable()
+            btnDelete:Enable()
+        else
+            btnSave:Enable()
+            btnCopy:Disable()
+            btnDelete:Disable()
+        end
+    end
+
+    local function LoadWorkingState(trigger, index)
+        VS.TriggerWorkingState.name = trigger and trigger.name or "New Profile"
+        VS.TriggerWorkingState.priority = trigger and (trigger.priority or 10) or 10
+        VS.TriggerWorkingState.index = index
+        
+        VS.TriggerWorkingState.zones = {}
+        VS.TriggerWorkingState.volumes = {}
+        VS.TriggerWorkingState.ignored = {}
+
+        if trigger then
+            for _, z in ipairs(trigger.zones or {}) do table.insert(VS.TriggerWorkingState.zones, z) end
+            for k,v in pairs(trigger.volumes or {}) do VS.TriggerWorkingState.volumes[k] = v end
+            for k,v in pairs(trigger.ignored or {}) do VS.TriggerWorkingState.ignored[k] = v end
+        end
+        
+        -- Fill in any missing channels with the current CVar values so the sliders don't default to 100% incorrectly
+        for channelKey, _ in pairs(VS.CVAR_TO_VAR) do
+            if VS.TriggerWorkingState.volumes[channelKey] == nil then
+                VS.TriggerWorkingState.volumes[channelKey] = tonumber(GetCVar(channelKey)) or 1
+            end
+        end
+    end
+
+    local function SelectNewProfile()
+        currentSelectedIndex = nil
+        LoadWorkingState(nil, nil)
+        triggerDropdown:SetText("Create New Trigger")
+        UpdateFormFromWorkingState()
+    end
+
+    local function GenerateDropdownMenu(dropdown, rootDescription)
+        rootDescription:CreateButton("Create New Trigger", function()
+            SelectNewProfile()
+            -- Force text update after dropdown closes
+            dropdown:SetText("Create New Trigger") 
+        end)
+        
+        for i, trigger in ipairs(db.triggers) do
+            rootDescription:CreateButton(trigger.name .. " (Priority: " .. (trigger.priority or 0) .. ")", function()
+                currentSelectedIndex = i
+                -- Deep copy trigger so edits aren't live until saved
+                LoadWorkingState(trigger, i)
+                
+                triggerDropdown:SetText(trigger.name)
+                UpdateFormFromWorkingState()
+            end)
+        end
+    end
+
+    local function RefreshDropdown()
+        triggerDropdown:SetupMenu(GenerateDropdownMenu)
+        triggerDropdown:GenerateMenu()
+        
+        if currentSelectedIndex and db.triggers[currentSelectedIndex] then
+            triggerDropdown:SetText(db.triggers[currentSelectedIndex].name)
+        else
+            -- Ensure New Profile is selected if none is active or list is empty
+            SelectNewProfile()
+        end
+    end
+
+    VS.RefreshTriggerSettings = function()
+        RefreshDropdown()
+        
+        -- If we have an active profile selected, ensure the working state matches it so the UI populates
+        if currentSelectedIndex and db.triggers[currentSelectedIndex] then
+            LoadWorkingState(db.triggers[currentSelectedIndex], currentSelectedIndex)
+        end
+        
+        UpdateFormFromWorkingState()
+    end
+
+    -- Split string by semicolon and trim whitespace
+    local function ParseZones(str)
+        local rawParts = {strsplit(";", str)}
+        local result = {}
+        local seen = {}
+        for _, part in ipairs(rawParts) do
+            local clean = part:match("^%s*(.-)%s*$")
+            if clean and clean ~= "" and not seen[clean] then
+                seen[clean] = true
+                table.insert(result, clean)
+            end
+        end
+        return result
+    end
+
+    btnSave:SetScript("OnClick", function()
+        VS.TriggerWorkingState.name = inputName:GetText()
+        if VS.TriggerWorkingState.name == "" then VS.TriggerWorkingState.name = "Unnamed Trigger" end
+        VS.TriggerWorkingState.priority = tonumber(inputPriority:GetText()) or 10
+        VS.TriggerWorkingState.zones = ParseZones(inputZones:GetText())
+        
+        -- Serialize to DB
+        local newObj = {
+            name = VS.TriggerWorkingState.name,
+            priority = VS.TriggerWorkingState.priority,
+            zones = VS.TriggerWorkingState.zones,
+            volumes = {},
+            ignored = {}
+        }
+        for k,v in pairs(VS.TriggerWorkingState.volumes) do newObj.volumes[k] = v end
+        for k,v in pairs(VS.TriggerWorkingState.ignored) do newObj.ignored[k] = v end
+
+        if currentSelectedIndex then
+            db.triggers[currentSelectedIndex] = newObj
+        else
+            table.insert(db.triggers, newObj)
+            currentSelectedIndex = #db.triggers
+            VS.TriggerWorkingState.index = currentSelectedIndex
+        end
+
+        RefreshDropdown()
+        if VS.Triggers and VS.Triggers.RefreshEventState then
+            VS.Triggers:RefreshEventState()
+        end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+
+    btnCopy:SetScript("OnClick", function()
+        if currentSelectedIndex and db.triggers[currentSelectedIndex] then
+            VS.TriggerWorkingState.name = VS.TriggerWorkingState.name .. " (Copy)"
+            currentSelectedIndex = nil
+            VS.TriggerWorkingState.index = nil
+            triggerDropdown:SetText(VS.TriggerWorkingState.name)
+            UpdateFormFromWorkingState()
+        end
+    end)
+
+    StaticPopupDialogs["VolumeSlidersDeleteTriggerConfirm"] = {
+        text = "Are you sure you want to delete this zone trigger?",
+        button1 = "Yes",
+        button2 = "No",
+        OnAccept = function()
+            if currentSelectedIndex and db.triggers[currentSelectedIndex] then
+                table.remove(db.triggers, currentSelectedIndex)
+                currentSelectedIndex = nil
+                LoadWorkingState(nil, nil)
+                RefreshDropdown()
+                UpdateFormFromWorkingState()
+                
+                if VS.Triggers and VS.Triggers.RefreshEventState then
+                     VS.Triggers:RefreshEventState()
+                end
+                PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+            end
+        end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+        preferredIndex = 3,  -- Avoid UI taint
+    }
+
+    btnDelete:SetScript("OnClick", function()
+        if currentSelectedIndex and db.triggers[currentSelectedIndex] then
+            StaticPopup_Show("VolumeSlidersDeleteTriggerConfirm")
+        end
+    end)
+
+    -- Initialize View
+    btnSave:Disable()
+    btnCopy:Disable()
+    btnDelete:Disable()
+    
+    RefreshDropdown()
+end
+
