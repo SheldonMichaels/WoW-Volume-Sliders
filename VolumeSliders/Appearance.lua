@@ -331,13 +331,35 @@ function VS:UpdateFooterLayout()
             if hasLeft and hasRight then
                 currentY = currentY + 10 -- gap between blocks
             end
+
+            -- Flush alignment for right-side elements
+            local maxLabelWidth = 0
+            if db.showVoiceMode and VS.voiceModeLabel then 
+                maxLabelWidth = math_max(maxLabelWidth, VS.voiceModeLabel:GetStringWidth()) 
+            end
+            if db.showOutput and outputLabel then 
+                maxLabelWidth = math_max(maxLabelWidth, outputLabel:GetStringWidth()) 
+            end
+
+            local maxDropdownWidth = 0
+            if db.showVoiceMode and VS.voiceModeBtn then 
+                maxDropdownWidth = math_max(maxDropdownWidth, VS.voiceModeBtn:GetWidth()) 
+            end
+            if db.showOutput and dropdown then 
+                maxDropdownWidth = math_max(maxDropdownWidth, dropdown:GetWidth()) 
+            end
+
+            local maxRowWidth = maxLabelWidth + 5 + maxDropdownWidth
+
             if db.showVoiceMode and VS.voiceModeLabel then
-                local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - voiceModeWidth) / 2
+                local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - maxRowWidth) / 2
+                VS.voiceModeLabel:SetWidth(maxLabelWidth)
                 VS.voiceModeLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
                 currentY = currentY + 26
             end
             if db.showOutput then
-                local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - outputWidth) / 2
+                local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - maxRowWidth) / 2
+                outputLabel:SetWidth(maxLabelWidth)
                 outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
             end
         end
@@ -391,8 +413,16 @@ function VS:UpdateAppearance()
     if VS.container then
         local hTop, hBottom, hTrack = VS:GetSliderHeightExtent()
 
-        -- Header: Padding (15) + Instruction (15) + Gap (10)
-        local headerHeight = 40
+        -- Header: Dynamic height based on instruction text wrapping
+        if VS.instructionText then
+            VS.instructionText:SetShown(db.showHelpText ~= false) -- Default true if nil
+        end
+        local headerHeight = 0
+        if db.showHelpText ~= false and VS.instructionText then
+            headerHeight = VS.CONTENT_PADDING_TOP + VS.instructionText:GetStringHeight() + 10
+        else
+            headerHeight = VS.CONTENT_PADDING_TOP + 10
+        end
         -- Footer height calculation based on visibility and layout stacking
         local footerHeight = 0
         if db.showCharacter or db.showBackground or db.showOutput or db.showVoiceMode then

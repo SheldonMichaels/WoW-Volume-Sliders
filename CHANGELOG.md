@@ -1,8 +1,13 @@
-## v2.2.0-beta
+## v2.2.0
 
 - **New Feature:** Added a powerful Zone Triggers system! You can now configure different volume levels for specific zones (like muting the ambient loop in the Isle of Quel'Danas). The addon automatically restores your previous volume when you leave the area.
 - **New Feature:** The Zone Triggers system includes a new Settings page to manage your profiles with prioritization for overlapping areas.
 - **UI Improvement:** The Addon Version is now visible at the top of the Settings window.
+- **UI Improvement:** The window title is now left-aligned.
+- **UI Improvement:** The "Settings" text button has been replaced with a clean gear icon positioned next to the Lock button.
+- **UI Improvement:** The help text at the top of the panel now wraps dynamically to multiple lines based on the window width.
+- **UI Improvement:** Added a visibility toggle for the help text under Element Visibility in the Settings page.
+- **UI Improvement:** Footer dropdowns (Output, Voice Mode) now align flush in a clean column when the window is in a narrow, stacked layout.
 
 ## v2.1.2
 - **UI Improvement:** Added descriptive tooltips to almost all UI elements, including slider tracks, stepper arrows, and footer toggles, explaining their function on hover.

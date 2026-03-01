@@ -72,7 +72,12 @@
             "Minimap",
             "MinimapZoomIn",
             "MinimapZoomOut",
-            "GetMinimapShape"
+            "GetMinimapShape",
+            "StaticPopupDialogs",
+            "ScrollingEdit_OnCursorChanged",
+            "GetAddOnMetadata",
+            "ScrollingEdit_OnUpdate",
+            "StaticPopup_Show"
         ],
         "disable": [
             "undefined-doc-name",

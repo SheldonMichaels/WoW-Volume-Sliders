@@ -48,11 +48,13 @@ function VS:CreateOptionsFrame()
     -- Set the title bar text via the NineSlice's built-in Text font string.
     if VS.container.NineSlice and VS.container.NineSlice.Text then
         VS.container.NineSlice.Text:SetText("Volume Sliders")
+        VS.container.NineSlice.Text:ClearAllPoints()
+        VS.container.NineSlice.Text:SetPoint("TOPLEFT", VS.container, "TOPLEFT", 12, -8)
     else
         -- Fallback: create our own title if the template layout differs.
         local titleText = VS.container:CreateFontString(nil, "ARTWORK", "GameFontNormal")
         titleText:SetText("Volume Sliders")
-        titleText:SetPoint("TOP", VS.container, "TOP", 0, -5)
+        titleText:SetPoint("TOPLEFT", VS.container, "TOPLEFT", 12, -8)
     end
 
     -- Wire the close button (provided by SettingsFrameTemplate).
@@ -116,19 +118,14 @@ function VS:CreateOptionsFrame()
     UpdateLockIcon()
 
     -- Settings Button
-    local settingsBtn = CreateFrame("Button", "VolumeSlidersFrameSettingsButton", VS.container, "UIPanelButtonTemplate")
-    settingsBtn:SetSize(85, 22)
-    settingsBtn:SetText("Settings")
+    local settingsBtn = CreateFrame("Button", "VolumeSlidersFrameSettingsButton", VS.container)
+    settingsBtn:SetSize(27, 27)
+    settingsBtn:SetText("")
+    settingsBtn:SetNormalAtlas("common-dropdown-a-button-settings-shadowless")
+    settingsBtn:SetPushedAtlas("common-dropdown-a-button-settings-pressed-shadowless")
+    settingsBtn:SetHighlightAtlas("common-dropdown-a-button-settings-hover-shadowless")
 
-    local settingsBtnText = settingsBtn:GetFontString()
-    if settingsBtnText then
-        settingsBtnText:SetFontObject("GameFontNormal")
-    else
-        settingsBtn:SetNormalFontObject("GameFontNormal")
-        settingsBtn:SetHighlightFontObject("GameFontHighlight")
-    end
-
-    settingsBtn:SetPoint("TOPLEFT", VS.container, "TOPLEFT", 6, -1)
+    settingsBtn:SetPoint("RIGHT", lockBtn, "LEFT", -4, -3)
 
     settingsBtn:SetScript("OnClick", function()
         if VS.settingsCategory and VS.settingsCategory.ID then
@@ -251,10 +248,13 @@ function VS:CreateOptionsFrame()
     VS.contentFrame:SetPoint("BOTTOMRIGHT", VS.container, "BOTTOMRIGHT", -VS.TEMPLATE_CONTENT_OFFSET_RIGHT, VS.TEMPLATE_CONTENT_OFFSET_BOTTOM)
 
     -- Instruction text displayed at the top of the panel.
-    local instruction = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    instruction:SetPoint("TOP", VS.contentFrame, "TOP", 0, -VS.CONTENT_PADDING_TOP)
-    instruction:SetText("Right-click on the icon to toggle master mute.")
-    instruction:SetTextColor(1, 1, 1)
+    VS.instructionText = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    VS.instructionText:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", 0, -VS.CONTENT_PADDING_TOP)
+    VS.instructionText:SetPoint("TOPRIGHT", VS.contentFrame, "TOPRIGHT", 0, -VS.CONTENT_PADDING_TOP)
+    VS.instructionText:SetText("Right-click on the icon to toggle master mute.")
+    VS.instructionText:SetTextColor(1, 1, 1)
+    VS.instructionText:SetWordWrap(true)
+    VS.instructionText:SetJustifyH("CENTER")
 
     ---------------------------------------------------------------------------
     -- Volume Sliders

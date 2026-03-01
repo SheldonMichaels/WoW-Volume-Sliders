@@ -14,10 +14,11 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 - **Sound output device selector** — change your active audio device, with a saved master volume value per device
 - **Voice Chat mode toggle** — change between Push to Talk and Open Mic modes on the fly
 - **"Sound at Character" toggle** — positional audio at your character (checked) or at the camera location (unchecked)
+- **Zone Triggers** — automatically apply saved volume profiles when entering specific zones, with priority resolution for overlapping areas and instant volume restore on exit
 - **Addon Compartment & Data Broker** — works with the built-in compartment menu (tested) and LDB displays like Titan Panel (untested) or ChocolateBar (untested)
 - **Native look & feel** — uses native Blizzard UI assets
 - **Movable window** — detach the window from the minimap and place it anywhere
-- **Extensive Customization Options** — access via the WoW Interface options to customize slider height, toggle visibility of any channel or UI element, change visual themes (gold/silver, diamond/minimal knobs, text colors), and freely drag-to-reorder the sliders to your preference.
+- **Extensive Customization Options** — access via the WoW Interface options to customize slider height, toggle visibility of any channel or UI element (including the help text), change visual themes (gold/silver, diamond/minimal knobs, text colors), and freely drag-to-reorder the sliders to your preference.
 
 ## Possible Future Features
 

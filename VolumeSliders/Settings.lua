@@ -370,6 +370,7 @@ function VS:CreateSettingsContents(parentFrame)
     visibilityLabel:SetText("Element Visibility")
 
     local checkboxes = {
+        { name = "Help Text", var = "showHelpText", tooltip = "Show or hide the help instructions at the top." },
         { name = "Title", var = "showTitle", tooltip = "Show or hide the channel name (e.g., 'Master') above each slider." },
         { name = "Value (%)", var = "showValue", tooltip = "Show or hide the volume percentage text above each slider." },
         { name = "High Label", var = "showHigh", tooltip = "Show or hide the '100%' label at the top of the slider track." },
