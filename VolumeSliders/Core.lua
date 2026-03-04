@@ -112,10 +112,10 @@ VS.CONTENT_PADDING_BOTTOM = 15
 -- based on the number of active columns and current slider spacing.
 
 -- Content height breakdown:
---   CONTENT_PADDING_TOP + 95 (instruction text + slider titles + percentages) +
+--   CONTENT_PADDING_TOP + 35 (presets dropdown) + 95 (instruction text + titles) +
 --   SLIDER_HEIGHT + 100 (mute checkboxes shifted down) + 35 (bottom row) +
 --   CONTENT_PADDING_BOTTOM
-VS.CONTENT_HEIGHT = VS.CONTENT_PADDING_TOP + 95 + VS.SLIDER_HEIGHT + 100 + 35 + VS.CONTENT_PADDING_BOTTOM
+VS.CONTENT_HEIGHT = VS.CONTENT_PADDING_TOP + 35 + 95 + VS.SLIDER_HEIGHT + 100 + 35 + VS.CONTENT_PADDING_BOTTOM
 
 -- Default full frame size including NineSlice border insets (width is dynamic).
 VS.FRAME_HEIGHT = VS.CONTENT_HEIGHT + VS.TEMPLATE_CONTENT_OFFSET_TOP + VS.TEMPLATE_CONTENT_OFFSET_BOTTOM

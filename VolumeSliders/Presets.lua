@@ -1,9 +1,10 @@
 -------------------------------------------------------------------------------
--- Triggers.lua
+-- Presets.lua
 --
--- Logic for Zone Specific Triggers. Registers for zone change events,
--- evaluates triggers by priority, and dynamically adjusts volume levels.
--- Uses O(1) zone lookups and unregisters events when triggers are disabled.
+-- Logic for Automation Presets (formerly Zone Triggers). Registers for zone 
+-- change events, evaluates presets by priority, and dynamically adjusts 
+-- volume levels. Uses O(1) zone lookups and unregisters events when 
+-- automation is disabled.
 --
 -- Author: Sheldon Michaels
 -- License: All Rights Reserved (Non-commercial use permitted)
@@ -11,8 +12,8 @@
 
 local _, VS = ...
 
--- Expose a central table for trigger logic and state
-VS.Triggers = {}
+-- Expose a central table for preset logic and state
+VS.Presets = {}
 
 -------------------------------------------------------------------------------
 -- Localized Globals
@@ -33,11 +34,11 @@ local string_lower = string.lower
 -------------------------------------------------------------------------------
 
 -- Frame for listening to zone transitions.
-local triggerFrame = CreateFrame("Frame")
+local presetFrame = CreateFrame("Frame")
 
--- Lookup table for O(1) matching: activeZones[lowerZoneName] = {triggerIndex1, triggerIndex2, ...}
+-- Lookup table for O(1) matching: activeZones[lowerZoneName] = {presetIndex1, presetIndex2, ...}
 local activeZones = {}
--- Maintain a list of original CVars before they were overridden by triggers.
+-- Maintain a list of original CVars before they were overridden by presets.
 -- originalVolumes[channel] = originalValue
 VolumeSlidersMMDB.originalVolumes = VolumeSlidersMMDB.originalVolumes or {}
 
@@ -45,30 +46,29 @@ VolumeSlidersMMDB.originalVolumes = VolumeSlidersMMDB.originalVolumes or {}
 -- Logic Implementation
 -------------------------------------------------------------------------------
 
---- Sort function for triggers based on priority. High priority applies last (overwrites).
--- Triggers are assumed to have a 'priority' field (number).
-local function SortTriggersByPriority(a, b)
+--- Sort function for presets based on priority. High priority applies last (overwrites).
+local function SortPresetsByPriority(a, b)
     local pA = a.priority or 0
     local pB = b.priority or 0
     return pA < pB
 end
 
---- Apply a list of active triggers to the game state.
+--- Apply a list of active automation presets to the game state.
 -- Restores unmodified channels to their original values.
-local function ApplyTriggers(activeTriggerList)
+local function ApplyAutomationPresets(activePresetList)
     local db = VolumeSlidersMMDB
     
     -- We want to track which channels are currently overridden so we can restore the rest
     local overriddenChannels = {}
     local finalVolumes = {}
 
-    -- Apply triggers in priority ascending order
-    table_sort(activeTriggerList, SortTriggersByPriority)
+    -- Apply presets in priority ascending order
+    table_sort(activePresetList, SortPresetsByPriority)
 
-    for _, trigger in ipairs(activeTriggerList) do
-        for channel, vol in pairs(trigger.volumes) do
-            -- Ignore specific channels in a trigger if they are marked ignored
-            if not trigger.ignored or not trigger.ignored[channel] then
+    for _, preset in ipairs(activePresetList) do
+        for channel, vol in pairs(preset.volumes) do
+            -- Ignore specific channels in a preset if they are marked ignored
+            if not preset.ignored or not preset.ignored[channel] then
                 finalVolumes[channel] = vol
                 overriddenChannels[channel] = true
             end
@@ -90,7 +90,7 @@ local function ApplyTriggers(activeTriggerList)
                 SetCVar(channel, wantVol)
             end
         else
-            -- No active trigger is overriding this channel. Restore if it was overridden previously.
+            -- No active preset is overriding this channel. Restore if it was overridden previously.
             if db.originalVolumes[channel] then
                 local restoreVol = db.originalVolumes[channel]
                 local currentCVarVol = tonumber(GetCVar(channel)) or 1
@@ -117,39 +117,71 @@ local function ApplyTriggers(activeTriggerList)
     end
 end
 
+--- Applies a single preset immediately (called from quick dropdown)
+-- Does NOT modify originalVolumes (so it's permanent until changed again).
+function VS.Presets:ApplyPreset(preset)
+    if not preset or type(preset.volumes) ~= "table" then return end
+    
+    local changed = false
+    for channel, vol in pairs(preset.volumes) do
+        if not preset.ignored or not preset.ignored[channel] then
+            local currentCVarVol = tonumber(GetCVar(channel)) or 1
+            if currentCVarVol ~= vol then
+                SetCVar(channel, vol)
+                changed = true
+            end
+        end
+    end
+
+    -- Update UI if anything changed
+    if changed then
+        if VS.sliders then
+            for channel, slider in pairs(VS.sliders) do
+                if slider.RefreshValue then
+                    slider:RefreshValue()
+                end
+            end
+        end
+        if VS.VolumeSlidersObject then
+            VS.VolumeSlidersObject.text = VS:GetVolumeText()
+        end
+    end
+end
+
 --- Event handler for all registered zone/login events.
-local function OnTriggerEvent()
+local function OnPresetEvent()
     local db = VolumeSlidersMMDB
-    if not db.enableTriggers or not db.triggers or #db.triggers == 0 then return end
+    -- "enableTriggers" is still the DB key for the Automation (Zone Triggers) feature toggle
+    if not db.enableTriggers or not db.presets or #db.presets == 0 then return end
 
     local realZone = GetRealZoneText() and string_lower(GetRealZoneText()) or ""
     local subZone = GetSubZoneText() and string_lower(GetSubZoneText()) or ""
     local miniZone = GetMinimapZoneText() and string_lower(GetMinimapZoneText()) or ""
 
-    local matchedTriggers = {}
-    local matchedTriggerIndices = {} -- deduplication map
+    local matchedPresets = {}
+    local matchedPresetIndices = {} -- deduplication map
 
-    -- Helper to safely add matched triggers
-    local function AddMatchedTriggers(zoneStr)
+    -- Helper to safely add matched presets
+    local function AddMatchedPresets(zoneStr)
         local ids = activeZones[zoneStr]
         if ids then
             for _, id in ipairs(ids) do
-                if not matchedTriggerIndices[id] then
-                    matchedTriggerIndices[id] = true
-                    table.insert(matchedTriggers, db.triggers[id])
+                if not matchedPresetIndices[id] then
+                    matchedPresetIndices[id] = true
+                    table.insert(matchedPresets, db.presets[id])
                 end
             end
         end
     end
 
-    AddMatchedTriggers(realZone)
-    AddMatchedTriggers(subZone)
-    AddMatchedTriggers(miniZone)
+    AddMatchedPresets(realZone)
+    AddMatchedPresets(subZone)
+    AddMatchedPresets(miniZone)
 
-    ApplyTriggers(matchedTriggers)
+    ApplyAutomationPresets(matchedPresets)
 end
 
-triggerFrame:SetScript("OnEvent", OnTriggerEvent)
+presetFrame:SetScript("OnEvent", OnPresetEvent)
 
 -------------------------------------------------------------------------------
 -- Public API
@@ -157,19 +189,30 @@ triggerFrame:SetScript("OnEvent", OnTriggerEvent)
 
 --- Rebuilds the O(1) zone lookup table and registers/unregisters events based
 -- on load-on-demand principles to guarantee zero CPU drag when idle.
-function VS.Triggers:RefreshEventState()
+function VS.Presets:RefreshEventState()
     local db = VolumeSlidersMMDB
     
-    -- Ensure required tables exist (for users upgrading from older versions)
+    -- Ensure required tables exist
     db.originalVolumes = db.originalVolumes or {}
-    db.triggers = db.triggers or {}
+    db.presets = db.presets or {}
     
     -- Wipe lookup
     for k in pairs(activeZones) do activeZones[k] = nil end
 
-    if not db.enableTriggers or not db.triggers or #db.triggers == 0 then
+    -- Check if automation is enabled AND if there are any presets that ACTUALLY have zones defined
+    local hasZonePresets = false
+    if db.presets and #db.presets > 0 then
+        for _, preset in ipairs(db.presets) do
+            if preset.zones and #preset.zones > 0 then
+                hasZonePresets = true
+                break
+            end
+        end
+    end
+
+    if not db.enableTriggers or not hasZonePresets then
         -- Complete shutdown, unregister events
-        triggerFrame:UnregisterAllEvents()
+        presetFrame:UnregisterAllEvents()
         
         -- Restore ALL original volumes since logic is now defunct
         for channel, restoreVol in pairs(db.originalVolumes) do
@@ -191,10 +234,10 @@ function VS.Triggers:RefreshEventState()
         return
     end
 
-    -- If enabled, build map
-    for i, trigger in ipairs(db.triggers) do
-        if trigger.zones and type(trigger.zones) == "table" then
-            for _, z in ipairs(trigger.zones) do
+    -- If enabled, build map only for presets with zones
+    for i, preset in ipairs(db.presets) do
+        if preset.zones and type(preset.zones) == "table" and #preset.zones > 0 then
+            for _, z in ipairs(preset.zones) do
                 local lowerZ = string_lower(z)
                 if not activeZones[lowerZ] then
                     activeZones[lowerZ] = {}
@@ -205,12 +248,11 @@ function VS.Triggers:RefreshEventState()
     end
 
     -- Register events
-    triggerFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    triggerFrame:RegisterEvent("ZONE_CHANGED")
-    triggerFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-    triggerFrame:RegisterEvent("ZONE_CHANGED_INDOORS")
+    presetFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    presetFrame:RegisterEvent("ZONE_CHANGED")
+    presetFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    presetFrame:RegisterEvent("ZONE_CHANGED_INDOORS")
     
     -- Evaluate immediately in case we just enabled it while standing in a zone
-    OnTriggerEvent()
+    OnPresetEvent()
 end
-

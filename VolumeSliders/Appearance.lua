@@ -417,11 +417,25 @@ function VS:UpdateAppearance()
         if VS.instructionText then
             VS.instructionText:SetShown(db.showHelpText ~= false) -- Default true if nil
         end
-        local headerHeight = 0
+        local headerHeight = VS.CONTENT_PADDING_TOP
         if db.showHelpText ~= false and VS.instructionText then
-            headerHeight = VS.CONTENT_PADDING_TOP + VS.instructionText:GetStringHeight() + 10
+            headerHeight = headerHeight + VS.instructionText:GetStringHeight() + 10
         else
-            headerHeight = VS.CONTENT_PADDING_TOP + 10
+            headerHeight = headerHeight + 5
+        end
+
+        if VS.presetDropdown then
+            VS.presetDropdown:SetShown(db.showPresetsDropdown ~= false)
+            VS.presetDropdown:ClearAllPoints()
+            if db.showHelpText ~= false and VS.instructionText then
+                VS.presetDropdown:SetPoint("TOP", VS.instructionText, "BOTTOM", 0, -10)
+            else
+                VS.presetDropdown:SetPoint("TOP", VS.contentFrame, "TOP", 0, -VS.CONTENT_PADDING_TOP)
+            end
+            
+            if db.showPresetsDropdown ~= false then
+                headerHeight = headerHeight + 35
+            end
         end
         -- Footer height calculation based on visibility and layout stacking
         local footerHeight = 0

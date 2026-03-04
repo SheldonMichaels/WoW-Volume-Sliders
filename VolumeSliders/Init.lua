@@ -57,6 +57,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     if db.showBackground == nil then db.showBackground = true end
     if db.showCharacter == nil then db.showCharacter = true end
     if db.showOutput == nil then db.showOutput = true end
+    if db.showPresetsDropdown == nil then db.showPresetsDropdown = true end
 
     -- Feature Defaults
     if db.enableFishingVolume == nil then db.enableFishingVolume = false end
@@ -109,9 +110,26 @@ initFrame:SetScript("OnEvent", function(self, event)
         end
     end
 
-    -- Trigger Profile Defaults
-    if not db.triggers then
-        db.triggers = {
+    -- Trigger to Preset Migration
+    if db.triggers and not db.presets then
+        db.presets = {}
+        for _, trigger in ipairs(db.triggers) do
+            local newPreset = {
+                name = trigger.name,
+                priority = trigger.priority,
+                zones = trigger.zones or {},
+                volumes = trigger.volumes,
+                ignored = trigger.ignored,
+                showInDropdown = true -- Legacy triggers all show in dropdown
+            }
+            table.insert(db.presets, newPreset)
+        end
+        db.triggers = nil -- Unset old table
+    end
+
+    -- Preset Profile Defaults
+    if not db.presets then
+        db.presets = {
             {
                 name = "Sunwell Silencer",
                 priority = 5,
@@ -124,7 +142,8 @@ initFrame:SetScript("OnEvent", function(self, event)
                     ["Sound_SFXVolume"] = true,
                     ["Sound_MusicVolume"] = true,
                     ["Sound_DialogVolume"] = true
-                }
+                },
+                showInDropdown = true
             }
         }
     end
@@ -175,8 +194,8 @@ initFrame:SetScript("OnEvent", function(self, event)
         db.minimalistMinimap = not useStandardIcon
     end
     
-    if VS.Triggers and VS.Triggers.RefreshEventState then
-        VS.Triggers:RefreshEventState()
+    if VS.Presets and VS.Presets.RefreshEventState then
+        VS.Presets:RefreshEventState()
     end
     
     if VS.Fishing and VS.Fishing.Initialize then

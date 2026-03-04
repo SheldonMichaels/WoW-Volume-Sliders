@@ -2,7 +2,7 @@
 ## Title: Volume Sliders
 ## Notes: Volume sliders for all sound channels
 ## Author: Sheldon Michaels
-## Version: v2.4.0
+## Version: v2.5.0
 ## SavedVariables: VolumeSlidersMMDB
 ## SavedVariablesPerCharacter:
 ## OptionalDeps:
@@ -17,7 +17,7 @@ VolumeSliders.xml
 
 Core.lua
 SliderWidgets.lua
-Triggers.lua
+Presets.lua
 Fishing.lua
 LFGQueue.lua
 Appearance.lua

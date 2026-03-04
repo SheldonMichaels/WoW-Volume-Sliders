@@ -1,3 +1,13 @@
+## v2.5.0
+
+- **New Feature:** Zone Triggers have been fully expanded and renamed to **Presets**!
+- **New Feature:** Added a brand new Preset quick-apply dropdown menu to the main volume slider window for instant access to your saved configurations without opening the options menu.
+- **Customization:** Presets can now be freely reordered from the Settings page so your most important setups appear at the top of the list.
+- **Customization:** Added visibility toggles to show or hide individual Presets from appearing in the new dropdown menu.
+- **Customization:** Added a new element visibility toggle in Settings to completely hide the new Presets dropdown menu if you prefer the classic minimalist look.
+- **UI Improvement:** Greatly improved the visual layout of the Automation Settings page with dynamic dropdown resizing, mathematically centered data entry fields, and modern slider alignment.
+- **UI Improvement:** Upgraded the stepper arrows in the Settings page to use high-resolution Blizzard texture assets.
+
 ## v2.4.0
 
 - **New Feature:** Added an "LFG Queue Pop Boost" toggle to the Settings page! This dynamically maximizes the Master and SFX volumes when your Dungeon, Raid, or PvP queue prompt appears on screen so you never miss it. It automatically restores your original volumes 4.5 seconds later (after the sound finishes playing).

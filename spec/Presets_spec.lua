@@ -3,7 +3,7 @@ local spy = require("luassert.spy")
 
 require("spec.setup")
 
-describe("Triggers tests", function()
+describe("Presets tests", function()
     local VS
 
     before_each(function()
@@ -11,7 +11,7 @@ describe("Triggers tests", function()
         _G.VolumeSlidersMMDB = {
             enableTriggers = true,
             originalVolumes = {},
-            triggers = {}
+            presets = {}
         }
         
         -- Mock GetRealZoneText using mutable references
@@ -42,21 +42,21 @@ describe("Triggers tests", function()
         local coreChunk = loadfile("VolumeSliders/Core.lua")
         coreChunk(addonName, addonTable)
         
-        local triggersChunk = loadfile("VolumeSliders/Triggers.lua")
-        triggersChunk(addonName, addonTable)
+        local presetsChunk = loadfile("VolumeSliders/Presets.lua")
+        presetsChunk(addonName, addonTable)
 
         VS = addonTable
     end)
 
     it("does nothing returning instantly if triggers are disabled", function()
         _G.VolumeSlidersMMDB.enableTriggers = false
-        VS.Triggers:RefreshEventState()
+        VS.Presets:RefreshEventState()
         
         assert.spy(_G.setCvarSpy).was_not_called()
     end)
     
     it("sorts and overrides volumes correctly and restores them", function()
-        _G.VolumeSlidersMMDB.triggers = {
+        _G.VolumeSlidersMMDB.presets = {
             {
                 name = "Test 1", priority = 10,
                 zones = {"Elwynn Forest"},
@@ -71,7 +71,7 @@ describe("Triggers tests", function()
             }
         }
         
-        VS.Triggers:RefreshEventState()
+        VS.Presets:RefreshEventState()
         
         -- Goldshire (Priority 100) should override Elwynn Forest (Priority 10)
         assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 0.2)
@@ -82,14 +82,14 @@ describe("Triggers tests", function()
         
         -- Now let's simulate leaving Goldshire, meaning only Elwynn is active
         _G.zoneStates.sub = "Unknown"
-        VS.Triggers:RefreshEventState()
+        VS.Presets:RefreshEventState()
         
         -- Should have overridden with 0.5 this time
         assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 0.5)
         
         -- Now leaving Elwynn Forest (no triggers apply)
         _G.zoneStates.real = "Unknown"
-        VS.Triggers:RefreshEventState()
+        VS.Presets:RefreshEventState()
         
         -- Should have restored the original volume (1.0)
         assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 1.0)

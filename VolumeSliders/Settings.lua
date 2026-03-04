@@ -215,7 +215,7 @@ end
 -------------------------------------------------------------------------------
 function VS:CreateAutomationSettingsContents(parentFrame)
     local db = VolumeSlidersMMDB
-    db.triggers = db.triggers or {}
+    db.presets = db.presets or {}
 
     local scrollFrame = CreateFrame("ScrollFrame", "VSAutomationSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 10, -10)
@@ -240,7 +240,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     local desc = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
     desc:SetWidth(560)
-    desc:SetText("Configure volume settings to apply automatically when entering specific zones. Your original volume levels will be seamlessly restored when you leave the area.")
+    desc:SetText("Configure presets and apply them manually, or assign zones for them to trigger automatically.")
     desc:SetJustifyH("LEFT")
 
     ---------------------------------------------------------------------------
@@ -265,12 +265,12 @@ function VS:CreateAutomationSettingsContents(parentFrame)
 
     enableCheck:SetScript("OnClick", function(self)
         db.enableTriggers = self:GetChecked()
-        if VS.Triggers and VS.Triggers.RefreshEventState then
-            VS.Triggers:RefreshEventState()
+        if VS.Presets and VS.Presets.RefreshEventState then
+            VS.Presets:RefreshEventState()
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    AddTooltip(enableCheck, "Automatically adjust volume levels when entering specific zones. Original volumes are restored when leaving the area.")
+    AddTooltip(enableCheck, "Automatically adjust volume levels when entering zones designated in your presets. Original volumes are restored when leaving the area.")
 
     local fishingCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
     fishingCheck:SetPoint("TOPLEFT", enableCheck, "TOPRIGHT", 100, 0)
@@ -459,56 +459,70 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     ---------------------------------------------------------------------------
     -- State & Management
     ---------------------------------------------------------------------------
-    -- We need a working state for the currently selected/edited trigger
-    VS.TriggerWorkingState = {
-        name = "New Trigger",
+    -- We need a working state for the currently selected/edited preset
+    VS.PresetWorkingState = {
+        name = "New Preset",
         priority = 10,
         zones = {},
         volumes = {},
         ignored = {},
-        index = nil -- The index in db.triggers if it already exists
+        showInDropdown = true,
+        index = nil -- The index in db.presets if it already exists
     }
 
     local currentSelectedIndex = nil
-    local triggerSliders = {}
+    local presetSliders = {}
 
-    local triggerDropdown = CreateFrame("DropdownButton", nil, contentFrame, "WowStyle1DropdownTemplate")
-    triggerDropdown:SetPoint("TOPLEFT", separatorTop, "BOTTOMLEFT", 10, -35)
-    triggerDropdown:SetWidth(200)
+    local presetDropdown = CreateFrame("DropdownButton", nil, contentFrame, "WowStyle1DropdownTemplate")
+    presetDropdown:SetPoint("TOPLEFT", separatorTop, "BOTTOMLEFT", 10, -35)
 
     local priorityLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    priorityLabel:SetPoint("BOTTOMLEFT", triggerDropdown, "TOPLEFT", 0, 5)
-    priorityLabel:SetText("Select Trigger Profile")
-
-    local btnSave = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
-    btnSave:SetSize(90, 22)
-    btnSave:SetPoint("LEFT", triggerDropdown, "RIGHT", 15, 0)
-    btnSave:SetText("Save")
-
-    local btnCopy = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
-    btnCopy:SetSize(90, 22)
-    btnCopy:SetPoint("LEFT", btnSave, "RIGHT", 10, 0)
-    btnCopy:SetText("Copy")
+    priorityLabel:SetPoint("BOTTOMLEFT", presetDropdown, "TOPLEFT", 0, 5)
+    priorityLabel:SetText("Select Preset Profile")
 
     local btnDelete = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
-    btnDelete:SetSize(90, 22)
-    btnDelete:SetPoint("LEFT", btnCopy, "RIGHT", 10, 0)
+    btnDelete:SetSize(80, 22)
+    btnDelete:SetPoint("TOPRIGHT", separatorTop, "BOTTOMRIGHT", -15, -35)
     btnDelete:SetText("Delete")
+
+    local btnCopy = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnCopy:SetSize(80, 22)
+    btnCopy:SetPoint("RIGHT", btnDelete, "LEFT", -5, 0)
+    btnCopy:SetText("Copy")
+
+    local btnSave = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnSave:SetSize(80, 22)
+    btnSave:SetPoint("RIGHT", btnCopy, "LEFT", -5, 0)
+    btnSave:SetText("Save")
+
+    presetDropdown:SetPoint("RIGHT", btnSave, "LEFT", -15, 0)
+
+    local btnMoveUp = CreateFrame("Button", nil, contentFrame)
+    btnMoveUp:SetSize(22, 22)
+    btnMoveUp:SetPoint("LEFT", btnDelete, "RIGHT", 5, 0)
+    btnMoveUp:SetNormalAtlas("glues-characterselect-icon-arrowup")
+    btnMoveUp:SetPushedAtlas("glues-characterselect-icon-arrowup-pressed")
+    btnMoveUp:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    AddTooltip(btnMoveUp, "Move Preset Up")
+
+    local btnMoveDown = CreateFrame("Button", nil, contentFrame)
+    btnMoveDown:SetSize(22, 22)
+    btnMoveDown:SetPoint("LEFT", btnMoveUp, "RIGHT", 5, 0)
+    btnMoveDown:SetNormalAtlas("glues-characterSelect-icon-arrowDown")
+    btnMoveDown:SetPushedAtlas("glues-characterSelect-icon-arrowDown-pressed")
+    btnMoveDown:SetDisabledAtlas("glues-characterSelect-icon-arrowDown-disabled")
+    btnMoveDown:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    AddTooltip(btnMoveDown, "Move Preset Down")
 
     ---------------------------------------------------------------------------
     -- Zone List & Priority Edit
     ---------------------------------------------------------------------------
     local nameLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    nameLabel:SetPoint("TOPLEFT", triggerDropdown, "BOTTOMLEFT", 0, -20)
-    nameLabel:SetText("Trigger Name")
-
-    local inputName = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
-    inputName:SetSize(380, 20)
-    inputName:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", 5, -5)
-    inputName:SetAutoFocus(false)
+    nameLabel:SetPoint("TOPLEFT", presetDropdown, "BOTTOMLEFT", 0, -30)
+    nameLabel:SetText("Preset Name")
 
     local priorityEditLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    priorityEditLabel:SetPoint("BOTTOMLEFT", nameLabel, "BOTTOMRIGHT", 310, 0)
+    priorityEditLabel:SetPoint("LEFT", nameLabel, "LEFT", 490, 0)
     priorityEditLabel:SetText("Priority")
 
     -- Add Tooltip for Priority
@@ -516,7 +530,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     priorityEditLabel:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText("Priority Level", 1, 1, 1)
-        GameTooltip:AddLine("Determines which trigger wins if multiple zones overlap at the same time.", nil, nil, nil, true)
+        GameTooltip:AddLine("Determines which preset wins if multiple zones overlap at the same time.", nil, nil, nil, true)
         GameTooltip:AddLine("Lower numbers have higher priority (e.g., Priority 1 will override Priority 10).", 1, 0.82, 0, true)
         GameTooltip:Show()
     end)
@@ -528,19 +542,70 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     inputPriority:SetNumeric(true)
     inputPriority:SetAutoFocus(false)
 
+    local listOrderLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    listOrderLabel:SetPoint("LEFT", nameLabel, "LEFT", 410, 0)
+    listOrderLabel:SetText("List Order")
+
+    -- Add Tooltip for List Order
+    listOrderLabel:EnableMouse(true)
+    listOrderLabel:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("List Order", 1, 1, 1)
+        GameTooltip:AddLine("Changes the order this preset appears in the quick apply dropdown.", nil, nil, nil, true)
+        GameTooltip:AddLine("Lower numbers appear higher in the list.", 1, 0.82, 0, true)
+        GameTooltip:Show()
+    end)
+    listOrderLabel:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    local inputListOrder = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
+    inputListOrder:SetSize(40, 20)
+    inputListOrder:SetPoint("TOP", listOrderLabel, "BOTTOM", 0, -5)
+    inputListOrder:SetNumeric(true)
+    inputListOrder:SetAutoFocus(false)
+
+    -- Split the list order arrows to surround the input field with reduced padding
+    btnMoveUp:ClearAllPoints()
+    btnMoveUp:SetPoint("TOPRIGHT", inputListOrder, "TOPLEFT", -3, 1)
+    
+    btnMoveDown:ClearAllPoints()
+    btnMoveDown:SetPoint("TOPLEFT", inputListOrder, "TOPRIGHT", -1, 1)
+
+    local inputName = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
+    inputName:SetHeight(20)
+    inputName:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", 5, -5)
+    inputName:SetPoint("RIGHT", btnMoveUp, "LEFT", -10, 0)
+    inputName:SetAutoFocus(false)
+
+    local showDropdownCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    showDropdownCheck:SetPoint("TOPLEFT", inputName, "BOTTOMLEFT", -5, -15)
+    showDropdownCheck.text:SetFontObject("GameFontNormal")
+    showDropdownCheck.text:SetText("Show in main window presets list")
+    showDropdownCheck:SetChecked(true)
+
     local zonesLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    zonesLabel:SetPoint("TOPLEFT", inputName, "BOTTOMLEFT", -5, -20)
-    zonesLabel:SetText("Monitored Zones (semicolon separated)")
+    zonesLabel:SetPoint("TOPLEFT", showDropdownCheck, "BOTTOMLEFT", 5, -15)
+    zonesLabel:SetText("Monitored Zones (Optional, semicolon separated)")
+
+    -- Add Tooltip for Zones
+    zonesLabel:EnableMouse(true)
+    zonesLabel:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Monitored Zones", 1, 1, 1)
+        GameTooltip:AddLine("Type zone names or subzones here in a semicolon-separated list.", nil, nil, nil, true)
+        GameTooltip:AddLine("When the 'Zone Triggers' toggle is enabled above, these volume settings will automatically apply while your character is in these zones.", 1, 0.82, 0, true)
+        GameTooltip:Show()
+    end)
+    zonesLabel:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     local btnAddCurrent = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
     btnAddCurrent:SetSize(140, 22)
-    btnAddCurrent:SetPoint("LEFT", zonesLabel, "RIGHT", 15, 0)
+    btnAddCurrent:SetPoint("LEFT", zonesLabel, "LEFT", 320, 0)
     btnAddCurrent:SetText("Add Current Zone")
 
     local scrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersZoneScrollFrame", contentFrame, "UIPanelScrollFrameTemplate")
     local INPUT_WIDTH = 500
     scrollFrame:SetSize(INPUT_WIDTH, 70) 
-    scrollFrame:SetPoint("TOPLEFT", zonesLabel, "BOTTOMLEFT", 10, -20)
+    scrollFrame:SetPoint("TOPLEFT", zonesLabel, "BOTTOMLEFT", 0, -10)
     
     -- Add a visual backing frame so it looks like an input box
     local scrollBg = CreateFrame("Frame", nil, scrollFrame, "BackdropTemplate")
@@ -610,12 +675,12 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     local startX = (540 - totalWidth) / 2
     
     for i, chan in ipairs(channels) do
-        local slider = VS:CreateTriggerSlider(slidersContainer, "VSTriggerSlider"..chan.label, chan.label, chan.key, VS.TriggerWorkingState, 0, 1, 0.01)
+        local slider = VS:CreateTriggerSlider(slidersContainer, "VSPresetSlider"..chan.label, chan.label, chan.key, VS.PresetWorkingState, 0, 1, 0.01)
         
         -- Start hidden
         slider:Hide()
         slider:SetPoint("TOPLEFT", slidersContainer, "TOPLEFT", startX + (i-1) * (sliderWidth + sliderSpacing), -130)
-        table.insert(triggerSliders, slider)
+        table.insert(presetSliders, slider)
     end
 
     ---------------------------------------------------------------------------
@@ -623,7 +688,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     ---------------------------------------------------------------------------
 
     local function RefreshSliderUI()
-        for _, slider in ipairs(triggerSliders) do
+        for _, slider in ipairs(presetSliders) do
             slider:Show()
             if slider.RefreshValue then
                 slider:RefreshValue()
@@ -632,11 +697,13 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     end
 
     local function UpdateFormFromWorkingState()
-        inputName:SetText(VS.TriggerWorkingState.name)
-        inputPriority:SetText(tostring(VS.TriggerWorkingState.priority))
+        inputName:SetText(VS.PresetWorkingState.name)
+        inputPriority:SetText(tostring(VS.PresetWorkingState.priority))
+        inputListOrder:SetText(tostring(VS.PresetWorkingState.index or (#db.presets + 1)))
+        showDropdownCheck:SetChecked(VS.PresetWorkingState.showInDropdown)
         
         local zStr = ""
-            zStr = table.concat(VS.TriggerWorkingState.zones, "; ")
+        zStr = table.concat(VS.PresetWorkingState.zones, "; ")
         inputZones:SetText(zStr)
 
         RefreshSliderUI()
@@ -645,32 +712,37 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             btnSave:Enable()
             btnCopy:Enable()
             btnDelete:Enable()
+            if currentSelectedIndex > 1 then btnMoveUp:Enable() else btnMoveUp:Disable() end
+            if currentSelectedIndex < #db.presets then btnMoveDown:Enable() else btnMoveDown:Disable() end
         else
             btnSave:Enable()
             btnCopy:Disable()
             btnDelete:Disable()
+            btnMoveUp:Disable()
+            btnMoveDown:Disable()
         end
     end
 
-    local function LoadWorkingState(trigger, index)
-        VS.TriggerWorkingState.name = trigger and trigger.name or "New Profile"
-        VS.TriggerWorkingState.priority = trigger and (trigger.priority or 10) or 10
-        VS.TriggerWorkingState.index = index
+    local function LoadWorkingState(preset, index)
+        VS.PresetWorkingState.name = preset and preset.name or "New Preset"
+        VS.PresetWorkingState.priority = preset and (preset.priority or 10) or 10
+        VS.PresetWorkingState.showInDropdown = preset and (preset.showInDropdown ~= false) or (preset == nil)
+        VS.PresetWorkingState.index = index
         
-        VS.TriggerWorkingState.zones = {}
-        VS.TriggerWorkingState.volumes = {}
-        VS.TriggerWorkingState.ignored = {}
+        VS.PresetWorkingState.zones = {}
+        VS.PresetWorkingState.volumes = {}
+        VS.PresetWorkingState.ignored = {}
 
-        if trigger then
-            for _, z in ipairs(trigger.zones or {}) do table.insert(VS.TriggerWorkingState.zones, z) end
-            for k,v in pairs(trigger.volumes or {}) do VS.TriggerWorkingState.volumes[k] = v end
-            for k,v in pairs(trigger.ignored or {}) do VS.TriggerWorkingState.ignored[k] = v end
+        if preset then
+            for _, z in ipairs(preset.zones or {}) do table.insert(VS.PresetWorkingState.zones, z) end
+            for k,v in pairs(preset.volumes or {}) do VS.PresetWorkingState.volumes[k] = v end
+            for k,v in pairs(preset.ignored or {}) do VS.PresetWorkingState.ignored[k] = v end
         end
         
         -- Fill in any missing channels with the current CVar values so the sliders don't default to 100% incorrectly
         for channelKey, _ in pairs(VS.CVAR_TO_VAR) do
-            if VS.TriggerWorkingState.volumes[channelKey] == nil then
-                VS.TriggerWorkingState.volumes[channelKey] = tonumber(GetCVar(channelKey)) or 1
+            if VS.PresetWorkingState.volumes[channelKey] == nil then
+                VS.PresetWorkingState.volumes[channelKey] = tonumber(GetCVar(channelKey)) or 1
             end
         end
     end
@@ -678,47 +750,47 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     local function SelectNewProfile()
         currentSelectedIndex = nil
         LoadWorkingState(nil, nil)
-        triggerDropdown:SetText("Create New Trigger")
+        presetDropdown:SetDefaultText("Create New Preset")
         UpdateFormFromWorkingState()
     end
 
     local function GenerateDropdownMenu(dropdown, rootDescription)
-        rootDescription:CreateButton("Create New Trigger", function()
+        rootDescription:CreateButton("Create New Preset", function()
             SelectNewProfile()
             -- Force text update after dropdown closes
-            dropdown:SetText("Create New Trigger") 
+            dropdown:SetDefaultText("Create New Preset") 
         end)
         
-        for i, trigger in ipairs(db.triggers) do
-            rootDescription:CreateButton(trigger.name .. " (Priority: " .. (trigger.priority or 0) .. ")", function()
+        for i, preset in ipairs(db.presets) do
+            rootDescription:CreateButton(preset.name .. " (Priority: " .. (preset.priority or 0) .. ")", function()
                 currentSelectedIndex = i
-                -- Deep copy trigger so edits aren't live until saved
-                LoadWorkingState(trigger, i)
+                -- Deep copy preset so edits aren't live until saved
+                LoadWorkingState(preset, i)
                 
-                triggerDropdown:SetText(trigger.name)
+                presetDropdown:SetDefaultText(preset.name)
                 UpdateFormFromWorkingState()
             end)
         end
     end
 
     local function RefreshDropdown()
-        triggerDropdown:SetupMenu(GenerateDropdownMenu)
-        triggerDropdown:GenerateMenu()
+        presetDropdown:SetupMenu(GenerateDropdownMenu)
+        presetDropdown:GenerateMenu()
         
-        if currentSelectedIndex and db.triggers[currentSelectedIndex] then
-            triggerDropdown:SetText(db.triggers[currentSelectedIndex].name)
+        if currentSelectedIndex and db.presets[currentSelectedIndex] then
+            presetDropdown:SetDefaultText(db.presets[currentSelectedIndex].name)
         else
             -- Ensure New Profile is selected if none is active or list is empty
             SelectNewProfile()
         end
     end
 
-    VS.RefreshTriggerSettings = function()
+    VS.RefreshPresetSettings = function()
         RefreshDropdown()
         
         -- If we have an active profile selected, ensure the working state matches it so the UI populates
-        if currentSelectedIndex and db.triggers[currentSelectedIndex] then
-            LoadWorkingState(db.triggers[currentSelectedIndex], currentSelectedIndex)
+        if currentSelectedIndex and db.presets[currentSelectedIndex] then
+            LoadWorkingState(db.presets[currentSelectedIndex], currentSelectedIndex)
         end
         
         UpdateFormFromWorkingState()
@@ -740,62 +812,70 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     end
 
     btnSave:SetScript("OnClick", function()
-        VS.TriggerWorkingState.name = inputName:GetText()
-        if VS.TriggerWorkingState.name == "" then VS.TriggerWorkingState.name = "Unnamed Trigger" end
-        VS.TriggerWorkingState.priority = tonumber(inputPriority:GetText()) or 10
-        VS.TriggerWorkingState.zones = ParseZones(inputZones:GetText())
+        VS.PresetWorkingState.name = inputName:GetText()
+        if VS.PresetWorkingState.name == "" then VS.PresetWorkingState.name = "Unnamed Preset" end
+        VS.PresetWorkingState.priority = tonumber(inputPriority:GetText()) or 10
+        VS.PresetWorkingState.zones = ParseZones(inputZones:GetText())
+        VS.PresetWorkingState.showInDropdown = showDropdownCheck:GetChecked()
+        
+        local desiredIndex = tonumber(inputListOrder:GetText()) or (#db.presets + 1)
         
         -- Serialize to DB
         local newObj = {
-            name = VS.TriggerWorkingState.name,
-            priority = VS.TriggerWorkingState.priority,
-            zones = VS.TriggerWorkingState.zones,
+            name = VS.PresetWorkingState.name,
+            priority = VS.PresetWorkingState.priority,
+            zones = VS.PresetWorkingState.zones,
             volumes = {},
-            ignored = {}
+            ignored = {},
+            showInDropdown = VS.PresetWorkingState.showInDropdown
         }
-        for k,v in pairs(VS.TriggerWorkingState.volumes) do newObj.volumes[k] = v end
-        for k,v in pairs(VS.TriggerWorkingState.ignored) do newObj.ignored[k] = v end
+        for k,v in pairs(VS.PresetWorkingState.volumes) do newObj.volumes[k] = v end
+        for k,v in pairs(VS.PresetWorkingState.ignored) do newObj.ignored[k] = v end
 
         if currentSelectedIndex then
-            db.triggers[currentSelectedIndex] = newObj
-        else
-            table.insert(db.triggers, newObj)
-            currentSelectedIndex = #db.triggers
-            VS.TriggerWorkingState.index = currentSelectedIndex
+            table.remove(db.presets, currentSelectedIndex)
         end
+        
+        -- Insert into array at the new desired position and shift boundaries
+        desiredIndex = math.max(1, math.min(desiredIndex, #db.presets + 1))
+        table.insert(db.presets, desiredIndex, newObj)
+        currentSelectedIndex = desiredIndex
+        VS.PresetWorkingState.index = currentSelectedIndex
 
         RefreshDropdown()
-        if VS.Triggers and VS.Triggers.RefreshEventState then
-            VS.Triggers:RefreshEventState()
+        if VS.Presets and VS.Presets.RefreshEventState then
+            VS.Presets:RefreshEventState()
         end
+        if VS.RefreshPopupDropdown then VS.RefreshPopupDropdown() end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
 
     btnCopy:SetScript("OnClick", function()
-        if currentSelectedIndex and db.triggers[currentSelectedIndex] then
-            VS.TriggerWorkingState.name = VS.TriggerWorkingState.name .. " (Copy)"
+        if currentSelectedIndex and db.presets[currentSelectedIndex] then
+            VS.PresetWorkingState.name = VS.PresetWorkingState.name .. " (Copy)"
             currentSelectedIndex = nil
-            VS.TriggerWorkingState.index = nil
-            triggerDropdown:SetText(VS.TriggerWorkingState.name)
+            VS.PresetWorkingState.index = nil
+            presetDropdown:SetText(VS.PresetWorkingState.name)
             UpdateFormFromWorkingState()
         end
     end)
 
-    StaticPopupDialogs["VolumeSlidersDeleteTriggerConfirm"] = {
-        text = "Are you sure you want to delete this zone trigger?",
+    StaticPopupDialogs["VolumeSlidersDeletePresetConfirm"] = {
+        text = "Are you sure you want to delete this preset?",
         button1 = "Yes",
         button2 = "No",
         OnAccept = function()
-            if currentSelectedIndex and db.triggers[currentSelectedIndex] then
-                table.remove(db.triggers, currentSelectedIndex)
+            if currentSelectedIndex and db.presets[currentSelectedIndex] then
+                table.remove(db.presets, currentSelectedIndex)
                 currentSelectedIndex = nil
                 LoadWorkingState(nil, nil)
                 RefreshDropdown()
                 UpdateFormFromWorkingState()
                 
-                if VS.Triggers and VS.Triggers.RefreshEventState then
-                     VS.Triggers:RefreshEventState()
+                if VS.Presets and VS.Presets.RefreshEventState then
+                     VS.Presets:RefreshEventState()
                 end
+                if VS.RefreshPopupDropdown then VS.RefreshPopupDropdown() end
                 PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
             end
         end,
@@ -806,8 +886,37 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     }
 
     btnDelete:SetScript("OnClick", function()
-        if currentSelectedIndex and db.triggers[currentSelectedIndex] then
-            StaticPopup_Show("VolumeSlidersDeleteTriggerConfirm")
+        if currentSelectedIndex and db.presets[currentSelectedIndex] then
+            StaticPopup_Show("VolumeSlidersDeletePresetConfirm")
+        end
+    end)
+    
+    local function SwapPresets(idxA, idxB)
+        local temp = db.presets[idxA]
+        db.presets[idxA] = db.presets[idxB]
+        db.presets[idxB] = temp
+        RefreshDropdown()
+        
+        if VS.Presets and VS.Presets.RefreshEventState then VS.Presets:RefreshEventState() end
+        if VS.RefreshPopupDropdown then VS.RefreshPopupDropdown() end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end
+
+    btnMoveUp:SetScript("OnClick", function()
+        if currentSelectedIndex and currentSelectedIndex > 1 then
+            SwapPresets(currentSelectedIndex, currentSelectedIndex - 1)
+            currentSelectedIndex = currentSelectedIndex - 1
+            VS.PresetWorkingState.index = currentSelectedIndex
+            UpdateFormFromWorkingState()
+        end
+    end)
+
+    btnMoveDown:SetScript("OnClick", function()
+        if currentSelectedIndex and currentSelectedIndex < #db.presets then
+            SwapPresets(currentSelectedIndex, currentSelectedIndex + 1)
+            currentSelectedIndex = currentSelectedIndex + 1
+            VS.PresetWorkingState.index = currentSelectedIndex
+            UpdateFormFromWorkingState()
         end
     end)
 
@@ -1323,6 +1432,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
 
     local checkboxes = {
         { name = "Help Text", var = "showHelpText", tooltip = "Show or hide the help instructions at the top." },
+        { name = "Presets Dropdown", var = "showPresetsDropdown", tooltip = "Show or hide the quick-apply presets dropdown at the top." },
         { name = "SBG Checkbox", var = "showBackground", tooltip = "Show or hide the 'Sound in Background' toggle in the window footer." },
         { name = "Char Checkbox", var = "showCharacter", tooltip = "Show or hide the 'Sound at Character' toggle in the window footer." },
         { name = "Output Selector", var = "showOutput", tooltip = "Show or hide the 'Output:' device selection dropdown in the window footer." },

@@ -6,9 +6,9 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ## Current Features
 
-- **LFG Queue Pop Boost** — dynamically maximizes your volume when a Dungeon, Raid, or PvP queue prompt appears, automatically restoring your original levels after the sound finishes.
-- **Fishing Splash Boost** — automatically maxes out your sound effects volume while fishing, so you never miss a catch.
-- **Automated volume by zone** — Zone Triggers can be turned on in settings. Comes with an example Sunwell Silencer profile.
+- **LFG Queue Pop Boost** — dynamically adjusts your volume when a Dungeon, Raid, or PvP queue prompt appears, automatically restoring your original levels after the sound finishes.
+- **Fishing Splash Boost** — dynamically adjusts your volume while fishing, so you never miss a catch.
+- **Volume Presets & Automation** — Save volume profiles to quickly apply them from a dropdown menu in the main window, or automate them to trigger in specific zones! Comes with an example Sunwell Silencer profile.
 - **Nine vertical volume sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Voice Chat Volume, Voice Ducking, Mic Volume, and Mic Sensitivity. Last used volume values persist between mute/unmute
 - **Per-channel mute** — mute each channel individually
 - **Two Minimap styles** — choose between the classic ringed minimap button or a "minimalist" bare gold speaker icon that gracefully fades out when your mouse leaves the minimap.
@@ -17,18 +17,20 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 - **Sound output device selector** — change your active audio device, with a saved master volume value per device
 - **Voice Chat mode toggle** — change between Push to Talk and Open Mic modes on the fly
 - **"Sound at Character" toggle** — positional audio at your character (checked) or at the camera location (unchecked)
-- **Zone Triggers** — automatically apply saved volume profiles when entering specific zones, with priority resolution for overlapping areas and instant volume restore on exit
 - **Addon Compartment & Data Broker** — works with the built-in compartment menu (tested) and LDB displays like Titan Panel (untested) or ChocolateBar (untested)
 - **Native look & feel** — uses native Blizzard UI assets
 - **Movable window** — detach the window from the minimap and place it anywhere
 - **Extensive Customization Options** — access via the WoW Interface options to customize slider height, toggle visibility of any channel or UI element (including the help text), change visual themes (gold/silver, diamond/minimal knobs, text colors), and freely drag-to-reorder the sliders to your preference.
 
-## Possible Future Features
+## Planned Future Features
 
 - Toggle for persistent slider window if desired
 - Hotkey to show/hide the slider window
-- Configure what mouse buttons and modifiers perform which actions on the minimap button and sliders
+- Configure what mouse buttons and modifiers perform which actions on the minimap button, sliders, and slider buttons
 - More texture choices
+- Fully dynamic and resizable main slider window with dynamic elements
+- More customization options for minimap button
+- Control for "emote" sounds and specifically combat only sound effects
 
 ## Installation
 

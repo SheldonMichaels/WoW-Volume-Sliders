@@ -257,6 +257,117 @@ function VS:CreateOptionsFrame()
     VS.instructionText:SetJustifyH("CENTER")
 
     ---------------------------------------------------------------------------
+    -- Presets Quick-Apply Dropdown
+    ---------------------------------------------------------------------------
+    VS.presetDropdown = CreateFrame("DropdownButton", "VolumeSlidersPresetDropdown", VS.contentFrame)
+    VS.presetDropdown:SetPoint("TOP", VS.instructionText, "BOTTOM", 0, -10)
+    VS.presetDropdown:SetSize(140, 26)
+
+    local pDropdown = VS.presetDropdown
+
+    -- Background texture
+    local pDdBg = pDropdown:CreateTexture(nil, "BACKGROUND")
+    pDdBg:SetAtlas("common-dropdown-c-button")
+    pDdBg:SetPoint("TOPLEFT", -7, 7)
+    pDdBg:SetPoint("BOTTOMRIGHT", 7, -7)
+    pDropdown.Background = pDdBg
+
+    -- Hover arrow indicator
+    local pArrow = pDropdown:CreateTexture(nil, "OVERLAY")
+    pArrow:SetAtlas("common-dropdown-c-button-hover-arrow", true)
+    pArrow:SetPoint("BOTTOM", 0, -5)
+    pArrow:Hide()
+    pDropdown.Arrow = pArrow
+
+    -- Display Text
+    local pText = pDropdown:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    pText:SetPoint("CENTER", 0, 0)
+    pText:SetWidth(120)
+    pText:SetJustifyH("CENTER")
+    pText:SetWordWrap(false)
+    pDropdown.Text = pText
+
+    -- Provide SetText API for the rootDescription generator menu to use
+    pDropdown.SetText = function(self, text)
+        self.Text:SetText(text)
+    end
+
+    -- Event handlers for hover states
+    pDropdown:SetScript("OnEnter", function(self)
+        if not self.GenerateMenu then return end
+        self.Background:SetAtlas("common-dropdown-c-button-hover-1")
+        self.Arrow:Show()
+    end)
+
+    pDropdown:SetScript("OnLeave", function(self)
+        if not self.GenerateMenu then return end
+        self.Arrow:Hide()
+        -- Reset background to normal if the menu isn't open
+        if self.list and self.list:IsShown() then
+            self.Background:SetAtlas("common-dropdown-c-button-pressed-1")
+        else
+            self.Background:SetAtlas("common-dropdown-c-button")
+        end
+    end)
+
+    -- Hook into the frame's OnMouseDown/Up events for the pressed state
+    pDropdown:SetScript("OnMouseDown", function(self)
+        if not self.GenerateMenu then return end
+        self.Background:SetAtlas("common-dropdown-c-button-pressed-1")
+    end)
+
+    pDropdown:SetScript("OnMouseUp", function(self)
+        if not self.GenerateMenu then return end
+        self.Background:SetAtlas(self:IsMouseOver() and "common-dropdown-c-button-hover-1" or "common-dropdown-c-button")
+    end)
+    
+    local function SelectPreset(preset)
+        if VS.Presets and VS.Presets.ApplyPreset then
+            VS.Presets:ApplyPreset(preset)
+            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+            -- Optionally update slider visuals to reflect new volumes
+            if VS.sliders then
+                for _, slider in pairs(VS.sliders) do
+                    if slider.RefreshValue then slider:RefreshValue() end
+                end
+            end
+        end
+    end
+
+    local function GeneratePresetMenu(dropdown, rootDescription)
+        rootDescription:CreateTitle("Quick Apply Preset")
+        local db = VolumeSlidersMMDB
+        if db.presets and #db.presets > 0 then
+            local hasPresets = false
+            for _, preset in ipairs(db.presets) do
+                if preset.showInDropdown ~= false then -- default true
+                    hasPresets = true
+                    rootDescription:CreateButton(preset.name, function()
+                        SelectPreset(preset)
+                        dropdown:SetText("Presets")
+                    end)
+                end
+            end
+            if not hasPresets then
+                rootDescription:CreateTitle("No presets set to show")
+            end
+        else
+            rootDescription:CreateTitle("No presets available")
+        end
+    end
+    
+    VS.presetDropdown:SetupMenu(GeneratePresetMenu)
+    VS.presetDropdown:SetText("Presets")
+    
+    -- Expose refresh function to be called after settings are updated
+    VS.RefreshPopupDropdown = function()
+        if VS.presetDropdown then
+            VS.presetDropdown:GenerateMenu()
+            VS.presetDropdown:SetText("Presets")
+        end
+    end
+
+    ---------------------------------------------------------------------------
     -- Volume Sliders
     --
     -- Sliders are laid out in a horizontal row.  Each column is
