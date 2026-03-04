@@ -1,3 +1,11 @@
+## v2.2.1
+
+- **Bug Fix:** Fixed an issue where the text entry boxes for slider height and spacing would appear empty the first time you opened the Settings menu.
+- **UI Improvement:** Expanded tooltips for the slider height and spacing options to include their allowed minimum and maximum values.
+- **UI Improvement:** Reorganized the settings menus to automatically center their columns and space themselves out dynamically on wider screens.
+- **UI Improvement:** Relocated several visibility and spacing options around the settings tabs for better logical grouping.
+- **UI Improvement:** Fixed a typo where the addon version text would sometimes show two 'v' characters (e.g. vv2.2.0).
+
 ## v2.2.0
 
 - **New Feature:** Added a powerful Zone Triggers system! You can now configure different volume levels for specific zones (like muting the ambient loop in the Isle of Quel'Danas). The addon automatically restores your previous volume when you leave the area.

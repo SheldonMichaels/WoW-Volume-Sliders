@@ -12,8 +12,7 @@ Thumbs.db
 *.code-workspace
 
 # Internal docs
-dev_changelog.md
-TODO.md
+.local_dev_assets/
 luacheck_output.txt
 
 # Testing & Logs
