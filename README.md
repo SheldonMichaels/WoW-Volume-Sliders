@@ -6,6 +6,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ## Current Features
 
+- **Automated volume by zone** — Zone Triggers can be turned on in settings. Comes with an example Sunwell Silencer profile.
 - **Nine vertical volume sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Voice Chat Volume, Voice Ducking, Mic Volume, and Mic Sensitivity. Last used volume values persist between mute/unmute
 - **Per-channel mute** — mute each channel individually
 - **Two Minimap styles** — choose between the classic ringed minimap button or a "minimalist" bare gold speaker icon that gracefully fades out when your mouse leaves the minimap.
