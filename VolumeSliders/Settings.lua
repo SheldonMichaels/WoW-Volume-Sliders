@@ -243,10 +243,21 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     ---------------------------------------------------------------------------
     -- Master Toggle
     ---------------------------------------------------------------------------
+    local function AddTooltip(frame, text)
+        frame:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(text, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        frame:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+    end
+
     local enableCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
     enableCheck:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -15)
     enableCheck.text:SetFontObject("GameFontNormalLarge")
-    enableCheck.text:SetText("Enable Zone Triggers")
+    enableCheck.text:SetText("Zone Triggers")
     enableCheck:SetChecked(db.enableTriggers == true)
 
     enableCheck:SetScript("OnClick", function(self)
@@ -256,6 +267,22 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
+    AddTooltip(enableCheck, "Automatically adjust volume levels when entering specific zones. Original volumes are restored when leaving the area.")
+
+    local fishingCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    fishingCheck:SetPoint("TOPLEFT", enableCheck, "TOPRIGHT", 180, 0)
+    fishingCheck.text:SetFontObject("GameFontNormalLarge")
+    fishingCheck.text:SetText("Fishing Splash Boost")
+    fishingCheck:SetChecked(db.enableFishingVolume == true)
+
+    fishingCheck:SetScript("OnClick", function(self)
+        db.enableFishingVolume = self:GetChecked()
+        if VS.Fishing and VS.Fishing.Initialize then
+            VS.Fishing:Initialize()
+        end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+    AddTooltip(fishingCheck, "Temporarily increases the SFX volume channel to maximum while fishing so you can clearly hear the bobber splash. Disabled during combat.")
 
     local separatorTop = contentFrame:CreateTexture(nil, "ARTWORK")
     separatorTop:SetHeight(2)

@@ -6,6 +6,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ## Current Features
 
+- **Fishing Splash Boost** — automatically maxes out your sound effects volume while fishing, so you never miss a catch.
 - **Automated volume by zone** — Zone Triggers can be turned on in settings. Comes with an example Sunwell Silencer profile.
 - **Nine vertical volume sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Voice Chat Volume, Voice Ducking, Mic Volume, and Mic Sensitivity. Last used volume values persist between mute/unmute
 - **Per-channel mute** — mute each channel individually

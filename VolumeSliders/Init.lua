@@ -58,6 +58,9 @@ initFrame:SetScript("OnEvent", function(self, event)
     if db.showCharacter == nil then db.showCharacter = true end
     if db.showOutput == nil then db.showOutput = true end
 
+    -- Feature Defaults
+    if db.enableFishingVolume == nil then db.enableFishingVolume = false end
+
     -- Channel Visibility Defaults
     if db.showMaster == nil then db.showMaster = true end
     if db.showSFX == nil then db.showSFX = true end
@@ -164,6 +167,10 @@ initFrame:SetScript("OnEvent", function(self, event)
     
     if VS.Triggers and VS.Triggers.RefreshEventState then
         VS.Triggers:RefreshEventState()
+    end
+    
+    if VS.Fishing and VS.Fishing.Initialize then
+        VS.Fishing:Initialize()
     end
     
     VS:UpdateMiniMapButtonVisibility()

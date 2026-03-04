@@ -1,4 +1,9 @@
+## v2.3.0
+
+- **New Feature:** Added a "Fishing Splash Boost" toggle to the Settings page! This dynamically maximizes the sound effects volume while you have your fishing bobber cast out, letting you clearly hear the splash without turning up other elements. It safely disables itself if you enter combat.
+
 ## v2.2.1
+
 
 - **Bug Fix:** Fixed an issue where the text entry boxes for slider height and spacing would appear empty the first time you opened the Settings menu.
 - **UI Improvement:** Expanded tooltips for the slider height and spacing options to include their allowed minimum and maximum values.
