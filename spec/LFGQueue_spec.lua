@@ -1,0 +1,168 @@
+local assert = require("luassert")
+local spy = require("luassert.spy")
+
+require("spec.setup")
+
+describe("LFG Queue volume tests", function()
+    local VS
+    local mockLFGFrame
+
+    before_each(function()
+        -- Reset state
+        _G.VolumeSlidersMMDB = {
+            enableLfgVolume = true,
+            enableLfgMaster = true,
+            enableLfgSFX = true,
+            originalVolumes = {},
+            lfgTargetMaster = 1.0,
+            lfgTargetSFX = 1.0,
+        }
+        
+        -- Mock CreateFrame
+        mockLFGFrame = {
+            scripts = {},
+            Hide = function(self) end,
+            SetScript = function(self, event, handler)
+                self.scripts[event] = handler
+            end,
+            events = {},
+            RegisterEvent = function(self, event) 
+                self.events[event] = true
+            end,
+            UnregisterEvent = function(self, event)
+                self.events[event] = false
+            end,
+            UnregisterAllEvents = function(self)
+                self.events = {}
+            end,
+        }
+        _G.CreateFrame = function() return mockLFGFrame end
+
+        -- Mock CVars and Spy
+        _G.cvarStorage = {
+            ["Sound_MasterVolume"] = 0.5,
+            ["Sound_SFXVolume"] = 0.5,
+        }
+        _G.GetCVar = function(name) return tostring(_G.cvarStorage[name] or 1) end
+        
+        _G.setCvarSpy = spy.new(function(name, val)
+            _G.cvarStorage[name] = val
+        end)
+        _G.SetCVar = _G.setCvarSpy
+        
+        -- Mock LFG APIs
+        _G.NUM_LE_LFG_CATEGORYS = 5
+        _G.activeLFGCategory = nil
+        _G.activeLFGProposal = false
+        
+        _G.GetLFGProposal = function()
+            return _G.activeLFGProposal
+        end
+        
+        _G.C_Timer = {
+            After = function(delay, callback) 
+                -- Just store the callback so we can manually invoke it in tests if needed
+                _G.mockTimerCallback = callback
+            end
+        }
+
+        _G.GetLFGQueueStats = function(category)
+            if _G.activeLFGCategory == category then
+                return true
+            end
+            return false
+        end
+
+        local addonName = "VolumeSliders"
+        local addonTable = {}
+        
+        local coreChunk = loadfile("VolumeSliders/Core.lua")
+        coreChunk(addonName, addonTable)
+        
+        local lfgChunk = loadfile("VolumeSliders/LFGQueue.lua")
+        lfgChunk(addonName, addonTable)
+
+        VS = addonTable
+        
+        -- Initialize
+        VS.LFGQueue:Initialize()
+    end)
+
+    it("does nothing if lfg volume is disabled", function()
+        _G.VolumeSlidersMMDB.enableLfgVolume = false
+        VS.LFGQueue:Initialize()
+        
+        assert.is_false(mockLFGFrame.events["LFG_UPDATE"] == true)
+        
+        -- Trigger event even if disabled
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_UPDATE")
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SHOW")
+        
+        assert.spy(_G.setCvarSpy).was_not_called()
+    end)
+    
+    it("registers proposal events only when actively queued", function()
+        -- Initial state is not queued
+        assert.is_false(mockLFGFrame.events["LFG_PROPOSAL_SHOW"] == true)
+        
+        -- Start queueing
+        _G.activeLFGCategory = 1
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_UPDATE")
+        
+        assert.is_true(mockLFGFrame.events["LFG_PROPOSAL_SHOW"])
+        
+        -- Stop queueing
+        _G.activeLFGCategory = nil
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_UPDATE")
+        
+        assert.is_false(mockLFGFrame.events["LFG_PROPOSAL_SHOW"] == true)
+    end)
+    
+    it("boosts volume on LFG Proposal Show and restores on conclusion", function()
+        -- Queue pops
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SHOW")
+        
+        assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 1.0)
+        assert.spy(_G.setCvarSpy).was_called_with("Sound_SFXVolume", 1.0)
+        
+        assert.are.equal(1.0, _G.cvarStorage["Sound_MasterVolume"])
+        assert.are.equal(1.0, _G.cvarStorage["Sound_SFXVolume"])
+        
+        assert.are.equal(0.5, _G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
+        assert.are.equal(0.5, _G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        
+        -- Proposal succeeds
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SUCCEEDED")
+        
+        assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 0.5)
+        assert.spy(_G.setCvarSpy).was_called_with("Sound_SFXVolume", 0.5)
+        
+        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
+        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+    end)
+    
+    it("ignores restoring volume if it was already higher than target", function()
+        -- Reset cvars to be higher than targets
+        _G.cvarStorage["Sound_MasterVolume"] = 1.0
+        _G.cvarStorage["Sound_SFXVolume"] = 1.0
+        
+        _G.VolumeSlidersMMDB.lfgTargetMaster = 0.8
+        _G.VolumeSlidersMMDB.lfgTargetSFX = 0.8
+        
+        -- Queue pops
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SHOW")
+        
+        assert.spy(_G.setCvarSpy).was_not_called()
+        
+        assert.are.equal("LFG_IGNORE", _G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
+        assert.are.equal("LFG_IGNORE", _G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        
+        -- Proposal fails
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_FAILED")
+        
+        -- Should not override with 1.0 or attempt restore
+        assert.spy(_G.setCvarSpy).was_not_called()
+        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
+        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+    end)
+end)

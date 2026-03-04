@@ -11,6 +11,10 @@ describe("Fishing volume tests", function()
         -- Reset state
         _G.VolumeSlidersMMDB = {
             enableFishingVolume = true,
+            enableFishingMaster = true,
+            enableFishingSFX = true,
+            fishingTargetMaster = 1.0,
+            fishingTargetSFX = 1.0,
             originalVolumes = {},
         }
         

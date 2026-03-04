@@ -1,3 +1,8 @@
+## v2.4.0
+
+- **New Feature:** Added an "LFG Queue Pop Boost" toggle to the Settings page! This dynamically maximizes the Master and SFX volumes when your Dungeon, Raid, or PvP queue prompt appears on screen so you never miss it. It automatically restores your original volumes 4.5 seconds later (after the sound finishes playing).
+- **UI Improvement:** Greatly improved the "Automation" settings page. The channel inputs are now explicitly clamped to 0-100 values to prevent errors, and their font rendering and visual alignment have been polished.
+
 ## v2.3.0
 
 - **New Feature:** Added a "Fishing Splash Boost" toggle to the Settings page! This dynamically maximizes the sound effects volume while you have your fishing bobber cast out, letting you clearly hear the splash without turning up other elements. It safely disables itself if you enter combat.

@@ -32,10 +32,9 @@ local C_Spell = C_Spell
 local fishingFrame = CreateFrame("Frame")
 fishingFrame:Hide()
 
--- The sound channel to boost during fishing
-local OVERRIDE_CHANNEL = "Sound_SFXVolume"
--- Hardcoded target volume for a loud splash (1.0 = 100%)
-local FISHING_TARGET_VOL = 1.0
+-- The sound channels we boost
+local MASTER_CHANNEL = "Sound_MasterVolume"
+local SFX_CHANNEL = "Sound_SFXVolume"
 
 -- Flag to track if we currently have an override active
 local isVolumeOverridden = false
@@ -68,21 +67,29 @@ local function RestoreVolume()
     local db = VolumeSlidersMMDB
     isVolumeOverridden = false
     
-    -- If we have an original volume saved, restore it
-    if db.originalVolumes[OVERRIDE_CHANNEL] then
-        local restoreVol = db.originalVolumes[OVERRIDE_CHANNEL]
-        local currentVol = tonumber(GetCVar(OVERRIDE_CHANNEL)) or 1
-        
-        -- Only set if it hasn't somehow already been changed back by something else,
-        -- though usually we just enforce the restore.
-        SetCVar(OVERRIDE_CHANNEL, restoreVol)
-        
-        -- Clear from saved states so Triggers module doesn't get confused
-        db.originalVolumes[OVERRIDE_CHANNEL] = nil
-        
+    local changed = false
+
+    -- Restore Master Volume
+    if db.originalVolumes[MASTER_CHANNEL] and db.originalVolumes[MASTER_CHANNEL] ~= "FISHING_IGNORE" then
+        SetCVar(MASTER_CHANNEL, db.originalVolumes[MASTER_CHANNEL])
+        changed = true
+    end
+    db.originalVolumes[MASTER_CHANNEL] = nil
+
+    -- Restore SFX Volume
+    if db.originalVolumes[SFX_CHANNEL] and db.originalVolumes[SFX_CHANNEL] ~= "FISHING_IGNORE" then
+        SetCVar(SFX_CHANNEL, db.originalVolumes[SFX_CHANNEL])
+        changed = true
+    end
+    db.originalVolumes[SFX_CHANNEL] = nil
+
+    if changed then
         -- Sync the sliders UI
-        if VS.sliders and VS.sliders[OVERRIDE_CHANNEL] and VS.sliders[OVERRIDE_CHANNEL].RefreshValue then
-            VS.sliders[OVERRIDE_CHANNEL]:RefreshValue()
+        if VS.sliders and VS.sliders[MASTER_CHANNEL] and VS.sliders[MASTER_CHANNEL].RefreshValue then
+            VS.sliders[MASTER_CHANNEL]:RefreshValue()
+        end
+        if VS.sliders and VS.sliders[SFX_CHANNEL] and VS.sliders[SFX_CHANNEL].RefreshValue then
+            VS.sliders[SFX_CHANNEL]:RefreshValue()
         end
     end
 end
@@ -91,22 +98,54 @@ local function ApplyFishingVolume()
     if isVolumeOverridden then return end
     
     local db = VolumeSlidersMMDB
-    local currentVol = tonumber(GetCVar(OVERRIDE_CHANNEL)) or 1
+    local currentMaster = tonumber(GetCVar(MASTER_CHANNEL)) or 1
+    local currentSFX = tonumber(GetCVar(SFX_CHANNEL)) or 1
     
-    -- Only override if the current volume is lower than our target
-    if currentVol < FISHING_TARGET_VOL then
-        isVolumeOverridden = true
-        
-        -- Store the user's original volume ONLY if it isn't already stored (e.g. by a zone trigger)
-        if not db.originalVolumes[OVERRIDE_CHANNEL] then
-            db.originalVolumes[OVERRIDE_CHANNEL] = currentVol
+    local targetMaster = db.fishingTargetMaster or 1.0
+    local targetSFX = db.fishingTargetSFX or 1.0
+
+    local changed = false
+    
+    db.originalVolumes = db.originalVolumes or {}
+
+    -- Master Volume Logic
+    if db.enableFishingMaster and currentMaster < targetMaster then
+        if db.originalVolumes[MASTER_CHANNEL] == nil then
+            db.originalVolumes[MASTER_CHANNEL] = currentMaster
         end
-        
-        SetCVar(OVERRIDE_CHANNEL, FISHING_TARGET_VOL)
-        
+        SetCVar(MASTER_CHANNEL, targetMaster)
+        changed = true
+    else
+        -- Mark as ignored so we don't restore it if it wasn't adjusted
+        if db.originalVolumes[MASTER_CHANNEL] == nil then
+            db.originalVolumes[MASTER_CHANNEL] = "FISHING_IGNORE"
+        end
+    end
+
+    -- SFX Volume Logic
+    if db.enableFishingSFX and currentSFX < targetSFX then
+        if db.originalVolumes[SFX_CHANNEL] == nil then
+            db.originalVolumes[SFX_CHANNEL] = currentSFX
+        end
+        SetCVar(SFX_CHANNEL, targetSFX)
+        changed = true
+    else
+        -- Mark as ignored so we don't restore it if it wasn't adjusted
+        if db.originalVolumes[SFX_CHANNEL] == nil then
+            db.originalVolumes[SFX_CHANNEL] = "FISHING_IGNORE"
+        end
+    end
+
+    -- We always set this to true so RestoreVolumes cleans up the IGNORE flags
+    isVolumeOverridden = true
+    
+    if changed then
         -- Sync the sliders UI
-        if VS.sliders and VS.sliders[OVERRIDE_CHANNEL] and VS.sliders[OVERRIDE_CHANNEL].RefreshValue then
-            VS.sliders[OVERRIDE_CHANNEL]:RefreshValue()
+        if VS.sliders and VS.sliders[MASTER_CHANNEL] and VS.sliders[MASTER_CHANNEL].RefreshValue then
+            VS.sliders[MASTER_CHANNEL]:RefreshValue()
+        end
+        if VS.sliders and VS.sliders[SFX_CHANNEL] and VS.sliders[SFX_CHANNEL].RefreshValue then
+            VS.sliders[SFX_CHANNEL]:RefreshValue()
         end
     end
 end

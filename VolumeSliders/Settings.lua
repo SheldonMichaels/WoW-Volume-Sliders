@@ -92,6 +92,9 @@ function VS:InitializeSettings()
         if VS.RefreshTriggerSettings then
             VS:RefreshTriggerSettings()
         end
+        if VS.RefreshAutomationTextInputs then
+            VS:RefreshAutomationTextInputs()
+        end
     end)
 end
 
@@ -256,7 +259,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
 
     local enableCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
     enableCheck:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -15)
-    enableCheck.text:SetFontObject("GameFontNormalLarge")
+    enableCheck.text:SetFontObject("GameFontNormal")
     enableCheck.text:SetText("Zone Triggers")
     enableCheck:SetChecked(db.enableTriggers == true)
 
@@ -270,8 +273,8 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     AddTooltip(enableCheck, "Automatically adjust volume levels when entering specific zones. Original volumes are restored when leaving the area.")
 
     local fishingCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
-    fishingCheck:SetPoint("TOPLEFT", enableCheck, "TOPRIGHT", 180, 0)
-    fishingCheck.text:SetFontObject("GameFontNormalLarge")
+    fishingCheck:SetPoint("TOPLEFT", enableCheck, "TOPRIGHT", 100, 0)
+    fishingCheck.text:SetFontObject("GameFontNormal")
     fishingCheck.text:SetText("Fishing Splash Boost")
     fishingCheck:SetChecked(db.enableFishingVolume == true)
 
@@ -282,14 +285,176 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    AddTooltip(fishingCheck, "Temporarily increases the SFX volume channel to maximum while fishing so you can clearly hear the bobber splash. Disabled during combat.")
+    AddTooltip(fishingCheck, "Temporarily overrides volumes while fishing so you can clearly hear the bobber splash. Disabled during combat.")
 
+    local lfgCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    lfgCheck:SetPoint("TOPLEFT", fishingCheck, "TOPRIGHT", 130, 0)
+    lfgCheck.text:SetFontObject("GameFontNormal")
+    lfgCheck.text:SetText("LFG Queue Pop Boost")
+    lfgCheck:SetChecked(db.enableLfgVolume == true)
+
+    lfgCheck:SetScript("OnClick", function(self)
+        db.enableLfgVolume = self:GetChecked()
+        if VS.LFGQueue and VS.LFGQueue.Initialize then
+            VS.LFGQueue:Initialize()
+        end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+    AddTooltip(lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.")
+
+    local separator1 = contentFrame:CreateTexture(nil, "ARTWORK")
+    separator1:SetHeight(1)
+    separator1:SetPoint("LEFT", enableCheck, "LEFT", -10, 0)
+    separator1:SetPoint("TOP", enableCheck, "BOTTOM", 0, -10)
+    separator1:SetWidth(540)
+    separator1:SetColorTexture(1, 1, 1, 0.2)
+
+    ---------------------------------------------------------------------------
+    -- Volume Slider Helpers
+    ---------------------------------------------------------------------------
+    local function CreateVolSlider(label, dbKey, dbToggleKey, anchorFrame, xOff, yOff, tooltip)
+        local toggleCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+        toggleCheck:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", xOff, yOff)
+        toggleCheck.text:SetFontObject("GameFontNormal")
+        toggleCheck.text:SetText(label)
+        toggleCheck:SetChecked(db[dbToggleKey] ~= false) -- Default true if nil
+
+        toggleCheck:SetScript("OnClick", function(self)
+            db[dbToggleKey] = self:GetChecked()
+            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+        end)
+        AddTooltip(toggleCheck, "Toggle volume override for this specific channel.")
+
+        local input = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
+        input:SetSize(45, 20)
+        input:SetPoint("LEFT", toggleCheck.text, "RIGHT", 10, 0)
+        input:SetAutoFocus(false)
+        input:SetNumeric(true)
+        input:SetMaxLetters(3)
+        input:SetText(tostring(math.floor((db[dbKey] or 1.0) * 100)))
+        input:SetCursorPosition(0)
+
+        local slider = CreateFrame("Slider", nil, contentFrame, "OptionsSliderTemplate")
+        slider:SetPoint("TOPLEFT", toggleCheck, "BOTTOMLEFT", 0, -5)
+        slider:SetWidth(150)
+        slider:SetMinMaxValues(0, 100)
+        slider:SetValueStep(1)
+        slider:SetObeyStepOnDrag(true)
+        slider:SetValue(math.floor((db[dbKey] or 1.0) * 100))
+        
+        local tooltipText = tooltip .. " (0-100)"
+        AddTooltip(slider, tooltipText)
+        AddTooltip(input, tooltipText)
+        
+        -- Hide default UI elements on the template
+        for _, region in ipairs({slider:GetRegions()}) do
+            if region:GetObjectType() == "FontString" then region:Hide() end
+        end
+
+        input:SetScript("OnTextChanged", function(self, userInput)
+            if userInput then
+                local num = tonumber(self:GetText())
+                if num and num >= 0 and num <= 100 then
+                    slider:SetValue(num)
+                end
+            end
+        end)
+        input:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+        input:SetScript("OnEscapePressed", function(self)
+            self:SetText(tostring(math.floor((db[dbKey] or 1.0) * 100)))
+            self:SetCursorPosition(0)
+            self:ClearFocus()
+        end)
+
+        slider:SetScript("OnValueChanged", function(self, value)
+            local num = math.floor(value + 0.5)
+            self:SetValue(num)
+            input:SetText(tostring(num))
+            input:SetCursorPosition(0)
+            db[dbKey] = num / 100.0
+        end)
+        
+        -- Initialize value AFTER registering scripts so the data cascades correctly
+        local initialVal = math.floor((db[dbKey] or 1.0) * 100)
+        slider:SetValue(initialVal)
+        input:SetText(tostring(initialVal))
+
+        return slider, input, toggleCheck, toggleCheck.text
+    end
+
+    ---------------------------------------------------------------------------
+    -- Fishing Settings
+    ---------------------------------------------------------------------------
+    local fishingLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    fishingLabel:SetPoint("TOPLEFT", separator1, "BOTTOMLEFT", 0, -15)
+    fishingLabel:SetText("Fishing Splash Levels")
+
+    local fMasterSlider, fMasterInput, fMasterToggle, fMasterLabel = CreateVolSlider("Master Volume %", "fishingTargetMaster", "enableFishingMaster", fishingLabel, 0, -15, "Target Master Volume while fishing.")
+    local fSFXSlider, fSFXInput, fSFXToggle, fSFXLabel = CreateVolSlider("SFX Volume %", "fishingTargetSFX", "enableFishingSFX", fishingLabel, 240, -15, "Target SFX Volume while fishing.")
+
+    VS.fishingMasterSlider = fMasterSlider
+    VS.fishingMasterInput = fMasterInput
+    VS.fishingSFXSlider = fSFXSlider
+    VS.fishingSFXInput = fSFXInput
+
+    local separator2 = contentFrame:CreateTexture(nil, "ARTWORK")
+    separator2:SetHeight(1)
+    separator2:SetPoint("LEFT", separator1, "LEFT", 0, 0)
+    separator2:SetPoint("TOP", fMasterSlider, "BOTTOM", 0, -20)
+    separator2:SetWidth(540)
+    separator2:SetColorTexture(1, 1, 1, 0.2)
+
+    ---------------------------------------------------------------------------
+    -- LFG Queue Settings
+    ---------------------------------------------------------------------------
+    local lfgQueueLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    lfgQueueLabel:SetPoint("TOPLEFT", separator2, "BOTTOMLEFT", 0, -15)
+    lfgQueueLabel:SetText("LFG Queue Levels")
+
+    local lMasterSlider, lMasterInput, lMasterToggle, lMasterLabel = CreateVolSlider("Master Volume %", "lfgTargetMaster", "enableLfgMaster", lfgQueueLabel, 0, -15, "Target Master Volume when LFG queue pops.")
+    local lSFXSlider, lSFXInput, lSFXToggle, lSFXLabel = CreateVolSlider("SFX Volume %", "lfgTargetSFX", "enableLfgSFX", lfgQueueLabel, 240, -15, "Target SFX Volume when LFG queue pops.")
+
+    VS.lfgMasterSlider = lMasterSlider
+    VS.lfgMasterInput = lMasterInput
+    VS.lfgSFXSlider = lSFXSlider
+    VS.lfgSFXInput = lSFXInput
+    
     local separatorTop = contentFrame:CreateTexture(nil, "ARTWORK")
     separatorTop:SetHeight(2)
-    separatorTop:SetPoint("LEFT", enableCheck, "LEFT", -10, 0)
-    separatorTop:SetPoint("TOP", enableCheck, "BOTTOM", 0, -10)
+    separatorTop:SetPoint("LEFT", separator1, "LEFT", 0, 0)
+    separatorTop:SetPoint("TOP", lMasterSlider, "BOTTOM", 0, -20)
     separatorTop:SetWidth(540)
     separatorTop:SetColorTexture(1, 1, 1, 0.2)
+    
+    function VS:RefreshAutomationTextInputs()
+        if VS.fishingMasterSlider then 
+            local val = math.floor((db.fishingTargetMaster or 1.0) * 100)
+            VS.fishingMasterSlider:SetValue(val)
+            VS.fishingMasterInput:SetText(tostring(val))
+            VS.fishingMasterInput:SetCursorPosition(0)
+        end
+        if VS.fishingSFXSlider then 
+            local val = math.floor((db.fishingTargetSFX or 1.0) * 100)
+            VS.fishingSFXSlider:SetValue(val) 
+            VS.fishingSFXInput:SetText(tostring(val))
+            VS.fishingSFXInput:SetCursorPosition(0)
+        end
+        if VS.lfgMasterSlider then 
+            local val = math.floor((db.lfgTargetMaster or 1.0) * 100)
+            VS.lfgMasterSlider:SetValue(val) 
+            VS.lfgMasterInput:SetText(tostring(val))
+            VS.lfgMasterInput:SetCursorPosition(0)
+        end
+        if VS.lfgSFXSlider then 
+            local val = math.floor((db.lfgTargetSFX or 1.0) * 100)
+            VS.lfgSFXSlider:SetValue(val) 
+            VS.lfgSFXInput:SetText(tostring(val))
+            VS.lfgSFXInput:SetCursorPosition(0)
+        end
+    end
+    
+    -- Initialize values on creation
+    VS:RefreshAutomationTextInputs()
 
     ---------------------------------------------------------------------------
     -- State & Management

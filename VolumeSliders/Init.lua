@@ -60,6 +60,16 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Feature Defaults
     if db.enableFishingVolume == nil then db.enableFishingVolume = false end
+    if db.enableFishingMaster == nil then db.enableFishingMaster = true end
+    if db.enableFishingSFX == nil then db.enableFishingSFX = true end
+    if db.fishingTargetMaster == nil then db.fishingTargetMaster = 1.0 end
+    if db.fishingTargetSFX == nil then db.fishingTargetSFX = 1.0 end
+    
+    if db.enableLfgVolume == nil then db.enableLfgVolume = false end
+    if db.enableLfgMaster == nil then db.enableLfgMaster = true end
+    if db.enableLfgSFX == nil then db.enableLfgSFX = true end
+    if db.lfgTargetMaster == nil then db.lfgTargetMaster = 1.0 end
+    if db.lfgTargetSFX == nil then db.lfgTargetSFX = 1.0 end
 
     -- Channel Visibility Defaults
     if db.showMaster == nil then db.showMaster = true end
@@ -171,6 +181,10 @@ initFrame:SetScript("OnEvent", function(self, event)
     
     if VS.Fishing and VS.Fishing.Initialize then
         VS.Fishing:Initialize()
+    end
+    
+    if VS.LFGQueue and VS.LFGQueue.Initialize then
+        VS.LFGQueue:Initialize()
     end
     
     VS:UpdateMiniMapButtonVisibility()
