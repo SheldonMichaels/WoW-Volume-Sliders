@@ -43,6 +43,11 @@ local _addonName, VS = ...
 VS.LDB     = LibStub("LibDataBroker-1.1", true)
 VS.LDBIcon = LibStub("LibDBIcon-1.0", true)
 
+-- Setup Global Binding Strings
+_G.BINDING_HEADER_VOLUMESLIDERS = "Volume Sliders"
+_G.BINDING_NAME_VOLUMESLIDERS_TOGGLE = "Toggle Volume Sliders Window"
+_G.BINDING_NAME_VOLUMESLIDERS_MUTE_MASTER = "Toggle Master Mute"
+
 -------------------------------------------------------------------------------
 -- Saved Variables
 -------------------------------------------------------------------------------
@@ -302,4 +307,158 @@ function VS:SetAtlasRotated90CW(tex, atlasName)
     -- Swap dimensions: original width becomes height and vice-versa.
     tex:SetSize(info.height, info.width)
     return true
+end
+
+-----------------------------------------
+-- Mouse Action Processors
+-----------------------------------------
+
+function VS:GetActiveTriggerString(button, delta)
+    local mods = ""
+    if IsShiftKeyDown() then mods = mods .. "Shift+" end
+    if IsControlKeyDown() then mods = mods .. "Ctrl+" end
+    if IsAltKeyDown() then mods = mods .. "Alt+" end
+    
+    if delta then
+        return mods .. (delta > 0 and "WheelUp" or "WheelDown")
+    elseif button then
+        return mods .. button
+    end
+    return nil
+end
+
+function VS:ProcessMinimapAction(triggerStr, clickedFrame)
+    local db = VolumeSlidersMMDB
+    if not db.mouseActions or not db.mouseActions.minimap then return false end
+    
+    for _, action in ipairs(db.mouseActions.minimap) do
+        if action.trigger == triggerStr and action.effect then
+            local eff = action.effect
+            if eff == "TOGGLE_WINDOW" then
+                VS.brokerFrame = clickedFrame
+                VolumeSliders_ToggleWindow()
+            elseif eff == "MUTE_MASTER" then
+                VolumeSliders_ToggleMuteMaster()
+            elseif eff == "OPEN_SETTINGS" then
+                if VS.settingsCategory and VS.settingsCategory.ID then
+                    Settings.OpenToCategory(VS.settingsCategory.ID)
+                else
+                    Settings.OpenToCategory("Volume Sliders")
+                end
+            elseif eff == "RESET_POSITION" then
+                VolumeSlidersMMDB.minimalistOffsetX = -35
+                VolumeSlidersMMDB.minimalistOffsetY = -5
+                if VS.minimalistButton then
+                    VS.minimalistButton:ClearAllPoints()
+                    VS.minimalistButton:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", -35, -5)
+                end
+            elseif eff == "TOGGLE_TRIGGERS" then
+                VolumeSlidersMMDB.enableTriggers = not VolumeSlidersMMDB.enableTriggers
+                if VS.Presets and VS.Presets.RefreshEventState then VS.Presets:RefreshEventState() end
+                if VS.triggerCheck then VS.triggerCheck:SetChecked(VolumeSlidersMMDB.enableTriggers) end
+                PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+            elseif string.match(eff, "^PRESET_") then
+                local idx = tonumber(string.match(eff, "%d+"))
+                if idx and db.presets[idx] then
+                    if VS.Presets and VS.Presets.ApplyPreset then
+                        VS.Presets:ApplyPreset(db.presets[idx])
+                        if VS.sliders then
+                            for _, slider in pairs(VS.sliders) do
+                                if slider.RefreshValue then slider:RefreshValue() end
+                            end
+                        end
+                        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+                    end
+                end
+            end
+            return true
+        end
+    end
+    return false
+end
+
+function VS:ProcessSliderAction(triggerStr)
+    local db = VolumeSlidersMMDB
+    if not db.mouseActions or not db.mouseActions.sliders then return nil end
+    
+    for _, action in ipairs(db.mouseActions.sliders) do
+        if action.trigger == triggerStr and action.effect then
+            local eff = action.effect
+            if eff == "ADJUST_1" then return 0.01 end
+            if eff == "ADJUST_5" then return 0.05 end
+            if eff == "ADJUST_10" then return 0.10 end
+            if eff == "ADJUST_25" then return 0.25 end
+        end
+    end
+    return nil
+end
+
+function VS:ProcessScrollAction(triggerStr)
+    local db = VolumeSlidersMMDB
+    if not db.mouseActions or not db.mouseActions.scrollWheel then return nil end
+    
+    for _, action in ipairs(db.mouseActions.scrollWheel) do
+        if action.trigger == triggerStr and action.effect then
+            local eff = action.effect
+            if eff == "ADJUST_1" then return 0.01
+            elseif eff == "ADJUST_5" then return 0.05
+            elseif eff == "ADJUST_10" then return 0.10
+            elseif eff == "ADJUST_25" then return 0.25
+            end
+        end
+    end
+    return nil
+end
+
+-------------------------------------------------------------------------------
+-- Dynamic Tooltip Helper
+-------------------------------------------------------------------------------
+function VS:AppendActionTooltipLines(tooltip, elementKey, defaultActions)
+    local db = VolumeSlidersMMDB
+    local customActions = (db.mouseActions and db.mouseActions[elementKey]) or {}
+    local overriddenTriggers = {}
+    local added = false
+
+    local function getEffectName(eff, key)
+        if key == "minimap" then
+            if eff == "TOGGLE_WINDOW" then return "Toggle Slider Window" end
+            if eff == "MUTE_MASTER" then return "Toggle Master Mute" end
+            if eff == "OPEN_SETTINGS" then return "Open Settings Panel" end
+            if eff == "RESET_POSITION" then return "Reset Window Position" end
+            if eff == "TOGGLE_TRIGGERS" then return "Toggle Zone Triggers" end
+        elseif key == "sliders" then
+            if eff == "ADJUST_1" then return "Change by 1%" end
+            if eff == "ADJUST_5" then return "Change by 5%" end
+            if eff == "ADJUST_10" then return "Change by 10%" end
+            if eff == "ADJUST_25" then return "Change by 25%" end
+        end
+        if string.match(eff, "^PRESET_") then
+            local idx = tonumber(string.match(eff, "%d+"))
+            if idx and db.presets and db.presets[idx] then
+                return "Apply Preset: " .. db.presets[idx].name
+            end
+        end
+        return "Unknown Action"
+    end
+
+    -- 1. Print all custom actions and record their triggers
+    for _, action in ipairs(customActions) do
+        if action.trigger and action.effect then
+            tooltip:AddLine(string.format("|cff00ff00%s|r to %s", action.trigger, getEffectName(action.effect, elementKey)))
+            overriddenTriggers[action.trigger] = true
+            added = true
+        end
+    end
+
+    -- 2. Print default actions if their trigger wasn't overridden
+    if defaultActions then
+        for _, def in ipairs(defaultActions) do
+            if not overriddenTriggers[def.trigger] then
+                tooltip:AddLine(string.format("|cff00ff00%s|r to %s", def.trigger, def.effectName))
+                added = true
+            end
+        end
+    end
+
+    return added
 end

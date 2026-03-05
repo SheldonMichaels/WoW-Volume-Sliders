@@ -133,11 +133,17 @@ local function CreateSliderBase(parent, name, label, tooltipText)
     upTex:SetPoint("CENTER", upBtn, "CENTER", 0, 0)
     slider.upTex = upTex
     upBtn:SetPoint("BOTTOM", slider, "TOP", 0, 4)
-    upBtn:SetScript("OnClick", function()
+    upBtn:RegisterForClicks("AnyUp")
+    upBtn:SetScript("OnClick", function(self, button)
+        local customStep = nil
+        local triggerStr = VS:GetActiveTriggerString(button)
+        if triggerStr then customStep = VS:ProcessSliderAction(triggerStr) end
+        local step = customStep and (customStep * 100) or STEP_PERCENT
+        
         -- Convert from inverted slider value to real volume percentage.
         local currentPct = (1 - slider:GetValue()) * 100
-        -- Snap up: ceiling to next 5% boundary (0.5 prevents sticking).
-        local newPct = math_ceil((currentPct + 0.5) / STEP_PERCENT) * STEP_PERCENT
+        -- Snap up: ceiling to next step boundary (0.5 prevents sticking).
+        local newPct = math_ceil((currentPct + 0.5) / step) * step
         newPct = math_min(100, math_max(0, newPct))
         -- Convert back to inverted slider value.
         slider:SetValue(1 - (newPct / 100))
@@ -145,7 +151,11 @@ local function CreateSliderBase(parent, name, label, tooltipText)
     end)
     upBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Increase Volume 5%", nil, nil, nil, nil, true)
+        GameTooltip:SetText("Increase Volume")
+        VS:AppendActionTooltipLines(GameTooltip, "sliders", {
+            { trigger = "LeftButton", effectName = "Change by 5%" }
+        })
+        GameTooltip:AddLine("Use custom actions for different step amounts", 1, 1, 1)
         GameTooltip:Show()
     end)
     upBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -159,17 +169,27 @@ local function CreateSliderBase(parent, name, label, tooltipText)
     downTex:SetPoint("CENTER", downBtn, "CENTER", 0, 0)
     slider.downTex = downTex
     downBtn:SetPoint("TOP", slider, "BOTTOM", 0, -4)
-    downBtn:SetScript("OnClick", function()
+    downBtn:RegisterForClicks("AnyUp")
+    downBtn:SetScript("OnClick", function(self, button)
+        local customStep = nil
+        local triggerStr = VS:GetActiveTriggerString(button)
+        if triggerStr then customStep = VS:ProcessSliderAction(triggerStr) end
+        local step = customStep and (customStep * 100) or STEP_PERCENT
+        
         local currentPct = (1 - slider:GetValue()) * 100
-        -- Snap down: floor to previous 5% boundary (0.5 prevents sticking).
-        local newPct = math_floor((currentPct - 0.5) / STEP_PERCENT) * STEP_PERCENT
+        -- Snap down: floor to previous step boundary (0.5 prevents sticking).
+        local newPct = math_floor((currentPct - 0.5) / step) * step
         newPct = math_min(100, math_max(0, newPct))
         slider:SetValue(1 - (newPct / 100))
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
     downBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Decrease Volume 5%", nil, nil, nil, nil, true)
+        GameTooltip:SetText("Decrease Volume")
+        VS:AppendActionTooltipLines(GameTooltip, "sliders", {
+            { trigger = "LeftButton", effectName = "Change by 5%" }
+        })
+        GameTooltip:AddLine("Use custom actions for different step amounts", 1, 1, 1)
         GameTooltip:Show()
     end)
     downBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -219,11 +239,23 @@ local function CreateSliderBase(parent, name, label, tooltipText)
     -- value direction is inverted.
     ---------------------------------------------------------------------------
     slider:SetScript("OnMouseWheel", function(self, delta)
+        local customStep = nil
+        -- Build modifier-only string to match scrollWheel triggers
+        local mods = ""
+        if IsShiftKeyDown() then mods = mods .. "Shift+" end
+        if IsControlKeyDown() then mods = mods .. "Ctrl+" end
+        if IsAltKeyDown() then mods = mods .. "Alt+" end
+        if mods ~= "" then
+            local modTrigger = string.sub(mods, 1, -2) -- trim trailing '+'
+            customStep = VS:ProcessScrollAction(modTrigger)
+        end
+        local step = customStep or 0.01
+        
         local val = self:GetValue()
         if delta > 0 then
-            self:SetValue(val - 0.01) -- Scroll up → decrease slider value → increase volume
+            self:SetValue(val - step) -- Scroll up → decrease slider value → increase volume
         else
-            self:SetValue(val + 0.01) -- Scroll down → increase slider value → decrease volume
+            self:SetValue(val + step) -- Scroll down → increase slider value → decrease volume
         end
     end)
 

@@ -88,12 +88,25 @@ function VS:InitializeSettings()
     
     VS:CreateAutomationSettingsContents(triggerFrame)
 
+    -- Subcategory 4: Mouse Actions
+    local mouseActionsFrame = CreateFrame("Frame", "VolumeSlidersMouseActionsOptionsFrame", UIParent)
+    local mouseActionsCategory, mouseActionsLayout = Settings.RegisterCanvasLayoutSubcategory(category, mouseActionsFrame, "Mouse Actions")
+    Settings.RegisterAddOnCategory(mouseActionsCategory)
+    
+    VS:CreateMouseActionsSettingsContents(mouseActionsFrame)
+
     triggerFrame:SetScript("OnShow", function(self)
         if VS.RefreshTriggerSettings then
             VS:RefreshTriggerSettings()
         end
         if VS.RefreshAutomationTextInputs then
             VS:RefreshAutomationTextInputs()
+        end
+    end)
+    
+    mouseActionsFrame:SetScript("OnShow", function(self)
+        if VS.RefreshMouseActionsUI then
+            VS:RefreshMouseActionsUI()
         end
     end)
 end
@@ -210,6 +223,15 @@ function VS:CreateSettingsContents(parentFrame)
         end
     end)
     AddTooltip(resetBtn, "Reset the custom minimap icon position to its default location.")
+
+    local showTooltipCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    showTooltipCheck:SetPoint("TOPLEFT", bindMinimapCheck, "BOTTOMLEFT", 0, 5)
+    showTooltipCheck.text:SetText("Show Tooltip")
+    showTooltipCheck:SetChecked(db.showMinimapTooltip ~= false)  -- default true
+    showTooltipCheck:SetScript("OnClick", function(self)
+        db.showMinimapTooltip = self:GetChecked()
+    end)
+    AddTooltip(showTooltipCheck, "Show or hide the tooltip when hovering over the minimap icon.")
 end
 
 -------------------------------------------------------------------------------
@@ -1797,12 +1819,323 @@ function VS:CreateWindowSettingsContents(parentFrame)
 
     RefreshFooterDataProvider()
 
+    RefreshFooterDataProvider()
+
     -- Column Layout cleanup since it is not fully dynamic columns anymore
     scrollFrame:SetScript("OnSizeChanged", function(self, width, height)
         categoryFrame:SetWidth(width)
     end)
     if scrollFrame:GetWidth() > 0 then
         scrollFrame:GetScript("OnSizeChanged")(scrollFrame, scrollFrame:GetWidth(), scrollFrame:GetHeight())
+    end
+end
+
+-------------------------------------------------------------------------------
+-- CreateMouseActionsSettingsContents
+--
+-- Builds the 3-column UI for mapping Hotkeys & Modifiers to UI element actions.
+-------------------------------------------------------------------------------
+function VS:CreateMouseActionsSettingsContents(parentFrame)
+    local db = VolumeSlidersMMDB
+    if not db.mouseActions then
+        db.mouseActions = { minimap = {}, sliders = {}, scrollWheel = {} }
+    end
+
+    local scrollFrame = CreateFrame("ScrollFrame", "VSMouseActionsSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 10, -10)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
+    
+    local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
+
+    local contentFrame = CreateFrame("Frame", "VSMouseActionsSettingsContentFrame", scrollFrame)
+    contentFrame:SetSize(600, 800)
+    scrollFrame:SetScrollChild(contentFrame)
+
+    local title = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightHuge")
+    title:SetPoint("TOPLEFT", 15, -15)
+    title:SetText("Mouse Actions")
+
+    local desc = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
+    desc:SetWidth(560)
+    desc:SetText("Configure custom actions for clicking the Minimap Icon, Slider Buttons, or modifiers for the Slider Scroll Wheel. Click 'Record Input' then press a modifier (Shift/Ctrl/Alt) + Mouse Button or Scroll Wheel combination.")
+    desc:SetJustifyH("LEFT")
+    desc:SetWordWrap(true)
+    
+    local function GetMinimapEffects()
+        local list = {
+            { id = "TOGGLE_WINDOW", name = "Toggle Slider Window" },
+            { id = "MUTE_MASTER", name = "Toggle Master Mute" },
+            { id = "OPEN_SETTINGS", name = "Open Settings Panel" },
+            { id = "RESET_POSITION", name = "Reset Window Position" },
+            { id = "TOGGLE_TRIGGERS", name = "Toggle Zone Triggers" }
+        }
+        if db.presets then
+            for i, p in ipairs(db.presets) do
+                table.insert(list, { id = "PRESET_" .. i, name = "Apply Preset: " .. p.name })
+            end
+        end
+        return list
+    end
+    
+    local sliderEffects = {
+        { id = "ADJUST_1", name = "Change by 1%" },
+        { id = "ADJUST_5", name = "Change by 5%" },
+        { id = "ADJUST_10", name = "Change by 10%" },
+        { id = "ADJUST_25", name = "Change by 25%" }
+    }
+    
+    local scrollWheelEffects = {
+        { id = "ADJUST_1", name = "Change by 1%" },
+        { id = "ADJUST_5", name = "Change by 5%" },
+        { id = "ADJUST_10", name = "Change by 10%" },
+        { id = "ADJUST_25", name = "Change by 25%" }
+    }
+    
+    local function GetEffectName(id, list)
+        for _, eff in ipairs(list) do
+            if eff.id == id then return eff.name end
+        end
+        return "Select Effect..."
+    end
+
+    local columns = {}
+    local NUM_COLUMNS = 3
+    local COLUMN_GAP = 40           -- space between columns (includes divider)
+    local COLUMN_PADDING = 10       -- inner padding for elements inside each column
+    local TOTAL_WIDTH = 560         -- usable content width
+    local COL_WIDTH = math.floor((TOTAL_WIDTH - (COLUMN_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS)
+    local ELEMENT_WIDTH = COL_WIDTH - (COLUMN_PADDING * 2)
+    local DELETE_BTN_SIZE = 20      -- approximate width of close button
+    local CAPTURE_WIDTH = ELEMENT_WIDTH - DELETE_BTN_SIZE + 2  -- captureBtn sits next to delBtn
+    
+    -- Check if a trigger already exists in the given column's action list
+    local function IsDuplicateTrigger(colKey, triggerStr, currentAction)
+        local actions = db.mouseActions[colKey] or {}
+        for _, action in ipairs(actions) do
+            if action ~= currentAction and action.trigger == triggerStr then
+                return true
+            end
+        end
+        return false
+    end
+    
+    local function RefreshColumn(colKey)
+        local col = columns[colKey]
+        if not col then return end
+        
+        -- Hide old rows
+        for _, row in ipairs(col.rows) do
+            row:Hide()
+        end
+        
+        local yOffset = -30
+        local actions = db.mouseActions[colKey] or {}
+        local getEffectsFunc = col.getEffectsFunc
+        
+        for i, action in ipairs(actions) do
+            local row = col.rows[i]
+            if not row then
+                row = CreateFrame("Frame", nil, col.frame)
+                row:SetSize(COL_WIDTH, 65)
+                
+                -- Capture Input Button
+                row.captureBtn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+                row.captureBtn:SetSize(CAPTURE_WIDTH, 22)
+                row.captureBtn:SetPoint("TOPLEFT", row, "TOPLEFT", COLUMN_PADDING, 0)
+                row.captureBtn:RegisterForClicks("AnyUp")
+                row.captureBtn:EnableMouseWheel(true)
+                
+                -- Capture Input Tooltips
+                row.captureBtn:SetScript("OnEnter", function(self)
+                    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+                    local txt = self:GetText()
+                    if txt then
+                        GameTooltip:SetText(txt, nil, nil, nil, nil, true)
+                        GameTooltip:Show()
+                    end
+                end)
+                row.captureBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+                
+                -- Effect Dropdown
+                row.effectDrop = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
+                row.effectDrop:SetPoint("TOPLEFT", row.captureBtn, "BOTTOMLEFT", 0, -10)
+                row.effectDrop:SetWidth(ELEMENT_WIDTH)
+                
+                -- Delete Button
+                row.delBtn = CreateFrame("Button", nil, row, "UIPanelCloseButton")
+                row.delBtn:SetPoint("LEFT", row.captureBtn, "RIGHT", -2, 0)
+                
+                -- Subtle bottom divider
+                row.divider = row:CreateTexture(nil, "ARTWORK")
+                row.divider:SetColorTexture(1, 1, 1, 0.15)
+                row.divider:SetSize(ELEMENT_WIDTH, 1)
+                row.divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", COLUMN_PADDING, 0)
+                
+                table.insert(col.rows, row)
+            end
+            
+            row:Show()
+            row:SetPoint("TOPLEFT", col.frame, "TOPLEFT", 0, yOffset)
+            yOffset = yOffset - 80
+            
+            row.captureBtn:SetText(action.trigger or (colKey == "scrollWheel" and "Record Modifier..." or "Record Input..."))
+            
+            row.captureBtn:SetScript("OnClick", function(self, btn)
+                if self.isCapturing then
+                    local mods = ""
+                    if IsShiftKeyDown() then mods = mods .. "Shift+" end
+                    if IsControlKeyDown() then mods = mods .. "Ctrl+" end
+                    if IsAltKeyDown() then mods = mods .. "Alt+" end
+                    
+                    if colKey == "scrollWheel" then
+                        -- Only capture modifier keys, ignore the mouse button
+                        if mods == "" then
+                            self:SetText("|cffffffffModifier Required|r")
+                            C_Timer.After(1, function()
+                                self:SetText(action.trigger or "Record Modifier...")
+                                self.isCapturing = false
+                            end)
+                            return
+                        end
+                        -- Trim trailing '+' to produce clean trigger like "Shift" or "Ctrl+Alt"
+                        local triggerStr = string.sub(mods, 1, -2)
+                        
+                        -- Prevent duplicate triggers within the same column
+                        if IsDuplicateTrigger(colKey, triggerStr, action) then
+                            self:SetText("|cffffffffAlready Assigned|r")
+                            C_Timer.After(1, function()
+                                self:SetText(action.trigger or "Record Modifier...")
+                                self.isCapturing = false
+                            end)
+                            return
+                        end
+                        
+                        action.trigger = triggerStr
+                        self:SetText(triggerStr)
+                        self.isCapturing = false
+                    else
+                        local triggerStr = mods .. btn
+                        
+                        -- Prevent duplicate triggers within the same column
+                        if IsDuplicateTrigger(colKey, triggerStr, action) then
+                            self:SetText("|cffffffffAlready Assigned|r")
+                            C_Timer.After(1, function()
+                                self:SetText(action.trigger or "Record Input...")
+                                self.isCapturing = false
+                            end)
+                            return
+                        end
+                        
+                        action.trigger = triggerStr
+                        self:SetText(triggerStr)
+                        self.isCapturing = false
+                    end
+                else
+                    self:SetText(colKey == "scrollWheel" and "Hold Modifier + Click..." or "Press Bind Now...")
+                    self.isCapturing = true
+                end
+            end)
+            
+            row.captureBtn:SetScript("OnMouseWheel", function(self, delta)
+                if self.isCapturing then
+                    -- Scroll Wheel column only captures modifier keys, not scroll input
+                    if colKey == "scrollWheel" then return end
+                    
+                    local mods = ""
+                    if IsShiftKeyDown() then mods = mods .. "Shift+" end
+                    if IsControlKeyDown() then mods = mods .. "Ctrl+" end
+                    if IsAltKeyDown() then mods = mods .. "Alt+" end
+                    local triggerStr = mods .. (delta > 0 and "WheelUp" or "WheelDown")
+                    
+                    -- Prevent duplicate triggers within the same column
+                    if IsDuplicateTrigger(colKey, triggerStr, action) then
+                        self:SetText("|cffffffffAlready Assigned|r")
+                        C_Timer.After(1, function()
+                            self:SetText(action.trigger or "Record Input...")
+                            self.isCapturing = false
+                        end)
+                        return
+                    end
+                    
+                    action.trigger = triggerStr
+                    self:SetText(triggerStr)
+                    self.isCapturing = false
+                end
+            end)
+            
+            row.effectDrop:SetupMenu(function(dropdown, rootDescription)
+                local effects = type(getEffectsFunc) == "function" and getEffectsFunc() or getEffectsFunc
+                for _, eff in ipairs(effects) do
+                    rootDescription:CreateButton(eff.name, function()
+                        action.effect = eff.id
+                        dropdown:SetDefaultText(eff.name)
+                    end)
+                end
+            end)
+            
+            local currentEffects = type(getEffectsFunc) == "function" and getEffectsFunc() or getEffectsFunc
+            row.effectDrop:SetDefaultText(GetEffectName(action.effect, currentEffects))
+            
+            row.delBtn:SetScript("OnClick", function()
+                table.remove(db.mouseActions[colKey], i)
+                RefreshColumn(colKey)
+                PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+            end)
+        end
+        
+        col.addBtn:SetPoint("TOPLEFT", col.frame, "TOPLEFT", COLUMN_PADDING, yOffset)
+    end
+    
+    local function CreateColumn(key, titleText, colIndex, getEffectsFunc)
+        local xOffset = (colIndex - 1) * (COL_WIDTH + COLUMN_GAP)
+        
+        local frame = CreateFrame("Frame", nil, contentFrame)
+        frame:SetSize(COL_WIDTH, 600)
+        frame:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", xOffset, -20)
+        
+        if colIndex > 1 then
+            local divider = contentFrame:CreateTexture(nil, "ARTWORK")
+            divider:SetColorTexture(1, 1, 1, 0.3)
+            divider:SetSize(1, 550)
+            divider:SetPoint("TOPLEFT", frame, "TOPLEFT", -(COLUMN_GAP / 2), 10)
+        end
+        
+        local header = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        header:SetPoint("TOP", frame, "TOP", 0, 0)
+        header:SetText(titleText)
+        header:SetJustifyH("CENTER")
+        
+        local addBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+        addBtn:SetSize(ELEMENT_WIDTH, 22)
+        addBtn:SetText("Add Action")
+        addBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", COLUMN_PADDING, -30)
+        addBtn:SetScript("OnClick", function()
+            table.insert(db.mouseActions[key], { trigger = nil, effect = nil })
+            RefreshColumn(key)
+            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+        end)
+        
+        columns[key] = {
+            frame = frame,
+            addBtn = addBtn,
+            rows = {},
+            getEffectsFunc = getEffectsFunc
+        }
+        
+        RefreshColumn(key)
+    end
+    
+    CreateColumn("minimap", "Minimap Icon", 1, GetMinimapEffects)
+    CreateColumn("sliders", "Slider Buttons", 2, sliderEffects)
+    CreateColumn("scrollWheel", "Slider Scroll Wheel", 3, scrollWheelEffects)
+    
+    VS.RefreshMouseActionsUI = function()
+        RefreshColumn("minimap")
+        RefreshColumn("sliders")
+        RefreshColumn("scrollWheel")
     end
 end
 

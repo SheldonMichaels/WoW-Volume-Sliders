@@ -1,0 +1,8 @@
+<Bindings>
+    <Binding name="VOLUMESLIDERS_TOGGLE" header="VOLUMESLIDERS" category="Volume Sliders">
+        VolumeSliders_ToggleWindow()
+    </Binding>
+    <Binding name="VOLUMESLIDERS_MUTE_MASTER" category="Volume Sliders">
+        VolumeSliders_ToggleMuteMaster()
+    </Binding>
+</Bindings>

@@ -36,6 +36,12 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
     --- Left-click: toggle the slider panel. If it's already open, hide it regardless of whether it was opened from this button.
     --- Right-click: toggle master mute.
     OnClick = function(clickedFrame, button)
+        local triggerStr = VS:GetActiveTriggerString(button)
+        if triggerStr and VS:ProcessMinimapAction(triggerStr, clickedFrame) then
+            VS:SetScroll()
+            return
+        end
+        
         if button == "LeftButton" then
              if not VS.container then
                  VS:CreateOptionsFrame()
@@ -56,11 +62,15 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
         end
     end,
 
-    --- Tooltip: brief usage instructions with green action text.
+    --- Tooltip: dynamic instructions based on configured Mouse Actions.
     OnTooltipShow = function(tooltip)
+        if VolumeSlidersMMDB and VolumeSlidersMMDB.showMinimapTooltip == false then return end
         tooltip:AddLine("Volume Sliders", 1, 1, 1)
-        tooltip:AddLine("|cff00ff00Left click|r to open slider panel")
-        tooltip:AddLine("|cff00ff00Right click|r to mute/unmute all audio")
+        VS:AppendActionTooltipLines(tooltip, "minimap", {
+            { trigger = "LeftButton", effectName = "Toggle Slider Window" },
+            { trigger = "RightButton", effectName = "Toggle Master Mute" }
+        })
+        tooltip:AddLine("|cff00ff00Scroll|r to adjust Master Volume")
     end,
 })
 
@@ -229,6 +239,11 @@ function VS:CreateMinimalistButton()
         
         -- We handle clicks here now since Frames don't have OnClick
         if not self.isMoving and self:IsMouseOver() then
+            local triggerStr = VS:GetActiveTriggerString(button)
+            if triggerStr and VS:ProcessMinimapAction(triggerStr, self) then
+                return
+            end
+            
             if button == "LeftButton" then
                  if not VS.container then
                      VS:CreateOptionsFrame()
@@ -296,10 +311,14 @@ function VS:CreateMinimalistButton()
     
     btn:SetScript("OnEnter", function(self)
         VS:StartHoverPolling()
+        if VolumeSlidersMMDB and VolumeSlidersMMDB.showMinimapTooltip == false then return end
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         GameTooltip:AddLine("Volume Sliders", 1, 1, 1)
-        GameTooltip:AddLine("|cff00ff00Left click|r to open slider panel")
-        GameTooltip:AddLine("|cff00ff00Right click|r to mute/unmute all audio")
+        VS:AppendActionTooltipLines(GameTooltip, "minimap", {
+            { trigger = "LeftButton", effectName = "Toggle Slider Window" },
+            { trigger = "RightButton", effectName = "Toggle Master Mute" }
+        })
+        GameTooltip:AddLine("|cff00ff00Scroll|r to adjust Master Volume")
         GameTooltip:AddLine("|cff00ff00Shift+Drag|r to move icon")
         GameTooltip:Show()
     end)

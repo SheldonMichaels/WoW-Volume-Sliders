@@ -127,6 +127,22 @@ initFrame:SetScript("OnEvent", function(self, event)
         db.triggers = nil -- Unset old table
     end
 
+    -- Mouse Actions Table
+    if not db.mouseActions then
+        db.mouseActions = {
+            minimap = {},
+            sliders = {},
+            scrollWheel = {}
+        }
+    end
+    -- Migrate old "preset" key to "scrollWheel" if present
+    if db.mouseActions.preset then
+        if not db.mouseActions.scrollWheel then
+            db.mouseActions.scrollWheel = {}
+        end
+        db.mouseActions.preset = nil
+    end
+
     -- Preset Profile Defaults
     if not db.presets then
         db.presets = {
@@ -160,6 +176,10 @@ initFrame:SetScript("OnEvent", function(self, event)
 
         -- Scroll on the minimap icon to adjust master volume.
         minimapButton:SetScript("OnMouseWheel", function(self, delta)
+            local triggerStr = VS:GetActiveTriggerString(nil, delta)
+            if triggerStr and VS:ProcessMinimapAction(triggerStr, self) then
+                return
+            end
             VS:AdjustVolume(delta)
         end)
 
@@ -223,13 +243,24 @@ end)
 --- Global click handler for the Addon Compartment entry.
 --- Toggles the slider panel visibility.
 function VolumeSliders_OnAddonCompartmentClick(_addonName, menuButtonFrame)
+    VolumeSliders_ToggleWindow()
+end
+
+--- Global handlers for Bindings.xml
+function VolumeSliders_ToggleWindow()
     if not VS.container then
         VS:CreateOptionsFrame()
     end
-
     if VS.container:IsShown() then
         VS.container:Hide()
     else
         VS.container:Show()
+        if VS.Reposition then VS:Reposition() end
+    end
+end
+
+function VolumeSliders_ToggleMuteMaster()
+    if VS.VolumeSliders_ToggleMute then
+        VS:VolumeSliders_ToggleMute()
     end
 end

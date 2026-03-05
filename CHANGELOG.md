@@ -1,3 +1,11 @@
+## v2.7.0
+
+### Added
+- **Mouse Actions Settings Page** — The former "Click Actions" page has been completely overhauled and renamed to "Mouse Actions". Configure custom modifier + mouse button combinations for the Minimap Icon, Slider Buttons, and now the Slider Scroll Wheel!
+- **Slider Scroll Wheel Modifiers** — A brand new column on the Mouse Actions page lets you assign modifier keys (Shift, Ctrl, Alt, or combinations) to change the scroll wheel step size on your volume sliders. For example, hold Shift while scrolling for 10% steps instead of the default 1%.
+- **Duplicate Binding Prevention** — The Mouse Actions page now prevents you from accidentally assigning the same modifier combination to multiple actions in the same column.
+- **Show Tooltip Toggle** — Added a new "Show Tooltip" checkbox under the Minimap Icon settings. Turn it off to hide the tooltip when hovering over the minimap icon.
+
 ## v2.6.1
 
 - **UI Update:** Replaced the "Settings" button on the main slider window with a modern gear icon.

@@ -310,12 +310,12 @@ function VS:CreateOptionsFrame()
     end)
 
     -- Hook into the frame's OnMouseDown/Up events for the pressed state
-    pDropdown:SetScript("OnMouseDown", function(self)
+    pDropdown:HookScript("OnMouseDown", function(self, button)
         if not self.GenerateMenu then return end
         self.Background:SetAtlas("common-dropdown-c-button-pressed-1")
     end)
 
-    pDropdown:SetScript("OnMouseUp", function(self)
+    pDropdown:HookScript("OnMouseUp", function(self, button)
         if not self.GenerateMenu then return end
         self.Background:SetAtlas(self:IsMouseOver() and "common-dropdown-c-button-hover-1" or "common-dropdown-c-button")
     end)

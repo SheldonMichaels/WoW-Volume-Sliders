@@ -90,6 +90,7 @@ local function createMockFrame(frameType, name, parent, template)
         RegisterEvent = function(self, ev) end,
         UnregisterEvent = function(self, ev) end,
         UnregisterAllEvents = function(self) end,
+        RegisterForClicks = function(self, ...) end,
         
         -- Special elements
         CreateTexture = function() return createMockFrame("Texture") end,
@@ -251,6 +252,7 @@ _G.PlaySound = function(id) end
 _G.GetCursorPosition = function() return 0, 0 end
 _G.IsControlKeyDown = function() return false end
 _G.IsShiftKeyDown = function() return false end
+_G.IsAltKeyDown = function() return false end
 _G.hooksecurefunc = function(name, func) end
 
 _G.UISpecialFrames = {}
