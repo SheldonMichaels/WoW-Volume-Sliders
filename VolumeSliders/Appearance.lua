@@ -240,136 +240,148 @@ end
 -------------------------------------------------------------------------------
 -- UpdateFooterLayout
 --
--- Positions the footer controls (Character checkbox, Background checkbox,
--- Output dropdown, Voice Mode toggle) within the popup frame.  Uses a
--- side-by-side layout when width permits, otherwise stacks vertically.
+-- Positions the footer controls side-by-side. Elements wrap dynamically
+-- and flow based on the custom user ordering defined in db.footerOrder.
 -------------------------------------------------------------------------------
 function VS:UpdateFooterLayout()
     if not VS.container then return end
 
-    local charCheck = VS.characterCheckbox
-    local bgCheck = VS.backgroundCheckbox
-    local outputLabel = VS.outputLabel
-    local dropdown = VS.outputDropdown
+    local db = VolumeSlidersMMDB
+    local p = VS.contentFrame
 
-    if charCheck and charCheck.labelText and bgCheck and outputLabel and dropdown then
-        local db = VolumeSlidersMMDB
+    -- Map keys to their widget objects
+    local widgetMap = {
+        ["showZoneTriggers"]  = { frame = VS.triggerCheck,           label = VS.triggerCheck and VS.triggerCheck.labelText },
+        ["showFishingSplash"] = { frame = VS.fishingCheck,           label = VS.fishingCheck and VS.fishingCheck.labelText },
+        ["showLfgPop"]        = { frame = VS.lfgCheck,               label = VS.lfgCheck and VS.lfgCheck.labelText },
+        ["showCharacter"]     = { frame = VS.characterCheckbox,      label = VS.characterCheckbox and VS.characterCheckbox.labelText },
+        ["showBackground"]    = { frame = VS.backgroundCheckbox,     label = VS.backgroundCheckbox and VS.backgroundCheckbox.labelText },
+        ["showOutput"]        = { frame = VS.outputDropdown,         label = VS.outputLabel },
+        ["showVoiceMode"]     = { frame = VS.voiceModeBtn,           label = VS.voiceModeLabel },
+    }
 
-        -- Update visibility
-        charCheck:SetShown(db.showCharacter)
-        charCheck.labelText:SetShown(db.showCharacter)
-        bgCheck:SetShown(db.showBackground)
-        bgCheck.labelText:SetShown(db.showBackground)
-        outputLabel:SetShown(db.showOutput)
-        dropdown:SetShown(db.showOutput)
-        if VS.voiceModeLabel then VS.voiceModeLabel:SetShown(db.showVoiceMode) end
-        if VS.voiceModeBtn then VS.voiceModeBtn:SetShown(db.showVoiceMode) end
-
-        -- Measure content widths
-        local charWidth = (db.showCharacter and charCheck.labelText) and (charCheck:GetWidth() + 4 + charCheck.labelText:GetStringWidth()) or 0
-        local bgWidth = (db.showBackground and bgCheck.labelText) and (bgCheck:GetWidth() + 4 + bgCheck.labelText:GetStringWidth()) or 0
-        local outputWidth = (db.showOutput and outputLabel and dropdown) and (outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()) or 0
-        local voiceModeWidth = (db.showVoiceMode and VS.voiceModeLabel and VS.voiceModeBtn) and (VS.voiceModeLabel:GetStringWidth() + 5 + VS.voiceModeBtn:GetWidth()) or 0
-
-        local leftWidth = math_max(charWidth, bgWidth)
-        local rightWidth = math_max(outputWidth, voiceModeWidth)
-        local hasLeft = db.showCharacter or db.showBackground
-        local hasRight = db.showOutput or db.showVoiceMode
-
-        local stackedWidth
-        if hasLeft and hasRight then stackedWidth = leftWidth + 25 + rightWidth
-        elseif hasLeft then stackedWidth = leftWidth
-        else stackedWidth = rightWidth end
-
-        local availableWidth = VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - (VS.CONTENT_PADDING_X * 2)
-
-        -- Clear all existing anchors before re-laying-out
-        charCheck:ClearAllPoints()
-        bgCheck:ClearAllPoints()
-        outputLabel:ClearAllPoints()
-        dropdown:ClearAllPoints()
-        if VS.voiceModeLabel then
-            VS.voiceModeLabel:ClearAllPoints()
-            VS.voiceModeBtn:ClearAllPoints()
+    -- Hide everything first to establish a clean state, and clear anchors
+    for key, data in pairs(widgetMap) do
+        if data.frame then
+            data.frame:Hide()
+            data.frame:ClearAllPoints()
         end
+        if data.label then
+            data.label:Hide()
+            data.label:ClearAllPoints()
+        end
+    end
 
-        if hasLeft and hasRight and stackedWidth <= availableWidth then
-            -- Partial: Side-by-side blocks
-            local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - stackedWidth) / 2
+    local availableWidth = VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - (VS.CONTENT_PADDING_X * 2)
+    local footerOrder = db.footerOrder or VS.DEFAULT_FOOTER_ORDER
 
-            local rightY = VS.CONTENT_PADDING_BOTTOM + 25
-            if db.showVoiceMode and VS.voiceModeLabel then
-                VS.voiceModeLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + leftWidth + 25, rightY)
-                rightY = rightY + 26
+    local activeWidgets = {}
+    
+    for _, key in ipairs(footerOrder) do
+        if db[key] then
+            local data = widgetMap[key]
+            if data and data.frame then
+                data.frame:Show()
+                if data.label then data.label:Show() end
+                
+                -- Calculate effective width
+                local w = data.frame:GetWidth()
+                if key == "showOutput" or key == "showVoiceMode" then
+                    w = data.label:GetStringWidth() + 5 + w
+                elseif data.label then
+                    w = w + 4 + data.label:GetStringWidth()
+                end
+                
+                table.insert(activeWidgets, { key = key, data = data, width = w })
             end
-            if db.showOutput then
-                outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX + leftWidth + 25, rightY)
-            end
+        end
+    end
 
-            local leftY = VS.CONTENT_PADDING_BOTTOM + 15
-            if db.showCharacter then
-                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, leftY)
-                leftY = leftY + 26
-            end
-            if db.showBackground then
-                bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, leftY)
-            end
+    -- Flex wrap layout
+    local rows = {}
+    local currentRow = {}
+    local currentWidth = 0
+    local spacingX = 5
+
+    local limitCols = db.limitFooterCols
+    local maxCols = db.maxFooterCols or 3
+
+    for _, item in ipairs(activeWidgets) do
+        if #currentRow == 0 then
+            table.insert(currentRow, item)
+            currentWidth = item.width
         else
-            -- Stacked: blocks are vertically stacked building upward
-            local currentY = VS.CONTENT_PADDING_BOTTOM + 15
-
-            if db.showCharacter then
-                local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - charWidth) / 2
-                charCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
-                currentY = currentY + 26
-            end
-            if db.showBackground then
-                local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - bgWidth) / 2
-                bgCheck:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
-                currentY = currentY + 26
-            end
-            if hasLeft and hasRight then
-                currentY = currentY + 10 -- gap between blocks
+            local widthCondition = (currentWidth + spacingX + item.width <= availableWidth + 20)
+            local countCondition = true
+            if limitCols and #currentRow >= maxCols then
+                countCondition = false
             end
 
-            -- Flush alignment for right-side elements
-            local maxLabelWidth = 0
-            if db.showVoiceMode and VS.voiceModeLabel then 
-                maxLabelWidth = math_max(maxLabelWidth, VS.voiceModeLabel:GetStringWidth()) 
-            end
-            if db.showOutput and outputLabel then 
-                maxLabelWidth = math_max(maxLabelWidth, outputLabel:GetStringWidth()) 
-            end
-
-            local maxDropdownWidth = 0
-            if db.showVoiceMode and VS.voiceModeBtn then 
-                maxDropdownWidth = math_max(maxDropdownWidth, VS.voiceModeBtn:GetWidth()) 
-            end
-            if db.showOutput and dropdown then 
-                maxDropdownWidth = math_max(maxDropdownWidth, dropdown:GetWidth()) 
-            end
-
-            local maxRowWidth = maxLabelWidth + 5 + maxDropdownWidth
-
-            if db.showVoiceMode and VS.voiceModeLabel then
-                local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - maxRowWidth) / 2
-                VS.voiceModeLabel:SetWidth(maxLabelWidth)
-                VS.voiceModeLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
-                currentY = currentY + 26
-            end
-            if db.showOutput then
-                local offsetX = (VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - maxRowWidth) / 2
-                outputLabel:SetWidth(maxLabelWidth)
-                outputLabel:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", offsetX, currentY)
+            if widthCondition and countCondition then
+                table.insert(currentRow, item)
+                currentWidth = currentWidth + spacingX + item.width
+            else
+                table.insert(rows, { items = currentRow, width = currentWidth })
+                currentRow = { item }
+                currentWidth = item.width
             end
         end
+    end
+    if #currentRow > 0 then
+        table.insert(rows, { items = currentRow, width = currentWidth })
+    end
 
-        if db.showOutput then
-            dropdown:SetPoint("LEFT", outputLabel, "RIGHT", 5, 0)
+    -- Render rows bottom-up
+    local currentY = VS.CONTENT_PADDING_BOTTOM + 8
+    for i = #rows, 1, -1 do
+        local row = rows[i]
+        local numItems = #row.items
+        local xPositions = {}
+
+        if numItems == 1 then
+            -- Center align
+            table.insert(xPositions, (availableWidth - row.items[1].width) / 2)
+        elseif numItems == 2 then
+            -- Left align the first, Right align the second
+            table.insert(xPositions, 0)
+            table.insert(xPositions, availableWidth - row.items[2].width)
+        else
+            -- Evenly spaced (left aligned for all columns)
+            local remainingSpace = availableWidth - row.width
+            local spacing = spacingX + (remainingSpace / (numItems - 1))
+            local currentX = 0
+            for j, item in ipairs(row.items) do
+                table.insert(xPositions, currentX)
+                currentX = currentX + item.width + spacing
+            end
         end
-        if db.showVoiceMode and VS.voiceModeBtn then
-            VS.voiceModeBtn:SetPoint("LEFT", VS.voiceModeLabel, "RIGHT", 5, 0)
+        
+        for idx, item in ipairs(row.items) do
+            local key = item.key
+            local data = item.data
+            local offsetX = xPositions[idx]
+            local absoluteOffsetX = VS.CONTENT_PADDING_X + offsetX
+            
+            if key == "showOutput" or key == "showVoiceMode" then
+                data.label:SetWidth(data.label:GetStringWidth())
+                data.label:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", absoluteOffsetX, currentY)
+                data.frame:SetPoint("LEFT", data.label, "RIGHT", 5, 0)
+            else
+                data.frame:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", absoluteOffsetX, currentY)
+                if data.label then
+                    data.label:SetPoint("LEFT", data.frame, "RIGHT", 4, 0)
+                end
+            end
         end
+        -- Base widget height is ~24-26px plus margin
+        currentY = currentY + 30 
+    end
+
+    if #rows > 0 then
+        -- The height needs to encompass `currentY` plus arbitrary padding so it doesn't overlap the slider mute/arrows above
+        VS.footerCalculatedHeight = currentY + 30
+    else
+        VS.footerCalculatedHeight = 0
     end
 end
 
@@ -437,67 +449,25 @@ function VS:UpdateAppearance()
                 headerHeight = headerHeight + 35
             end
         end
-        -- Footer height calculation based on visibility and layout stacking
-        local footerHeight = 0
-        if db.showCharacter or db.showBackground or db.showOutput or db.showVoiceMode then
-            footerHeight = 15 -- Initial top gap
-            local charCheck = VS.characterCheckbox
-            local bgCheck = VS.backgroundCheckbox
-            local outputLabel = VS.outputLabel
-            local dropdown = VS.outputDropdown
+        -- Calculate frame width based on active sliders
+        local spacing = db.sliderSpacing or 10
+        local i = 0
+        local cvarOrder = db.sliderOrder or VS.DEFAULT_CVAR_ORDER
 
-            local charWidth = (db.showCharacter and charCheck and charCheck.labelText) and (charCheck:GetWidth() + 4 + charCheck.labelText:GetStringWidth()) or 0
-            local bgWidth = (db.showBackground and bgCheck and bgCheck.labelText) and (bgCheck:GetWidth() + 4 + bgCheck.labelText:GetStringWidth()) or 0
-            local outputWidth = (db.showOutput and outputLabel and dropdown) and (outputLabel:GetStringWidth() + 5 + dropdown:GetWidth()) or 0
-            local voiceModeWidth = (db.showVoiceMode and VS.voiceModeLabel and VS.voiceModeBtn) and (VS.voiceModeLabel:GetStringWidth() + 5 + VS.voiceModeBtn:GetWidth()) or 0
-
-            local leftWidth = math_max(charWidth, bgWidth)
-            local rightWidth = math_max(outputWidth, voiceModeWidth)
-            local hasLeft = db.showCharacter or db.showBackground
-            local hasRight = db.showOutput or db.showVoiceMode
-
-            local leftHeight = 0
-            if db.showCharacter and db.showBackground then leftHeight = 55
-            elseif db.showCharacter or db.showBackground then leftHeight = 25 end
-
-            local rightHeight = 0
-            if db.showOutput and db.showVoiceMode then rightHeight = 72
-            elseif db.showOutput or db.showVoiceMode then rightHeight = 36 end
-
-            -- Estimate layout state before applying it
-            local spacing = db.sliderSpacing or 10
-            local i = 0
-
-            local cvarOrder = db.sliderOrder or VS.DEFAULT_CVAR_ORDER
-
-            for _, cvar in ipairs(cvarOrder) do
-                local var = VS.CVAR_TO_VAR[cvar]
-                if var and db[var] then
-                    i = i + 1
-                end
+        for _, cvar in ipairs(cvarOrder) do
+            local var = VS.CVAR_TO_VAR[cvar]
+            if var and db[var] then
+                i = i + 1
             end
-
-            local visibleWidth = (VS.CONTENT_PADDING_X * 2) + (i * VS.SLIDER_COLUMN_WIDTH) + (math_max(0, i - 1) * spacing)
-            local availableWidth = visibleWidth - (VS.CONTENT_PADDING_X * 2)
-
-            local stackedWidth
-            if hasLeft and hasRight then stackedWidth = leftWidth + 25 + rightWidth
-            elseif hasLeft then stackedWidth = leftWidth
-            else stackedWidth = rightWidth end
-
-            if hasLeft and hasRight and stackedWidth <= availableWidth then
-                -- Partial (blocks side-by-side)
-                footerHeight = footerHeight + math_max(leftHeight, rightHeight)
-            else
-                -- Fully stacked vertically OR single column
-                footerHeight = footerHeight + leftHeight + rightHeight
-                if hasLeft and hasRight then
-                    footerHeight = footerHeight + 10 -- gap between blocks
-                end
-            end
-
-            footerHeight = footerHeight + 15 -- Bottom padding
         end
+
+        local visibleWidth = (VS.CONTENT_PADDING_X * 2) + (i * VS.SLIDER_COLUMN_WIDTH) + (math_max(0, i - 1) * spacing)
+        local frameWidth = math_max(300, visibleWidth + VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT)
+        VS.container:SetWidth(frameWidth)
+
+        -- Determine dynamic footer layout and retrieve height
+        VS:UpdateFooterLayout()
+        local footerHeight = VS.footerCalculatedHeight or 0
 
         local contentHeight = headerHeight + hTop + hTrack + hBottom + footerHeight
         local frameHeight = contentHeight + VS.TEMPLATE_CONTENT_OFFSET_TOP + VS.TEMPLATE_CONTENT_OFFSET_BOTTOM
@@ -510,10 +480,7 @@ function VS:UpdateAppearance()
         -- Re-anchor all active sliders to the new dynamic startY
         if VS.sliders then
             local startX = VS.CONTENT_PADDING_X
-            local i = 0
-            local spacing = db.sliderSpacing or 10
-
-            local cvarOrder = db.sliderOrder or VS.DEFAULT_CVAR_ORDER
+            local k = 0
 
             for _, cvar in ipairs(cvarOrder) do
                 local slider = VS.sliders[cvar]
@@ -523,25 +490,14 @@ function VS:UpdateAppearance()
                         slider:Hide()
                     else
                         slider:Show()
-                        local offsetX = startX + (i * (VS.SLIDER_COLUMN_WIDTH + spacing)) + (VS.SLIDER_COLUMN_WIDTH / 2) - 8
+                        local offsetX = startX + (k * (VS.SLIDER_COLUMN_WIDTH + spacing)) + (VS.SLIDER_COLUMN_WIDTH / 2) - 8
                         slider:ClearAllPoints()
                         slider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", offsetX, startY)
-                        i = i + 1
+                        k = k + 1
                     end
                 end
             end
-
-            -- Dynamically adjust frame width based on visible sliders
-            local visibleWidth = (VS.CONTENT_PADDING_X * 2)
-                + (i * VS.SLIDER_COLUMN_WIDTH)
-                + (math_max(0, i - 1) * spacing)
-            -- A minimum width to guarantee elements like the footer don't clip drastically
-            local frameWidth = math_max(300, visibleWidth + VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT)
-            VS.container:SetWidth(frameWidth)
         end
-
-        -- Update footer elements visibility and layout
-        VS:UpdateFooterLayout()
     end
 end
 

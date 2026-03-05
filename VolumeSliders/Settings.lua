@@ -1351,7 +1351,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     end
 
     local spacingLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    spacingLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -35)
+    spacingLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 15, -30)
     spacingLabel:SetText("Slider Spacing")
 
     local spacingInput = CreateFrame("EditBox", "VolumeSlidersSpacingInput", categoryFrame, "InputBoxTemplate")
@@ -1424,57 +1424,52 @@ function VS:CreateWindowSettingsContents(parentFrame)
     AddTooltipLoc(spacingInput, spacingTooltipText)
 
     ---------------------------------------------------------------------------
-    -- Visibility Checkboxes
+    -- Vertical Divider
     ---------------------------------------------------------------------------
-    local visibilityLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    visibilityLabel:SetPoint("TOPLEFT", spacingSlider, "BOTTOMLEFT", 0, -25)
-    visibilityLabel:SetText("Element Visibility")
+    local dividerV = categoryFrame:CreateTexture(nil, "ARTWORK")
+    dividerV:SetWidth(1)
+    dividerV:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 220, -10)
+    dividerV:SetPoint("BOTTOMLEFT", categoryFrame, "TOPLEFT", 220, -500)
+    dividerV:SetColorTexture(1, 1, 1, 0.2)
 
-    local checkboxes = {
-        { name = "Help Text", var = "showHelpText", tooltip = "Show or hide the help instructions at the top." },
-        { name = "Presets Dropdown", var = "showPresetsDropdown", tooltip = "Show or hide the quick-apply presets dropdown at the top." },
-        { name = "SBG Checkbox", var = "showBackground", tooltip = "Show or hide the 'Sound in Background' toggle in the window footer." },
-        { name = "Char Checkbox", var = "showCharacter", tooltip = "Show or hide the 'Sound at Character' toggle in the window footer." },
-        { name = "Output Selector", var = "showOutput", tooltip = "Show or hide the 'Output:' device selection dropdown in the window footer." },
-        { name = "Voice Mode Toggle", var = "showVoiceMode", tooltip = "Show or hide the Voice Chat Mode (Push to Talk / Open Mic) toggle in the window footer." },
-    }
+    ---------------------------------------------------------------------------
+    -- Visibility Checkboxes (Window Header Elements)
+    ---------------------------------------------------------------------------
+    local headerElementsLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    headerElementsLabel:SetPoint("TOPLEFT", dividerV, "TOPRIGHT", 25, -20)
+    headerElementsLabel:SetText("Header Elements")
 
-    local previousCheckbox = nil
+    local helpTextCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    helpTextCheck:SetPoint("TOPLEFT", headerElementsLabel, "BOTTOMLEFT", -5, -5)
+    helpTextCheck.text:SetText("Help Text")
+    helpTextCheck:SetChecked(db.showHelpText ~= false)
+    helpTextCheck:SetScript("OnClick", function(self)
+        db.showHelpText = self:GetChecked()
+        VS:UpdateAppearance()
+    end)
+    AddTooltipLoc(helpTextCheck, "Show or hide the help instructions at the top.")
 
-    for _, data in ipairs(checkboxes) do
-        local checkbox = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
-        if previousCheckbox then
-            checkbox:SetPoint("TOPLEFT", previousCheckbox, "BOTTOMLEFT", 0, 5)
-        else
-            checkbox:SetPoint("TOPLEFT", visibilityLabel, "BOTTOMLEFT", -5, -5)
-        end
+    local presetCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    presetCheck:SetPoint("LEFT", helpTextCheck.text, "RIGHT", 40, 0)
+    presetCheck.text:SetText("Presets Dropdown")
+    presetCheck:SetChecked(db.showPresetsDropdown ~= false)
+    presetCheck:SetScript("OnClick", function(self)
+        db.showPresetsDropdown = self:GetChecked()
+        VS:UpdateAppearance()
+    end)
+    AddTooltipLoc(presetCheck, "Show or hide the quick-apply presets dropdown at the top.")
 
-        checkbox.text:SetText(data.name)
-        checkbox:SetChecked(db[data.var] == true)
-
-        checkbox:SetScript("OnClick", function(self)
-            db[data.var] = self:GetChecked()
-            VS:UpdateAppearance()
-        end)
-
-        -- Add tooltip support
-        checkbox:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText(data.tooltip, nil, nil, nil, nil, true)
-            GameTooltip:Show()
-        end)
-        checkbox:SetScript("OnLeave", function(self)
-            GameTooltip:Hide()
-        end)
-
-        previousCheckbox = checkbox
-    end
+    local dividerH = categoryFrame:CreateTexture(nil, "ARTWORK")
+    dividerH:SetHeight(1)
+    dividerH:SetPoint("TOPLEFT", headerElementsLabel, "BOTTOMLEFT", -25, -45)
+    dividerH:SetWidth(400)
+    dividerH:SetColorTexture(1, 1, 1, 0.2)
 
     ---------------------------------------------------------------------------
     -- Channel Visibility
     ---------------------------------------------------------------------------
     local channelLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 250, -35)
+    channelLabel:SetPoint("TOPLEFT", spacingSlider, "BOTTOMLEFT", 0, -30)
     channelLabel:SetText("Channel Visibility")
 
     local channelSubLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -1613,32 +1608,193 @@ function VS:CreateWindowSettingsContents(parentFrame)
     end
 
     RefreshDataProvider()
-    local math_floor = math.floor
-    local tonumber   = tonumber
-    local tostring   = tostring
 
-    local function AddTooltip(frame, text)
+    ---------------------------------------------------------------------------
+    -- Footer Elements Drag Box
+    ---------------------------------------------------------------------------
+    if db.limitFooterCols == nil then db.limitFooterCols = false end
+    if db.maxFooterCols == nil then db.maxFooterCols = 3 end
+
+    local limitFooterCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    limitFooterCheck:SetPoint("TOPLEFT", dividerH, "BOTTOMLEFT", 25, -15)
+    limitFooterCheck.text:SetText("Limit Footer Columns")
+    limitFooterCheck:SetChecked(db.limitFooterCols)
+    limitFooterCheck:SetScript("OnClick", function(self)
+        db.limitFooterCols = self:GetChecked()
+        VS:UpdateAppearance()
+    end)
+    AddTooltipLoc(limitFooterCheck, "Restrict the maximum number of items allowed per row in the footer.")
+
+    local maxFooterInput = CreateFrame("EditBox", nil, categoryFrame, "InputBoxTemplate")
+    maxFooterInput:SetSize(30, 20)
+    maxFooterInput:SetPoint("LEFT", limitFooterCheck.text, "RIGHT", 15, 0)
+    maxFooterInput:SetAutoFocus(false)
+    maxFooterInput:SetNumeric(true)
+    maxFooterInput:SetMaxLetters(2)
+    maxFooterInput:SetFontObject("GameFontHighlight")
+    maxFooterInput:SetText(tostring(db.maxFooterCols))
+    maxFooterInput:SetCursorPosition(0)
+    
+    maxFooterInput:SetScript("OnTextChanged", function(self, userInput)
+        if userInput then
+            local num = tonumber(self:GetText())
+            if num and num > 0 and num <= 20 then
+                db.maxFooterCols = num
+                VS:UpdateAppearance()
+            end
+        end
+    end)
+    maxFooterInput:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    maxFooterInput:SetScript("OnEscapePressed", function(self)
+        self:SetText(tostring(db.maxFooterCols or 3))
+        self:SetCursorPosition(0)
+        self:ClearFocus()
+    end)
+    AddTooltipLoc(maxFooterInput, "Maximum items per row (1-20).")
+
+    local footerLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    footerLabel:SetPoint("TOPLEFT", limitFooterCheck, "BOTTOMLEFT", 0, -15)
+    footerLabel:SetText("Footer Elements")
+
+    local footerSubLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    footerSubLabel:SetPoint("TOP", footerLabel, "BOTTOM", 0, -2)
+    footerSubLabel:SetText("(Drag to Reorder)")
+    footerSubLabel:SetAlpha(0.6)
+
+    local footerMap = {
+        ["showZoneTriggers"] = { name = "Zone Triggers", tooltip = "Show or hide the Zone Triggers toggle." },
+        ["showFishingSplash"] = { name = "Fishing Boost", tooltip = "Show or hide the Fishing Splash Boost toggle." },
+        ["showLfgPop"] = { name = "LFG Pop Boost", tooltip = "Show or hide the LFG Pop Boost toggle." },
+        ["showBackground"] = { name = "SBG Checkbox", tooltip = "Show or hide the 'Sound in Background' toggle." },
+        ["showCharacter"] = { name = "Char Checkbox", tooltip = "Show or hide the 'Sound at Character' toggle." },
+        ["showOutput"] = { name = "Output Selector", tooltip = "Show or hide the 'Output:' dropdown." },
+        ["showVoiceMode"] = { name = "Voice Mode", tooltip = "Show or hide the Voice Chat Mode toggle." },
+    }
+
+    local footerBox = CreateFrame("Frame", nil, categoryFrame, "WowScrollBoxList")
+    footerBox:SetSize(145, 230)
+    footerBox:SetPoint("TOPLEFT", footerSubLabel, "BOTTOMLEFT", -5, -8)
+
+    local footerDragBehavior 
+
+    local function FooterRowInitializer(frame, elementData)
+        local data = footerMap[elementData]
+        if not data then return end
+
+        if not frame.initialized then
+            frame:SetBackdrop({
+                bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+                edgeFile = "Interface\\Buttons\\WHITE8X8",
+                tile = true, tileSize = 16, edgeSize = 1,
+                insets = { left = 1, right = 1, top = 1, bottom = 1 }
+            })
+            frame:SetBackdropColor(0, 0, 0, 0.4)
+            frame:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.3)
+
+            local checkbox = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+            checkbox:SetPoint("LEFT", 0, 0)
+            checkbox:SetSize(24, 24)
+            frame.checkbox = checkbox
+
+            local drag = frame:CreateTexture(nil, "ARTWORK")
+            drag:SetAtlas("ReagentWizards-ReagentRow-Grabber")
+            drag:SetSize(12, 18)
+            drag:SetPoint("RIGHT", -6, 0)
+            drag:SetAlpha(0.5)
+            frame.drag = drag
+
+            frame.initialized = true
+        end
+
+        frame.checkbox.text:SetText(data.name)
+        frame.checkbox:SetChecked(db[elementData] == true)
+        frame.checkbox:SetScript("OnClick", function(self)
+            db[elementData] = self:GetChecked()
+            VS:UpdateAppearance()
+        end)
+
         frame:SetScript("OnEnter", function(self)
+            if footerDragBehavior and footerDragBehavior:GetDragging() then return end
+            self:SetBackdropBorderColor(1, 0.8, 0, 0.5)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText(text, nil, nil, nil, nil, true)
+            GameTooltip:SetText(data.tooltip .. "\n\n|cff00ff00Drag to reorder|r", nil, nil, nil, nil, true)
             GameTooltip:Show()
         end)
         frame:SetScript("OnLeave", function(self)
+            self:SetBackdropBorderColor(0.5, 0.5, 0.5, 0.3)
             GameTooltip:Hide()
         end)
     end
 
-    -- Dynamic Column Layout
+    local footerView = CreateScrollBoxListLinearView()
+    footerView:SetElementInitializer("VolumeSlidersFooterRowTemplate", FooterRowInitializer)
+    footerView:SetPadding(0, 0, 0, 0, 4)
+
+    footerBox:Init(footerView)
+
+    footerDragBehavior = ScrollUtil.AddLinearDragBehavior(footerBox)
+    footerDragBehavior:SetReorderable(true)
+    footerDragBehavior:SetDragRelativeToCursor(true)
+
+    footerDragBehavior:SetCursorFactory(function(elementData)
+        return "VolumeSlidersFooterRowTemplate", function(frame)
+            FooterRowInitializer(frame, elementData)
+            frame:SetAlpha(0.6)
+            frame:SetBackdropBorderColor(1, 0.8, 0, 0.8)
+        end
+    end)
+
+    footerDragBehavior:SetDropPredicate(function(sourceElementData, intersectData)
+        if intersectData.area == DragIntersectionArea.Inside then
+            local cursorParent = FrameUtil.GetRootParent(footerBox)
+            local _, cy = InputUtil.GetCursorPosition(cursorParent)
+            local frame = intersectData.frame
+            local centerY = frame:GetBottom() + (frame:GetHeight() / 2)
+            if cy > centerY then
+                intersectData.area = DragIntersectionArea.Above
+            else
+                intersectData.area = DragIntersectionArea.Below
+            end
+        end
+        return true
+    end)
+
+    footerDragBehavior:SetDropEnter(function(factory, candidate)
+        local frame = factory("VolumeSlidersDropIndicatorTemplate")
+        frame:SetSize(150, 3)
+        if candidate.area == DragIntersectionArea.Above then
+            frame:SetPoint("BOTTOMLEFT", candidate.frame, "TOPLEFT", 0, 1)
+            frame:SetPoint("BOTTOMRIGHT", candidate.frame, "TOPRIGHT", 0, 1)
+        elseif candidate.area == DragIntersectionArea.Below then
+            frame:SetPoint("TOPLEFT", candidate.frame, "BOTTOMLEFT", 0, -1)
+            frame:SetPoint("TOPRIGHT", candidate.frame, "BOTTOMRIGHT", 0, -1)
+        end
+    end)
+
+    footerDragBehavior:SetPostDrop(function(contextData)
+        local dp = contextData.dataProvider
+        db.footerOrder = db.footerOrder or {}
+        wipe(db.footerOrder)
+        for _, key in dp:EnumerateEntireRange() do
+            table.insert(db.footerOrder, key)
+        end
+        VS:UpdateAppearance()
+    end)
+
+    local function RefreshFooterDataProvider()
+        local dataProvider = CreateDataProvider()
+        local footerOrder = db.footerOrder or VS.DEFAULT_FOOTER_ORDER
+        for _, key in ipairs(footerOrder) do
+            dataProvider:Insert(key)
+        end
+        footerBox:SetDataProvider(dataProvider)
+    end
+
+    RefreshFooterDataProvider()
+
+    -- Column Layout cleanup since it is not fully dynamic columns anymore
     scrollFrame:SetScript("OnSizeChanged", function(self, width, height)
         categoryFrame:SetWidth(width)
-        local usableWidth = width - 40
-        if usableWidth < 400 then usableWidth = 400 end
-        
-        local col1X = 10
-        local col2X = col1X + (usableWidth * 0.50)
-        
-        if spacingLabel then spacingLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", col1X, -35) end
-        if channelLabel then channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", col2X, -35) end
     end)
     if scrollFrame:GetWidth() > 0 then
         scrollFrame:GetScript("OnSizeChanged")(scrollFrame, scrollFrame:GetWidth(), scrollFrame:GetHeight())

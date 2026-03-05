@@ -1,0 +1,385 @@
+Initializing ...
+                                                                                
+>>================== 01/17
+                                                                                
+>>>>================ 03/17
+                                                                                
+>>>>>>============== 05/17
+                                                                                
+>>>>>>>>============ 06/17
+                                                                                
+[34mVolumeSliders\PopupFrame.lua:359:22[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        VS.presetDropdown:SetupMenu(GeneratePresetMenu)
+    [90m                     ^[0m
+[34mVolumeSliders\PopupFrame.lua:359:33[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        VS.presetDropdown:SetupMenu(GeneratePresetMenu)
+    [90m                                ^^^^^^^^^^^^^^^^^^[0m
+
+                                                                                
+>>>>>>>>>=========== 07/17 [Found 2 problems in 1 files]
+                                                                                
+[34mVolumeSliders\Settings.lua:632:45[0m [[33mWarning[0m] Undefined global `ScrollingEdit_OnCursorChanged`. [35m(undefined-global)[0m
+        inputZones:SetScript("OnCursorChanged", ScrollingEdit_OnCursorChanged)
+    [90m                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:634:9[0m [[33mWarning[0m] Undefined global `ScrollingEdit_OnUpdate`. [35m(undefined-global)[0m
+            ScrollingEdit_OnUpdate(self, elapsed, self:GetParent())
+    [90m        ^^^^^^^^^^^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:997:18[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        titleDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                 ^[0m
+[34mVolumeSliders\Settings.lua:997:29[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        titleDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                            ^[0m
+[34mVolumeSliders\Settings.lua:1019:18[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        valueDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                 ^[0m
+[34mVolumeSliders\Settings.lua:1019:29[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        valueDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                            ^[0m
+[34mVolumeSliders\Settings.lua:1041:17[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        highDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                ^[0m
+[34mVolumeSliders\Settings.lua:1041:28[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        highDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                           ^[0m
+[34mVolumeSliders\Settings.lua:1063:18[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        arrowDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                 ^[0m
+[34mVolumeSliders\Settings.lua:1063:29[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        arrowDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                            ^[0m
+[34mVolumeSliders\Settings.lua:1087:17[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        knobDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                ^[0m
+[34mVolumeSliders\Settings.lua:1087:28[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        knobDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                           ^[0m
+[34mVolumeSliders\Settings.lua:1109:16[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        lowDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m               ^[0m
+[34mVolumeSliders\Settings.lua:1109:27[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        lowDropdown:SetupMenu(function(dropdown, rootDescription)
+    [90m                          ^[0m
+[34mVolumeSliders\Settings.lua:1536:9[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 3. [35m(redundant-parameter)[0m
+        view:SetElementInitializer("VolumeSlidersChannelRowTemplate", RowInitializer)
+    [90m        ^[0m
+[34mVolumeSliders\Settings.lua:1536:32[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 3. [35m(redundant-parameter)[0m
+        view:SetElementInitializer("VolumeSlidersChannelRowTemplate", RowInitializer)
+    [90m                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1536:67[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 3. [35m(redundant-parameter)[0m
+        view:SetElementInitializer("VolumeSlidersChannelRowTemplate", RowInitializer)
+    [90m                                                                  ^^^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1537:9[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        view:SetPadding(0, 0, 0, 0, 4)
+    [90m        ^[0m
+[34mVolumeSliders\Settings.lua:1537:21[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        view:SetPadding(0, 0, 0, 0, 4)
+    [90m                    ^[0m
+[34mVolumeSliders\Settings.lua:1537:24[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        view:SetPadding(0, 0, 0, 0, 4)
+    [90m                       ^[0m
+[34mVolumeSliders\Settings.lua:1537:27[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        view:SetPadding(0, 0, 0, 0, 4)
+    [90m                          ^[0m
+[34mVolumeSliders\Settings.lua:1537:30[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        view:SetPadding(0, 0, 0, 0, 4)
+    [90m                             ^[0m
+[34mVolumeSliders\Settings.lua:1537:33[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        view:SetPadding(0, 0, 0, 0, 4)
+    [90m                                ^[0m
+[34mVolumeSliders\Settings.lua:1542:17[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetReorderable(true)
+    [90m                ^[0m
+[34mVolumeSliders\Settings.lua:1542:33[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetReorderable(true)
+    [90m                                ^^^^[0m
+[34mVolumeSliders\Settings.lua:1543:17[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetDragRelativeToCursor(true)
+    [90m                ^[0m
+[34mVolumeSliders\Settings.lua:1543:42[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetDragRelativeToCursor(true)
+    [90m                                         ^^^^[0m
+[34mVolumeSliders\Settings.lua:1545:17[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetCursorFactory(function(elementData)
+    [90m                ^[0m
+[34mVolumeSliders\Settings.lua:1545:35[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetCursorFactory(function(elementData)
+    [90m                                  ^[0m
+[34mVolumeSliders\Settings.lua:1553:17[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetDropPredicate(function(sourceElementData, intersectData)
+    [90m                ^[0m
+[34mVolumeSliders\Settings.lua:1553:35[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetDropPredicate(function(sourceElementData, intersectData)
+    [90m                                  ^[0m
+[34mVolumeSliders\Settings.lua:1568:17[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetDropEnter(function(factory, candidate)
+    [90m                ^[0m
+[34mVolumeSliders\Settings.lua:1568:31[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetDropEnter(function(factory, candidate)
+    [90m                              ^[0m
+[34mVolumeSliders\Settings.lua:1580:17[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetPostDrop(function(contextData)
+    [90m                ^[0m
+[34mVolumeSliders\Settings.lua:1580:30[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        dragBehavior:SetPostDrop(function(contextData)
+    [90m                             ^[0m
+[34mVolumeSliders\Settings.lua:1677:15[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 3. [35m(redundant-parameter)[0m
+        footerView:SetElementInitializer("VolumeSlidersFooterRowTemplate", FooterRowInitializer)
+    [90m              ^[0m
+[34mVolumeSliders\Settings.lua:1677:38[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 3. [35m(redundant-parameter)[0m
+        footerView:SetElementInitializer("VolumeSlidersFooterRowTemplate", FooterRowInitializer)
+    [90m                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1677:72[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 3. [35m(redundant-parameter)[0m
+        footerView:SetElementInitializer("VolumeSlidersFooterRowTemplate", FooterRowInitializer)
+    [90m                                                                       ^^^^^^^^^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1678:15[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        footerView:SetPadding(0, 0, 0, 0, 4)
+    [90m              ^[0m
+[34mVolumeSliders\Settings.lua:1678:27[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        footerView:SetPadding(0, 0, 0, 0, 4)
+    [90m                          ^[0m
+[34mVolumeSliders\Settings.lua:1678:30[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        footerView:SetPadding(0, 0, 0, 0, 4)
+    [90m                             ^[0m
+[34mVolumeSliders\Settings.lua:1678:33[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        footerView:SetPadding(0, 0, 0, 0, 4)
+    [90m                                ^[0m
+[34mVolumeSliders\Settings.lua:1678:36[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        footerView:SetPadding(0, 0, 0, 0, 4)
+    [90m                                   ^[0m
+[34mVolumeSliders\Settings.lua:1678:39[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 6. [35m(redundant-parameter)[0m
+        footerView:SetPadding(0, 0, 0, 0, 4)
+    [90m                                      ^[0m
+[34mVolumeSliders\Settings.lua:1683:23[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetReorderable(true)
+    [90m                      ^[0m
+[34mVolumeSliders\Settings.lua:1683:39[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetReorderable(true)
+    [90m                                      ^^^^[0m
+[34mVolumeSliders\Settings.lua:1684:23[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetDragRelativeToCursor(true)
+    [90m                      ^[0m
+[34mVolumeSliders\Settings.lua:1684:48[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetDragRelativeToCursor(true)
+    [90m                                               ^^^^[0m
+[34mVolumeSliders\Settings.lua:1686:23[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetCursorFactory(function(elementData)
+    [90m                      ^[0m
+[34mVolumeSliders\Settings.lua:1686:41[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetCursorFactory(function(elementData)
+    [90m                                        ^[0m
+[34mVolumeSliders\Settings.lua:1694:23[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetDropPredicate(function(sourceElementData, intersectData)
+    [90m                      ^[0m
+[34mVolumeSliders\Settings.lua:1694:41[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetDropPredicate(function(sourceElementData, intersectData)
+    [90m                                        ^[0m
+[34mVolumeSliders\Settings.lua:1709:23[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetDropEnter(function(factory, candidate)
+    [90m                      ^[0m
+[34mVolumeSliders\Settings.lua:1709:37[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetDropEnter(function(factory, candidate)
+    [90m                                    ^[0m
+[34mVolumeSliders\Settings.lua:1721:23[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetPostDrop(function(contextData)
+    [90m                      ^[0m
+[34mVolumeSliders\Settings.lua:1721:36[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+        footerDragBehavior:SetPostDrop(function(contextData)
+    [90m                                   ^[0m
+[34mVolumeSliders\Settings.lua:777:23[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+            presetDropdown:SetupMenu(GenerateDropdownMenu)
+    [90m                      ^[0m
+[34mVolumeSliders\Settings.lua:777:34[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+            presetDropdown:SetupMenu(GenerateDropdownMenu)
+    [90m                                 ^^^^^^^^^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1592:25[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+                dataProvider:Insert(cvar)
+    [90m                        ^[0m
+[34mVolumeSliders\Settings.lua:1592:33[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+                dataProvider:Insert(cvar)
+    [90m                                ^^^^[0m
+[34mVolumeSliders\Settings.lua:1735:25[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+                dataProvider:Insert(key)
+    [90m                        ^[0m
+[34mVolumeSliders\Settings.lua:1735:33[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 2. [35m(redundant-parameter)[0m
+                dataProvider:Insert(key)
+    [90m                                ^^^[0m
+[34mVolumeSliders\Settings.lua:890:30[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 1. [35m(redundant-parameter)[0m
+                StaticPopup_Show("VolumeSlidersDeletePresetConfirm")
+    [90m                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1555:58[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 1. [35m(redundant-parameter)[0m
+                local cursorParent = FrameUtil.GetRootParent(scrollBox)
+    [90m                                                         ^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1556:55[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 1. [35m(redundant-parameter)[0m
+                local _, cy = InputUtil.GetCursorPosition(cursorParent)
+    [90m                                                      ^^^^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1696:58[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 1. [35m(redundant-parameter)[0m
+                local cursorParent = FrameUtil.GetRootParent(footerBox)
+    [90m                                                         ^^^^^^^^^[0m
+[34mVolumeSliders\Settings.lua:1697:55[0m [[33mWarning[0m] This function expects a maximum of 0 argument(s) but instead it is receiving 1. [35m(redundant-parameter)[0m
+                local _, cy = InputUtil.GetCursorPosition(cursorParent)
+    [90m                                                      ^^^^^^^^^^^^[0m
+
+                                                                                
+>>>>>>>>>>>========= 09/17 [Found 69 problems in 2 files]
+                                                                                
+>>>>>>>>>>>>======== 10/17 [Found 69 problems in 2 files]
+                                                                                
+[34mspec\Core_spec.lua:5:1[0m [[33mWarning[0m] Undefined global `describe`. [35m(undefined-global)[0m
+    describe("VolumeSliders Core Module", function()
+    [90m^^^^^^^^[0m
+[34mspec\Core_spec.lua:8:5[0m [[33mWarning[0m] Undefined global `before_each`. [35m(undefined-global)[0m
+        before_each(function()
+    [90m    ^^^^^^^^^^^[0m
+[34mspec\Core_spec.lua:15:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("should instantiate LibDataBroker and LibDBIcon", function()
+    [90m    ^^[0m
+[34mspec\Core_spec.lua:20:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("should define constant configuration values", function()
+    [90m    ^^[0m
+
+                                                                                
+[34mspec\Fishing_spec.lua:31:9[0m [[33mWarning[0m] Duplicate field `CreateFrame`. [35m(duplicate-set-field)[0m
+            _G.CreateFrame = function() return mockFishingFrame end
+    [90m        ^^^^^^^^^^^^^^[0m
+[34mspec\Fishing_spec.lua:37:9[0m [[33mWarning[0m] Duplicate field `GetCVar`. [35m(duplicate-set-field)[0m
+            _G.GetCVar = function(name) return tostring(_G.cvarStorage[name] or 1) end
+    [90m        ^^^^^^^^^^[0m
+[34mspec\Fishing_spec.lua:6:1[0m [[33mWarning[0m] Undefined global `describe`. [35m(undefined-global)[0m
+    describe("Fishing volume tests", function()
+    [90m^^^^^^^^[0m
+[34mspec\Fishing_spec.lua:10:5[0m [[33mWarning[0m] Undefined global `before_each`. [35m(undefined-global)[0m
+        before_each(function()
+    [90m    ^^^^^^^^^^^[0m
+[34mspec\Fishing_spec.lua:76:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("does nothing returning instantly if fishing volume is disabled", function()
+    [90m    ^^[0m
+[34mspec\Fishing_spec.lua:86:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("boosts volume on fishing cast and restores on stop", function()
+    [90m    ^^[0m
+[34mspec\Fishing_spec.lua:101:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("does not boost if in combat", function()
+    [90m    ^^[0m
+[34mspec\Fishing_spec.lua:107:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("restores volume aggressively if combat starts", function()
+    [90m    ^^[0m
+[34mspec\Fishing_spec.lua:119:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("ignores non-fishing spells", function()
+    [90m    ^^[0m
+[34mspec\Fishing_spec.lua:65:9[0m [[33mWarning[0m] Need check nil. [35m(need-check-nil)[0m
+            coreChunk(addonName, addonTable)
+    [90m        ^^^^^^^^^[0m
+[34mspec\Fishing_spec.lua:68:9[0m [[33mWarning[0m] Need check nil. [35m(need-check-nil)[0m
+            fishingChunk(addonName, addonTable)
+    [90m        ^^^^^^^^^^^^[0m
+
+                                                                                
+[34mspec\LFGQueue_spec.lua:39:9[0m [[33mWarning[0m] Duplicate field `CreateFrame`. [35m(duplicate-set-field)[0m
+            _G.CreateFrame = function() return mockLFGFrame end
+    [90m        ^^^^^^^^^^^^^^[0m
+[34mspec\LFGQueue_spec.lua:46:9[0m [[33mWarning[0m] Duplicate field `GetCVar`. [35m(duplicate-set-field)[0m
+            _G.GetCVar = function(name) return tostring(_G.cvarStorage[name] or 1) end
+    [90m        ^^^^^^^^^^[0m
+[34mspec\LFGQueue_spec.lua:6:1[0m [[33mWarning[0m] Undefined global `describe`. [35m(undefined-global)[0m
+    describe("LFG Queue volume tests", function()
+    [90m^^^^^^^^[0m
+[34mspec\LFGQueue_spec.lua:10:5[0m [[33mWarning[0m] Undefined global `before_each`. [35m(undefined-global)[0m
+        before_each(function()
+    [90m    ^^^^^^^^^^^[0m
+[34mspec\LFGQueue_spec.lua:91:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("does nothing if lfg volume is disabled", function()
+    [90m    ^^[0m
+[34mspec\LFGQueue_spec.lua:104:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("registers proposal events only when actively queued", function()
+    [90m    ^^[0m
+[34mspec\LFGQueue_spec.lua:121:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("boosts volume on LFG Proposal Show and restores on conclusion", function()
+    [90m    ^^[0m
+[34mspec\LFGQueue_spec.lua:144:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("ignores restoring volume if it was already higher than target", function()
+    [90m    ^^[0m
+[34mspec\LFGQueue_spec.lua:80:9[0m [[33mWarning[0m] Need check nil. [35m(need-check-nil)[0m
+            coreChunk(addonName, addonTable)
+    [90m        ^^^^^^^^^[0m
+[34mspec\LFGQueue_spec.lua:83:9[0m [[33mWarning[0m] Need check nil. [35m(need-check-nil)[0m
+            lfgChunk(addonName, addonTable)
+    [90m        ^^^^^^^^[0m
+
+                                                                                
+[34mspec\MinimapBroker_spec.lua:5:1[0m [[33mWarning[0m] Undefined global `describe`. [35m(undefined-global)[0m
+    describe("MinimapBroker Module", function()
+    [90m^^^^^^^^[0m
+[34mspec\MinimapBroker_spec.lua:8:5[0m [[33mWarning[0m] Undefined global `before_each`. [35m(undefined-global)[0m
+        before_each(function()
+    [90m    ^^^^^^^^^^^[0m
+[34mspec\MinimapBroker_spec.lua:30:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("should register an LDB data object", function()
+    [90m    ^^[0m
+[34mspec\MinimapBroker_spec.lua:36:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("should handle icon RightClick to toggle mute", function()
+    [90m    ^^[0m
+[34mspec\MinimapBroker_spec.lua:49:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("should toggle the options frame on LeftClick", function()
+    [90m    ^^[0m
+
+                                                                                
+[34mspec\Presets_spec.lua:31:9[0m [[33mWarning[0m] Duplicate field `GetCVar`. [35m(duplicate-set-field)[0m
+            _G.GetCVar = function(name) return tostring(_G.cvarStorage[name] or 1) end
+    [90m        ^^^^^^^^^^[0m
+[34mspec\Presets_spec.lua:6:1[0m [[33mWarning[0m] Undefined global `describe`. [35m(undefined-global)[0m
+    describe("Presets tests", function()
+    [90m^^^^^^^^[0m
+[34mspec\Presets_spec.lua:9:5[0m [[33mWarning[0m] Undefined global `before_each`. [35m(undefined-global)[0m
+        before_each(function()
+    [90m    ^^^^^^^^^^^[0m
+[34mspec\Presets_spec.lua:51:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("does nothing returning instantly if triggers are disabled", function()
+    [90m    ^^[0m
+[34mspec\Presets_spec.lua:58:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("sorts and overrides volumes correctly and restores them", function()
+    [90m    ^^[0m
+[34mspec\Presets_spec.lua:43:9[0m [[33mWarning[0m] Need check nil. [35m(need-check-nil)[0m
+            coreChunk(addonName, addonTable)
+    [90m        ^^^^^^^^^[0m
+[34mspec\Presets_spec.lua:46:9[0m [[33mWarning[0m] Need check nil. [35m(need-check-nil)[0m
+            presetsChunk(addonName, addonTable)
+    [90m        ^^^^^^^^^^^^[0m
+
+                                                                                
+[34mspec\SliderWidgets_spec.lua:5:1[0m [[33mWarning[0m] Undefined global `describe`. [35m(undefined-global)[0m
+    describe("SliderWidgets Factory Module", function()
+    [90m^^^^^^^^[0m
+[34mspec\SliderWidgets_spec.lua:8:5[0m [[33mWarning[0m] Undefined global `before_each`. [35m(undefined-global)[0m
+        before_each(function()
+    [90m    ^^^^^^^^^^^[0m
+[34mspec\SliderWidgets_spec.lua:19:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("should provide factory methods", function()
+    [90m    ^^[0m
+[34mspec\SliderWidgets_spec.lua:25:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("should instantiate a vertical slider frame with sub-components", function()
+    [90m    ^^[0m
+[34mspec\SliderWidgets_spec.lua:33:5[0m [[33mWarning[0m] Undefined global `it`. [35m(undefined-global)[0m
+        it("should hook slider OnMouseWheel for volume stepping", function()
+    [90m    ^^[0m
+
+                                                                                
+[34mspec\setup.lua:239:1[0m [[33mWarning[0m] Duplicate field `GetCVar`. [35m(duplicate-set-field)[0m
+    _G.GetCVar = function(name) return cvars[name] end
+    [90m^^^^^^^^^^[0m
+[34mspec\setup.lua:258:1[0m [[33mWarning[0m] Duplicate field `wipe`. [35m(duplicate-set-field)[0m
+    _G.wipe = function(t) for k in pairs(t) do t[k] = nil end end
+    [90m^^^^^^^[0m
+[34mspec\setup.lua:270:24[0m [[33mWarning[0m] Missing required fields in type `colorRGBA`: `a`, `r`, `g`, `b` [35m(missing-fields)[0m
+    _G.NORMAL_FONT_COLOR = { GetRGB = function() return 1, 0.82, 0 end }
+    [90m                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[34mspec\setup.lua:271:27[0m [[33mWarning[0m] Missing required fields in type `colorRGBA`: `a`, `r`, `g`, `b` [35m(missing-fields)[0m
+    _G.HIGHLIGHT_FONT_COLOR = { GetRGB = function() return 1, 1, 1 end }
+    [90m                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[34mspec\setup.lua:272:28[0m [[33mWarning[0m] Missing required fields in type `colorRGBA`: `a`, `r`, `g`, `b` [35m(missing-fields)[0m
+    _G.VERY_LIGHT_GRAY_COLOR = { GetRGB = function() return 0.9, 0.9, 0.9 end }
+    [90m                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+                                                                                
+>>>>>>>>>>>>>>>>>>>> 17/17 [Found 116 problems in 9 files]
+                                                                                
+Diagnosis complete, 116 problems found

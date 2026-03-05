@@ -155,6 +155,17 @@ VS.DEFAULT_CVAR_ORDER = {
     "Voice_MicSensitivity",
 }
 
+-- Default ordering of footer elements in the popup panel.
+VS.DEFAULT_FOOTER_ORDER = {
+    "showZoneTriggers",
+    "showFishingSplash",
+    "showLfgPop",
+    "showCharacter",
+    "showBackground",
+    "showOutput",
+    "showVoiceMode",
+}
+
 -----------------------------------------
 -- Helper Functions
 -----------------------------------------

@@ -1,3 +1,11 @@
+## v2.6.0
+
+- **New Feature:** Added "Zone Triggers", "Fishing Boost", and "LFG Pop Boost" toggles directly to the main slider window's footer for quicker access.
+- **Customization:** Added a new "Footer Elements" column to the Window settings page. You can now toggle the visibility of any footer element and drag-and-drop them to reorder how they appear!
+- **Customization:** Added a "Limit Footer Columns" option to the Window settings page to restrict the maximum number of items allowed per row in the flexible footer layout.
+- **UI Improvement:** The main window footer has been upgraded to a dynamic layout engine that intelligently wraps, left/right aligns, and centers items based on your window width and visible item count.
+- **UI Improvement:** Reorganized the "Window" settings page with visual dividers, grouped the "Header Elements" toggles, and improved the layout flow.
+
 ## v2.5.0
 
 - **New Feature:** Zone Triggers have been fully expanded and renamed to **Presets**!

@@ -431,6 +431,47 @@ function VS:CreateOptionsFrame()
     -- Bottom Row Controls
     ---------------------------------------------------------------------------
 
+    local function AddTooltip(frame, text)
+        frame:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(text, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end)
+        frame:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+    end
+
+    VS.triggerCheck = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckTrigger", "Zone Triggers", function(checked)
+        VolumeSlidersMMDB.enableTriggers = checked
+        if VS.Presets and VS.Presets.RefreshEventState then
+            VS.Presets:RefreshEventState()
+        end
+    end, function()
+        return VolumeSlidersMMDB.enableTriggers == true
+    end)
+    AddTooltip(VS.triggerCheck, "Automatically adjust volume levels when entering zones designated in your presets.")
+
+    VS.fishingCheck = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckFishing", "Fishing Boost", function(checked)
+        VolumeSlidersMMDB.enableFishingVolume = checked
+        if VS.Fishing and VS.Fishing.Initialize then
+            VS.Fishing:Initialize()
+        end
+    end, function()
+        return VolumeSlidersMMDB.enableFishingVolume == true
+    end)
+    AddTooltip(VS.fishingCheck, "Temporarily overrides volumes while fishing so you can hear the splash.")
+
+    VS.lfgCheck = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckLFG", "LFG Pop Boost", function(checked)
+        VolumeSlidersMMDB.enableLfgVolume = checked
+        if VS.LFGQueue and VS.LFGQueue.Initialize then
+            VS.LFGQueue:Initialize()
+        end
+    end, function()
+        return VolumeSlidersMMDB.enableLfgVolume == true
+    end)
+    AddTooltip(VS.lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.")
+
     -- "Sound at Character" checkbox — toggles whether the listener position
     -- is at the player's character or at the camera.
     VS.characterCheckbox = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckChar", "Sound at Character", function(checked)
@@ -444,16 +485,6 @@ function VS:CreateOptionsFrame()
     end)
     VS.characterCheckbox:SetPoint("BOTTOMLEFT", VS.contentFrame, "BOTTOMLEFT", VS.CONTENT_PADDING_X, VS.CONTENT_PADDING_BOTTOM + 10)
 
-    local function AddTooltip(frame, text)
-        frame:SetScript("OnEnter", function(self)
-            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-            GameTooltip:SetText(text, nil, nil, nil, nil, true)
-            GameTooltip:Show()
-        end)
-        frame:SetScript("OnLeave", function(self)
-            GameTooltip:Hide()
-        end)
-    end
     AddTooltip(VS.characterCheckbox, "Toggle whether 3D sound is positioned at your character or at the camera.")
 
     VS.backgroundCheckbox = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckBG", "Sound in Background", function(checked)
