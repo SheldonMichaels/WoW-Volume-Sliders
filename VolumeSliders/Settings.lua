@@ -123,16 +123,21 @@ function VS:CreateSettingsContents(parentFrame)
         categoryFrame:SetWidth(width)
     end)
 
-    local title = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightHuge")
+    local title = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalHuge")
     title:SetPoint("TOPLEFT", 15, -15)
     local versionStr = C_AddOns and C_AddOns.GetAddOnMetadata(addonName, "Version") or GetAddOnMetadata(addonName, "Version") or ""
     if versionStr ~= "" and not versionStr:match("^[vV]") then versionStr = "v" .. versionStr end
     title:SetText("Volume Sliders Settings" .. (versionStr ~= "" and (" " .. versionStr) or ""))
 
-    local desc = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    desc:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
-    desc:SetText("Volume Sliders provides quick-access vertical volume sliders for all sound channels via a single minimap button.\nUse the subcategories on the left to customize the appearance, visibility, and automation logic.")
-    desc:SetJustifyH("LEFT")
+    local urlText = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    urlText:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -5)
+    urlText:SetText("curseforge.com/wow/addons/volume-sliders")
+
+    local divider = categoryFrame:CreateTexture(nil, "ARTWORK")
+    divider:SetHeight(1)
+    divider:SetPoint("TOPLEFT", urlText, "BOTTOMLEFT", 0, -10)
+    divider:SetWidth(560)
+    divider:SetColorTexture(1, 1, 1, 0.2)
 
     ---------------------------------------------------------------------------
     -- Minimap Icon Settings
@@ -149,7 +154,7 @@ function VS:CreateSettingsContents(parentFrame)
     end
 
     local customIconLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    customIconLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -35)
+    customIconLabel:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", 10, -20)
     customIconLabel:SetText("Minimap Icon")
 
     local customIconCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")

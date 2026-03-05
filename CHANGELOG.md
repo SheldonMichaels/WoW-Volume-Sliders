@@ -1,3 +1,10 @@
+## v2.6.1
+
+- **UI Update:** Replaced the "Settings" button on the main slider window with a modern gear icon.
+- **UI Update:** Redesigned the main Settings page header. The title is now larger and gold, and a clean horizontal divider separates the header from the configuration options.
+- **UI Update:** Added the CurseForge project URL directly to the Settings page for easier access to updates and documentation.
+- **UI Improvement:** Removed the verbose help text from the Settings header to provide a cleaner, more focused configuration experience.
+
 ## v2.6.0
 
 - **New Feature:** Added "Zone Triggers", "Fishing Boost", and "LFG Pop Boost" toggles directly to the main slider window's footer for quicker access.

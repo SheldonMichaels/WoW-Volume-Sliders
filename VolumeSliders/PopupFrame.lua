@@ -119,13 +119,12 @@ function VS:CreateOptionsFrame()
 
     -- Settings Button
     local settingsBtn = CreateFrame("Button", "VolumeSlidersFrameSettingsButton", VS.container)
-    settingsBtn:SetSize(27, 27)
-    settingsBtn:SetText("")
-    settingsBtn:SetNormalAtlas("common-dropdown-a-button-settings-shadowless")
-    settingsBtn:SetPushedAtlas("common-dropdown-a-button-settings-pressed-shadowless")
-    settingsBtn:SetHighlightAtlas("common-dropdown-a-button-settings-hover-shadowless")
+    settingsBtn:SetSize(17, 17)
+    settingsBtn:SetNormalAtlas("mechagon-projects")
+    settingsBtn:SetPushedAtlas("mechagon-projects")
+    settingsBtn:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
 
-    settingsBtn:SetPoint("RIGHT", lockBtn, "LEFT", -4, -3)
+    settingsBtn:SetPoint("RIGHT", lockBtn, "LEFT", -4, 0)
 
     settingsBtn:SetScript("OnClick", function()
         if VS.settingsCategory and VS.settingsCategory.ID then
