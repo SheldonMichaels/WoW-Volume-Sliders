@@ -158,6 +158,9 @@ local function OnPresetEvent()
     local subZone = GetSubZoneText() and string_lower(GetSubZoneText()) or ""
     local miniZone = GetMinimapZoneText() and string_lower(GetMinimapZoneText()) or ""
 
+    -- Guard against "secret" values introduced in Midnight (13.x)
+    if VS:IsSecret(realZone) or VS:IsSecret(subZone) or VS:IsSecret(miniZone) then return end
+
     local matchedPresets = {}
     local matchedPresetIndices = {} -- deduplication map
 

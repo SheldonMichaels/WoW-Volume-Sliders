@@ -170,6 +170,9 @@ local function OnEvent(self, event, ...)
             -- to a localized string match, but IDs are safer.
             local spellInfo = C_Spell and C_Spell.GetSpellInfo(spellID)
             local spellName = spellInfo and spellInfo.name
+
+            -- Guard against secret values in Midnight (13.x)
+            if VS:IsSecret(spellID) or VS:IsSecret(spellName) then return end
             
             -- We check if it's explicitly the fishing spell ID OR if the localized name evaluates to "Fishing"
             -- (To support various language clients, using the ID is ideal, but name is a good fallback)

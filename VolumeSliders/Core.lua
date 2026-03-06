@@ -249,6 +249,17 @@ end
 -- UI Utility Functions
 -----------------------------------------
 
+--- Safely identifies "secret" or protected values introduced in the Midnight (13.x) expansion.
+--- Addons cannot directly compare or manipulate these values in an unprotected context.
+--- @param value any The value to check.
+--- @return boolean True if the value is "secret", false otherwise.
+function VS:IsSecret(value)
+    if issecretvalue then
+        return issecretvalue(value)
+    end
+    return false
+end
+
 --- Disable the HoverBackgroundTemplate that ships with SettingsCheckboxTemplate.
 ---
 --- The template anchors a white overlay texture to $parent.$parent (the

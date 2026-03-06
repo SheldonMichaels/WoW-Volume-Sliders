@@ -184,7 +184,19 @@ end
 -- Hook PlaySound so we can guarantee the volume is boosted exactly when 
 -- the Dungeon Ready sound is requested by the UI, distinguishing it from party /readycheck.
 hooksecurefunc("PlaySound", function(soundID)
-    if VolumeSlidersMMDB.enableLfgVolume and soundID == SOUNDKIT.READY_CHECK then
+    -- Guard against "secret" values introduced in Midnight (13.x).
+    -- Attempting to compare a secret value directly triggers a taint error.
+    if VS:IsSecret(soundID) then return end
+
+    local isLfgPop = false
+    -- Use pcall for the comparison as a secondary safety measure.
+    pcall(function()
+        if soundID == SOUNDKIT.READY_CHECK then
+            isLfgPop = true
+        end
+    end)
+
+    if VolumeSlidersMMDB.enableLfgVolume and isLfgPop then
         -- Only boost if we have an active queue proposal specifically popping.
         -- Do not use IsPlayerQueued() here, as that returns true while merely waiting 
         -- in the queue, which would accidentally boost party /readycheck sounds.

@@ -165,4 +165,22 @@ describe("LFG Queue volume tests", function()
         assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
         assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
     end)
+
+    it("should return early and NOT boost volume if soundID is a secret value (Midnight)", function()
+        VolumeSlidersMMDB.enableLfgVolume = true
+        
+        -- Mock issecretvalue to return true for this specific test
+        _G.issecretvalue = function() return true end
+        
+        VS.LFGQueue:Initialize()
+        
+        -- Trigger hook with what would normally be READY_CHECK
+        local readyCheckID = 8960
+        _G.PlaySound(readyCheckID)
+        
+        assert.spy(_G.setCvarSpy).was_not_called()
+        
+        -- Cleanup mock
+        _G.issecretvalue = function() return false end
+    end)
 end)

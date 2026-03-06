@@ -206,6 +206,8 @@ local function createMockFrame(frameType, name, parent, template)
     return f
 end
 
+_G.issecretvalue = function(v) return false end
+
 _G.CreateFrame = createMockFrame
 
 -- Config & Variables
