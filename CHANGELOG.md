@@ -1,3 +1,9 @@
+## v2.9.1 — 2026-03-06
+
+### Fixed
+- **Midnight Compatibility (WoW 13.x)**: Resolved a critical taint error where the `PlaySound` hook could crash the UI when encountering "secret" sound identifiers.
+- **Safety Guards**: Implemented `issecretvalue` protection across the LFG, Fishing, and Presets modules to ensure stability in protected game contexts.
+
 ## v2.9.0 — 2026-03-05
 
 ### Added

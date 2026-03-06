@@ -2,7 +2,7 @@
 
 A World of Warcraft addon that provides quick-access vertical volume sliders for all five sound channels, right from your minimap.
 
-![WoW](https://img.shields.io/badge/WoW-12.0.1-blue)
+![WoW](https://img.shields.io/badge/WoW-13.0.0-blue)
 
 ## Current Features
 
