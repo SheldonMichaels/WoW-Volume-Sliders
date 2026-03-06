@@ -17,6 +17,7 @@ jobs:
       uses: leafo/gh-actions-lua@v9
       with:
         luaVersion: "5.1.5"
+        buildCache: false
 
     - name: Setup Luarocks
       uses: leafo/gh-actions-luarocks@v4
