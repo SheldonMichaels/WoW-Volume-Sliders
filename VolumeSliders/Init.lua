@@ -85,8 +85,17 @@ initFrame:SetScript("OnEvent", function(self, event)
     if db.showVoiceMode == nil then db.showVoiceMode = true end
 
     -- Layout Defaults
-    db.sliderHeight = db.sliderHeight or 150
-    db.sliderSpacing = db.sliderSpacing or 10
+    -- Window dimensions are dynamic via resize; nil = use VS.DEFAULT_WINDOW_WIDTH/HEIGHT.
+    -- db.windowWidth and db.windowHeight are set when the user resizes.
+
+    -- Background Color Defaults
+    if db.bgColorR == nil then db.bgColorR = 0.05 end
+    if db.bgColorG == nil then db.bgColorG = 0.05 end
+    if db.bgColorB == nil then db.bgColorB = 0.05 end
+    if db.bgColorA == nil then db.bgColorA = 0.95 end
+
+    -- Persistent Window (click-outside doesn't close)
+    if db.persistentWindow == nil then db.persistentWindow = false end
     
     -- The layout must unconditionally update at least once upon session startup 
     -- to map all newly instantiated UI frames before they are cached as clean.

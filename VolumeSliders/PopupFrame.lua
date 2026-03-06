@@ -36,14 +36,21 @@ local SetCVar    = SetCVar
 function VS:CreateOptionsFrame()
     if VS.container then return VS.container end
 
+    local db = VolumeSlidersMMDB
+
     -- Create the popup using the modern settings frame template.
     VS.container = CreateFrame("Frame", "VolumeSlidersFrame", UIParent, "SettingsFrameTemplate")
-    VS.container:SetSize(300, VS.FRAME_HEIGHT)
+    local initW = db.windowWidth or VS.DEFAULT_WINDOW_WIDTH
+    local initH = db.windowHeight or VS.DEFAULT_WINDOW_HEIGHT
+    VS.container:SetSize(initW, initH)
     VS.container:SetPoint("CENTER")
     VS.container:SetFrameStrata("DIALOG")
     VS.container:SetFrameLevel(100)
     VS.container:SetClampedToScreen(true)
     VS.container:EnableMouse(true)
+
+    -- Enable resizing
+    VS.container:SetResizable(true)
 
     -- Set the title bar text via the NineSlice's built-in Text font string.
     if VS.container.NineSlice and VS.container.NineSlice.Text then
@@ -166,10 +173,10 @@ function VS:CreateOptionsFrame()
     -- Replace the template's default light background with a darker one
     -- for better contrast against the volume controls.
     if VS.container.Bg then VS.container.Bg:Hide() end
-    local newBg = VS.container:CreateTexture(nil, "BACKGROUND", nil, -1)
-    newBg:SetPoint("TOPLEFT", VS.container, "TOPLEFT", VS.TEMPLATE_CONTENT_OFFSET_LEFT, -VS.TEMPLATE_CONTENT_OFFSET_TOP)
-    newBg:SetPoint("BOTTOMRIGHT", VS.container, "BOTTOMRIGHT", -VS.TEMPLATE_CONTENT_OFFSET_RIGHT, VS.TEMPLATE_CONTENT_OFFSET_BOTTOM)
-    newBg:SetColorTexture(0.05, 0.05, 0.05, 0.95)
+    VS.windowBg = VS.container:CreateTexture(nil, "BACKGROUND", nil, -1)
+    VS.windowBg:SetPoint("TOPLEFT", VS.container, "TOPLEFT", VS.TEMPLATE_CONTENT_OFFSET_LEFT, -VS.TEMPLATE_CONTENT_OFFSET_TOP)
+    VS.windowBg:SetPoint("BOTTOMRIGHT", VS.container, "BOTTOMRIGHT", -VS.TEMPLATE_CONTENT_OFFSET_RIGHT, VS.TEMPLATE_CONTENT_OFFSET_BOTTOM)
+    VS.windowBg:SetColorTexture(db.bgColorR or 0.05, db.bgColorG or 0.05, db.bgColorB or 0.05, db.bgColorA or 0.95)
 
     -- Register for Escape-key closing via the Blizzard UISpecialFrames list.
     tinsert(UISpecialFrames, VS.container:GetName())
@@ -182,6 +189,9 @@ function VS:CreateOptionsFrame()
             -- Auto-hide when entering combat to avoid taint issues.
             self:Hide()
         elseif event == "GLOBAL_MOUSE_DOWN" then
+            -- Persistent window mode: don't close on outside click.
+            if VolumeSlidersMMDB.persistentWindow then return end
+
             -- Close the panel when the user clicks anywhere outside it.
             if self:IsShown() and not self:IsMouseOver() then
                 -- Check if the mouse is currently hovering the expanded output list.
@@ -374,7 +384,7 @@ function VS:CreateOptionsFrame()
     ---------------------------------------------------------------------------
     local startX = VS.CONTENT_PADDING_X
     local startY = -(VS.CONTENT_PADDING_TOP + 95)
-    local spacing = VolumeSlidersMMDB and VolumeSlidersMMDB.sliderSpacing or 10
+    local spacing = 10 -- Initial spacing; dynamically overridden by UpdateAppearance()
 
     -- Master Volume
     local masterSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderMaster", "Master", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01, "Master Volume")
@@ -509,21 +519,12 @@ function VS:CreateOptionsFrame()
     --   List BG:    common-dropdown-c-bg
     ---------------------------------------------------------------------------
 
-    -- "Output:" label
-    VS.outputLabel = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    VS.outputLabel:SetPoint("LEFT", VS.characterCheckbox.labelText, "RIGHT", 20, 0)
-    VS.outputLabel:SetText("Output:")
-    VS.outputLabel:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
-    VS.outputLabel:SetWidth(85)
-    VS.outputLabel:SetJustifyH("RIGHT")
-
+    -- Sound Output Device Dropdown (label context is now in tooltip only)
     -- Dropdown button
     VS.outputDropdown = CreateFrame("Button", "VolumeSlidersOutputDropdown", VS.contentFrame)
     VS.outputDropdown:SetSize(140, 26)
-    VS.outputDropdown:SetPoint("LEFT", VS.outputLabel, "RIGHT", 5, 0)
 
     local dropdown = VS.outputDropdown
-    local outputLabel = VS.outputLabel
 
     -- Background texture (Blizzard atlas, extends slightly beyond frame bounds
     -- to match the original template's visual padding).
@@ -578,7 +579,7 @@ function VS:CreateOptionsFrame()
     dropdown:SetScript("OnEnter", function(self)
         UpdateDropdownState(true)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Select the audio playback device.", nil, nil, nil, nil, true)
+        GameTooltip:SetText("Sound Output Device\n\nSelect the audio playback device.", nil, nil, nil, nil, true)
         GameTooltip:Show()
     end)
     dropdown:SetScript("OnLeave", function(self)
@@ -867,14 +868,8 @@ function VS:CreateOptionsFrame()
     dropdown:HookScript("OnShow", RefreshDropdownText)
 
     ---------------------------------------------------------------------------
-    -- Voice Chat Mode Toggle
+    -- Voice Chat Mode Toggle (label context is now in tooltip only)
     ---------------------------------------------------------------------------
-
-    VS.voiceModeLabel = VS.contentFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    VS.voiceModeLabel:SetText("Voice Mode:")
-    VS.voiceModeLabel:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
-    VS.voiceModeLabel:SetWidth(85)
-    VS.voiceModeLabel:SetJustifyH("RIGHT")
 
     VS.voiceModeBtn = CreateFrame("Button", "VolumeSlidersVoiceModeButton", VS.contentFrame)
     VS.voiceModeBtn:SetSize(140, 26)
@@ -907,7 +902,7 @@ function VS:CreateOptionsFrame()
     VS.voiceModeBtn:SetScript("OnEnter", function(self)
         vmBg:SetAtlas("common-dropdown-c-button-hover-1", true)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Switch between Push to Talk and Open Mic for Voice Chat.", nil, nil, nil, nil, true)
+        GameTooltip:SetText("Voice Chat Mode\n\nSwitch between Push to Talk and Open Mic.", nil, nil, nil, nil, true)
         GameTooltip:Show()
     end)
     VS.voiceModeBtn:SetScript("OnLeave", function(self)
@@ -939,6 +934,110 @@ function VS:CreateOptionsFrame()
     -- the entire bottom row within the content width.
     -- Initial layout of the footer.
     C_Timer.After(0.01, function() VS:UpdateFooterLayout() end)
+
+    ---------------------------------------------------------------------------
+    -- Resize Handles
+    --
+    -- 8 invisible frames along the edges and corners drive StartSizing().
+    -- The handles save window dimensions to the database on drag stop.
+    ---------------------------------------------------------------------------
+    local function CreateResizeHandle(point, x1, y1, x2, y2, w, h, cursor)
+        local handle = CreateFrame("Frame", nil, VS.container)
+        handle:SetPoint("TOPLEFT", VS.container, "TOPLEFT", x1, y1)
+        handle:SetPoint("BOTTOMRIGHT", VS.container, "TOPLEFT", x2, y2)
+        if w then handle:SetSize(w, h) end
+        handle:EnableMouse(true)
+        handle:SetScript("OnMouseDown", function()
+            VS.container:StartSizing(point)
+        end)
+        handle:SetScript("OnMouseUp", function()
+            VS.container:StopMovingOrSizing()
+            local dbL = VolumeSlidersMMDB
+            dbL.windowWidth = VS.container:GetWidth()
+            dbL.windowHeight = VS.container:GetHeight()
+        end)
+        return handle
+    end
+
+    local t = VS.RESIZE_HANDLE_THICKNESS
+    local cw = VS.container:GetWidth()
+    local ch = VS.container:GetHeight()
+
+    -- Edge handles — anchored using two-point anchoring to stretch along edges
+    -- LEFT edge
+    local leftHandle = CreateFrame("Frame", nil, VS.container)
+    leftHandle:SetPoint("TOPLEFT", VS.container, "TOPLEFT", 0, -t)
+    leftHandle:SetPoint("BOTTOMRIGHT", VS.container, "BOTTOMLEFT", t, t)
+    leftHandle:EnableMouse(true)
+    leftHandle:SetScript("OnMouseDown", function() VS.container:StartSizing("LEFT") end)
+    leftHandle:SetScript("OnMouseUp", function()
+        VS.container:StopMovingOrSizing()
+        VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
+        VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+    end)
+
+    -- RIGHT edge
+    local rightHandle = CreateFrame("Frame", nil, VS.container)
+    rightHandle:SetPoint("TOPLEFT", VS.container, "TOPRIGHT", -t, -t)
+    rightHandle:SetPoint("BOTTOMRIGHT", VS.container, "BOTTOMRIGHT", 0, t)
+    rightHandle:EnableMouse(true)
+    rightHandle:SetScript("OnMouseDown", function() VS.container:StartSizing("RIGHT") end)
+    rightHandle:SetScript("OnMouseUp", function()
+        VS.container:StopMovingOrSizing()
+        VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
+        VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+    end)
+
+    -- TOP edge
+    local topHandle = CreateFrame("Frame", nil, VS.container)
+    topHandle:SetPoint("TOPLEFT", VS.container, "TOPLEFT", t, 0)
+    topHandle:SetPoint("BOTTOMRIGHT", VS.container, "TOPRIGHT", -t, -t)
+    topHandle:EnableMouse(true)
+    topHandle:SetScript("OnMouseDown", function() VS.container:StartSizing("TOP") end)
+    topHandle:SetScript("OnMouseUp", function()
+        VS.container:StopMovingOrSizing()
+        VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
+        VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+    end)
+
+    -- BOTTOM edge
+    local bottomHandle = CreateFrame("Frame", nil, VS.container)
+    bottomHandle:SetPoint("TOPLEFT", VS.container, "BOTTOMLEFT", t, t)
+    bottomHandle:SetPoint("BOTTOMRIGHT", VS.container, "BOTTOMRIGHT", -t, 0)
+    bottomHandle:EnableMouse(true)
+    bottomHandle:SetScript("OnMouseDown", function() VS.container:StartSizing("BOTTOM") end)
+    bottomHandle:SetScript("OnMouseUp", function()
+        VS.container:StopMovingOrSizing()
+        VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
+        VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+    end)
+
+    -- Corner handles — small fixed-size squares at each corner
+    local corners = {
+        { point = "TOPLEFT",     a1 = "TOPLEFT",     x = 0, y = 0 },
+        { point = "TOPRIGHT",    a1 = "TOPRIGHT",    x = -t*2, y = 0 },
+        { point = "BOTTOMLEFT",  a1 = "BOTTOMLEFT",  x = 0, y = t*2 },
+        { point = "BOTTOMRIGHT", a1 = "BOTTOMRIGHT", x = -t*2, y = t*2 },
+    }
+    for _, c in ipairs(corners) do
+        local corner = CreateFrame("Frame", nil, VS.container)
+        corner:SetSize(t * 2, t * 2)
+        corner:SetPoint(c.a1, VS.container, c.a1, c.x, c.y)
+        corner:EnableMouse(true)
+        corner:SetScript("OnMouseDown", function() VS.container:StartSizing(c.point) end)
+        corner:SetScript("OnMouseUp", function()
+            VS.container:StopMovingOrSizing()
+            VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
+            VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+        end)
+    end
+
+    ---------------------------------------------------------------------------
+    -- OnSizeChanged: Reflow layout dynamically during resize
+    ---------------------------------------------------------------------------
+    VS.container:SetScript("OnSizeChanged", function(self, width, height)
+        VS:FlagLayoutDirty()
+    end)
 
     -- Register combat lockdown event and start hidden.
     VS.container:RegisterEvent("PLAYER_REGEN_DISABLED")

@@ -32,8 +32,9 @@ function VS:UpdateSliderLayout(slider)
     local db = VolumeSlidersMMDB
 
     -- Show/hide track textures
+    local trackH = VS.currentTrackHeight or 160
     if db.showSlider then
-        slider:SetHeight(db.sliderHeight or 160)
+        slider:SetHeight(trackH)
         slider:EnableMouse(true)
         slider.trackTop:SetAlpha(1)
         slider.trackMiddle:SetAlpha(1)
@@ -121,7 +122,7 @@ end
 -- Calculates the vertical pixels required above and below a slider track
 -- based on the currently visible components.
 -------------------------------------------------------------------------------
-function VS:GetSliderHeightExtent()
+function VS:GetSliderHeightExtent(trackH)
     local db = VolumeSlidersMMDB
     local hTop = 0
     local hBottom = 0
@@ -141,7 +142,7 @@ function VS:GetSliderHeightExtent()
     end
     if db.showMute then hBottom = hBottom + 26 + 8 + 15 + 2 end -- Check (26) + Pad (8) + Label (15) + Gap (2)
 
-    local hTrack = db.showSlider and (db.sliderHeight or 160) or 0
+    local hTrack = db.showSlider and (trackH or 160) or 0
     return hTop, hBottom, hTrack
 end
 
@@ -256,8 +257,8 @@ function VS:UpdateFooterLayout()
         ["showLfgPop"]        = { frame = VS.lfgCheck,               label = VS.lfgCheck and VS.lfgCheck.labelText },
         ["showCharacter"]     = { frame = VS.characterCheckbox,      label = VS.characterCheckbox and VS.characterCheckbox.labelText },
         ["showBackground"]    = { frame = VS.backgroundCheckbox,     label = VS.backgroundCheckbox and VS.backgroundCheckbox.labelText },
-        ["showOutput"]        = { frame = VS.outputDropdown,         label = VS.outputLabel },
-        ["showVoiceMode"]     = { frame = VS.voiceModeBtn,           label = VS.voiceModeLabel },
+        ["showOutput"]        = { frame = VS.outputDropdown },
+        ["showVoiceMode"]     = { frame = VS.voiceModeBtn },
     }
 
     -- Hide everything first to establish a clean state, and clear anchors
@@ -286,9 +287,7 @@ function VS:UpdateFooterLayout()
                 
                 -- Calculate effective width
                 local w = data.frame:GetWidth()
-                if key == "showOutput" or key == "showVoiceMode" then
-                    w = data.label:GetStringWidth() + 5 + w
-                elseif data.label then
+                if data.label then
                     w = w + 4 + data.label:GetStringWidth()
                 end
                 
@@ -311,7 +310,7 @@ function VS:UpdateFooterLayout()
             table.insert(currentRow, item)
             currentWidth = item.width
         else
-            local widthCondition = (currentWidth + spacingX + item.width <= availableWidth + 20)
+            local widthCondition = (currentWidth + spacingX + item.width <= availableWidth + 5)
             local countCondition = true
             if limitCols and #currentRow >= maxCols then
                 countCondition = false
@@ -362,15 +361,13 @@ function VS:UpdateFooterLayout()
             local offsetX = xPositions[idx]
             local absoluteOffsetX = VS.CONTENT_PADDING_X + offsetX
             
-            if key == "showOutput" or key == "showVoiceMode" then
-                data.label:SetWidth(data.label:GetStringWidth())
-                data.label:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", absoluteOffsetX, currentY)
-                data.frame:SetPoint("LEFT", data.label, "RIGHT", 5, 0)
-            else
+            if data.label then
+                -- Checkbox with right-aligned label
                 data.frame:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", absoluteOffsetX, currentY)
-                if data.label then
-                    data.label:SetPoint("LEFT", data.frame, "RIGHT", 4, 0)
-                end
+                data.label:SetPoint("LEFT", data.frame, "RIGHT", 4, 0)
+            else
+                -- Standalone widget (dropdown/button with no external label)
+                data.frame:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", absoluteOffsetX, currentY)
             end
         end
         -- Base widget height is ~24-26px plus margin
@@ -379,7 +376,7 @@ function VS:UpdateFooterLayout()
 
     if #rows > 0 then
         -- The height needs to encompass `currentY` plus arbitrary padding so it doesn't overlap the slider mute/arrows above
-        VS.footerCalculatedHeight = currentY + 30
+        VS.footerCalculatedHeight = currentY + 10
     else
         VS.footerCalculatedHeight = 0
     end
@@ -401,36 +398,43 @@ function VS:UpdateAppearance()
     local highSelected  = db.highColor or 2
     local lowSelected   = db.lowColor or 2
 
-    -- Update main panel sliders visibility and layout
-    if VS.sliders then
-        for _, slider in pairs(VS.sliders) do
-            VS:ApplySliderAppearance(slider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
-        end
-    end
-
-    -- Update the preview slider if it exists
-    if VS.previewSlider then
-        VS:ApplySliderAppearance(VS.previewSlider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
-
-        -- Update preview backdrop height if it exists
-        if VS.previewBackdrop then
-            local hTop, hBottom, hTrack = VS:GetSliderHeightExtent()
-            local totalSliderHeight = hTop + hTrack + hBottom
-            local backdropHeight = (totalSliderHeight * 0.9) + 60
-            VS.previewBackdrop:SetHeight(math_max(150, backdropHeight))
-        end
-    end
-
     -- Dynamically resize the main popup frame if it exists
-    if VS.container then
-        if not db.layoutDirty then 
-            return 
-        end
-        local hTop, hBottom, hTrack = VS:GetSliderHeightExtent()
+    if VS.container and db.layoutDirty then
 
-        -- Header: Dynamic height based on instruction text wrapping
+        local containerW = VS.container:GetWidth()
+        local containerH = VS.container:GetHeight()
+
+        -- Content area dimensions (inside the NineSlice border)
+        local contentW = containerW - VS.TEMPLATE_CONTENT_OFFSET_LEFT - VS.TEMPLATE_CONTENT_OFFSET_RIGHT
+        local contentH = containerH - VS.TEMPLATE_CONTENT_OFFSET_TOP - VS.TEMPLATE_CONTENT_OFFSET_BOTTOM
+
+        -- Count visible sliders
+        local numSliders = 0
+        local cvarOrder = db.sliderOrder or VS.DEFAULT_CVAR_ORDER
+        for _, cvar in ipairs(cvarOrder) do
+            local var = VS.CVAR_TO_VAR[cvar]
+            if var and db[var] then
+                numSliders = numSliders + 1
+            end
+        end
+        numSliders = math_max(1, numSliders) -- Avoid divide-by-zero
+
+        -- Derive dynamic slider spacing from current width
+        local usableW = contentW - (VS.SLIDER_PADDING_X * 2)
+        local dynamicSpacing
+        -- Pick the appropriate spacing floor based on title visibility
+        local minSpacing = db.showTitle and VS.MIN_SLIDER_SPACING_TITLED or VS.MIN_SLIDER_SPACING_UNTITLED
+
+        if numSliders > 1 then
+            dynamicSpacing = (usableW - numSliders * VS.SLIDER_COLUMN_WIDTH) / (numSliders - 1)
+            dynamicSpacing = math_max(minSpacing, dynamicSpacing)
+        else
+            dynamicSpacing = 0
+        end
+
+        -- Header height: instruction text + presets dropdown
         if VS.instructionText then
-            VS.instructionText:SetShown(db.showHelpText ~= false) -- Default true if nil
+            VS.instructionText:SetShown(db.showHelpText ~= false)
         end
         local headerHeight = VS.CONTENT_PADDING_TOP
         if db.showHelpText ~= false and VS.instructionText then
@@ -447,44 +451,40 @@ function VS:UpdateAppearance()
             else
                 VS.presetDropdown:SetPoint("TOP", VS.contentFrame, "TOP", 0, -VS.CONTENT_PADDING_TOP)
             end
-            
             if db.showPresetsDropdown ~= false then
                 headerHeight = headerHeight + 35
             end
         end
-        -- Calculate frame width based on active sliders
-        local spacing = db.sliderSpacing or 10
-        local i = 0
-        local cvarOrder = db.sliderOrder or VS.DEFAULT_CVAR_ORDER
 
-        for _, cvar in ipairs(cvarOrder) do
-            local var = VS.CVAR_TO_VAR[cvar]
-            if var and db[var] then
-                i = i + 1
-            end
-        end
-
-        local visibleWidth = (VS.CONTENT_PADDING_X * 2) + (i * VS.SLIDER_COLUMN_WIDTH) + (math_max(0, i - 1) * spacing)
-        local frameWidth = math_max(300, visibleWidth + VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT)
-        VS.container:SetWidth(frameWidth)
-
-        -- Determine dynamic footer layout and retrieve height
+        -- Footer layout first (to know its height)
         VS:UpdateFooterLayout()
         local footerHeight = VS.footerCalculatedHeight or 0
 
-        local contentHeight = headerHeight + hTop + hTrack + hBottom + footerHeight
-        local frameHeight = contentHeight + VS.TEMPLATE_CONTENT_OFFSET_TOP + VS.TEMPLATE_CONTENT_OFFSET_BOTTOM
+        -- Derive dynamic track height from remaining vertical space
+        -- Use a temporary track height of 160 to compute extent sizes
+        local hTop, hBottom, _ = VS:GetSliderHeightExtent(160)
+        local availableVertical = contentH - headerHeight - hTop - hBottom - footerHeight
+        local dynamicTrackHeight = math_max(VS.MIN_SLIDER_TRACK_HEIGHT, availableVertical)
+        VS.currentTrackHeight = dynamicTrackHeight
 
-        VS.container:SetHeight(frameHeight)
+        -- Compute minimum resize bounds
+        local minW = (VS.SLIDER_PADDING_X * 2) + (numSliders * VS.SLIDER_COLUMN_WIDTH) + (math_max(0, numSliders - 1) * minSpacing)
+        minW = minW + VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT
+        minW = math_max(200, minW)
 
-        -- Adjust startY so the sliders are pushed up when labels are hidden
+        local hTopMin, hBottomMin, _ = VS:GetSliderHeightExtent(VS.MIN_SLIDER_TRACK_HEIGHT)
+        local minH = headerHeight + hTopMin + VS.MIN_SLIDER_TRACK_HEIGHT + hBottomMin + footerHeight
+        minH = minH + VS.TEMPLATE_CONTENT_OFFSET_TOP + VS.TEMPLATE_CONTENT_OFFSET_BOTTOM
+        minH = math_max(200, minH)
+
+        VS.container:SetResizeBounds(minW, minH)
+
+        -- Anchor sliders with dynamic spacing and height
         local startY = -(headerHeight + hTop)
+        local startX = VS.SLIDER_PADDING_X
 
-        -- Re-anchor all active sliders to the new dynamic startY
         if VS.sliders then
-            local startX = VS.CONTENT_PADDING_X
             local k = 0
-
             for _, cvar in ipairs(cvarOrder) do
                 local slider = VS.sliders[cvar]
                 local var = VS.CVAR_TO_VAR[cvar]
@@ -493,7 +493,7 @@ function VS:UpdateAppearance()
                         slider:Hide()
                     else
                         slider:Show()
-                        local offsetX = startX + (k * (VS.SLIDER_COLUMN_WIDTH + spacing)) + (VS.SLIDER_COLUMN_WIDTH / 2) - 8
+                        local offsetX = startX + (k * (VS.SLIDER_COLUMN_WIDTH + dynamicSpacing)) + (VS.SLIDER_COLUMN_WIDTH / 2) - 8
                         slider:ClearAllPoints()
                         slider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", offsetX, startY)
                         k = k + 1
@@ -501,11 +501,31 @@ function VS:UpdateAppearance()
                 end
             end
         end
-        
-        -- Only flag the layout as clean if we actually populated sliders this pass
-        if VS.sliders and next(VS.sliders) ~= nil then
-            db.layoutDirty = false
+    end
+
+    -- Update main panel sliders visibility and layout
+    if VS.sliders then
+        for _, slider in pairs(VS.sliders) do
+            VS:ApplySliderAppearance(slider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
         end
+    end
+
+    -- Update the preview slider if it exists
+    if VS.previewSlider then
+        VS:ApplySliderAppearance(VS.previewSlider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
+
+        -- Update preview backdrop height if it exists
+        if VS.previewBackdrop then
+            local hTop, hBottom, hTrack = VS:GetSliderHeightExtent(VS.currentTrackHeight or 160)
+            local totalSliderHeight = hTop + hTrack + hBottom
+            local backdropHeight = (totalSliderHeight * 0.9) + 60
+            VS.previewBackdrop:SetHeight(math_max(150, backdropHeight))
+        end
+    end
+
+    -- Only flag the layout as clean if we actually populated sliders this pass
+    if VS.sliders and next(VS.sliders) ~= nil then
+        VolumeSlidersMMDB.layoutDirty = false
     end
 end
 
@@ -518,23 +538,13 @@ function VS:FlagLayoutDirty()
 end
 
 -------------------------------------------------------------------------------
--- RefreshTextInputs
+-- ApplyWindowBackground
 --
--- Syncs the height and spacing text input boxes to the current saved values.
--- Called when the settings panel is shown to ensure the displayed values
--- match the actual state.
+-- Updates the main popup window background color from saved variables.
 -------------------------------------------------------------------------------
-function VS:RefreshTextInputs()
-    local db = VolumeSlidersMMDB
-    local heightInput = _G["VolumeSlidersHeightInput"]
-    local spacingInput = _G["VolumeSlidersSpacingInput"]
-
-    if heightInput then
-        heightInput:SetText(tostring(db.sliderHeight or 150))
-        heightInput:SetCursorPosition(0)
-    end
-    if spacingInput then
-        spacingInput:SetText(tostring(db.sliderSpacing or 10))
-        spacingInput:SetCursorPosition(0)
+function VS:ApplyWindowBackground()
+    if VS.windowBg then
+        local db = VolumeSlidersMMDB
+        VS.windowBg:SetColorTexture(db.bgColorR or 0.05, db.bgColorG or 0.05, db.bgColorB or 0.05, db.bgColorA or 0.95)
     end
 end

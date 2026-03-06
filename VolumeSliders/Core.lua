@@ -58,7 +58,6 @@ _G.BINDING_NAME_VOLUMESLIDERS_MUTE_MASTER = "Toggle Master Mute"
 VolumeSlidersMMDB = VolumeSlidersMMDB or {
     minimapPos   = 180,   -- Degrees around the minimap (0 = top, 180 = bottom)
     hide         = false, -- Whether the minimap button is hidden
-    sliderHeight = 150,   -- Default vertical height
     minimalistMinimap = nil, -- Smart auto-detect if nil
     bindToMinimap     = true,
     minimalistOffsetX = -35, -- Default X offset for minimalist drag
@@ -101,29 +100,21 @@ VS.TEMPLATE_CONTENT_OFFSET_BOTTOM = 3
 -- Each slider occupies a column of this width.
 VS.SLIDER_COLUMN_WIDTH = 60
 
--- Fixed height of the slider track itself (excludes labels and buttons).
-VS.SLIDER_HEIGHT = 160
-
--- Total number of volume channel sliders displayed.
-VS.NUM_SLIDERS = 6
-
 -- Padding around the content area inside the NineSlice border.
 VS.CONTENT_PADDING_X      = 20
+VS.SLIDER_PADDING_X       = 10  -- Tighter inset for slider columns only
 VS.CONTENT_PADDING_TOP    = 15
 VS.CONTENT_PADDING_BOTTOM = 15
 
--- Derived dimensions — automatically adjust if the constants above change.
--- Note: CONTENT_WIDTH is dynamically calculated in VS:UpdateAppearance()
--- based on the number of active columns and current slider spacing.
+-- Resize constraints — floors for dynamic layout during window resize.
+VS.MIN_SLIDER_SPACING_TITLED   = -5   -- Floor when titles are shown (wider columns)
+VS.MIN_SLIDER_SPACING_UNTITLED = -20  -- Floor when titles are hidden (narrower columns)
+VS.MIN_SLIDER_TRACK_HEIGHT = 60  -- Minimum px for slider track height
+VS.RESIZE_HANDLE_THICKNESS = 6   -- Edge handle hit area width/height
 
--- Content height breakdown:
---   CONTENT_PADDING_TOP + 35 (presets dropdown) + 95 (instruction text + titles) +
---   SLIDER_HEIGHT + 100 (mute checkboxes shifted down) + 35 (bottom row) +
---   CONTENT_PADDING_BOTTOM
-VS.CONTENT_HEIGHT = VS.CONTENT_PADDING_TOP + 35 + 95 + VS.SLIDER_HEIGHT + 100 + 35 + VS.CONTENT_PADDING_BOTTOM
-
--- Default full frame size including NineSlice border insets (width is dynamic).
-VS.FRAME_HEIGHT = VS.CONTENT_HEIGHT + VS.TEMPLATE_CONTENT_OFFSET_TOP + VS.TEMPLATE_CONTENT_OFFSET_BOTTOM
+-- Default window dimensions (initial size before user resizes).
+VS.DEFAULT_WINDOW_WIDTH  = 375
+VS.DEFAULT_WINDOW_HEIGHT = 440
 
 -----------------------------------------
 -- Lookup Tables

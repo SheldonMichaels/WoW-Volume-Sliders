@@ -73,11 +73,25 @@
             "MinimapZoomIn",
             "MinimapZoomOut",
             "Sound_GameSystem_GetOutputDriverNameByIndex",
-            "GetMinimapShape"
+            "GetMinimapShape",
+            "ColorPickerFrame",
+            "SetCursor",
+            "ResetCursor",
+            "InCombatLockdown",
+            "GetCVarBool",
+            "C_AddOns",
+            "IsAltKeyDown",
+            "StaticPopupDialogs",
+            "StaticPopup_Show",
+            "StaticPopup_Hide",
+            "NUM_LE_LFG_CATEGORYS",
+            "ScrollingEdit_OnCursorChanged",
+            "ScrollingEdit_OnUpdate"
         ],
         "disable": [
             "undefined-doc-name",
-            "undefined-field"
+            "undefined-field",
+            "redundant-parameter"
         ]
     },
     "runtime": {

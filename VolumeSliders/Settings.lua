@@ -49,38 +49,6 @@ function VS:InitializeSettings()
     
     VS:CreateWindowSettingsContents(windowFrame)
 
-    function VS:RefreshTextInputs()
-        if VS.sliderHeightSlider and VS.sliderHeightInput then
-            local val = VolumeSlidersMMDB and VolumeSlidersMMDB.sliderHeight or 150
-            VS.sliderHeightSlider:SetValue(val)
-            VS.sliderHeightInput:SetText(tostring(val))
-            VS.sliderHeightInput:SetCursorPosition(0)
-        end
-        if VS.sliderSpacingSlider and VS.sliderSpacingInput then
-            local val = VolumeSlidersMMDB and VolumeSlidersMMDB.sliderSpacing or 10
-            VS.sliderSpacingSlider:SetValue(val)
-            VS.sliderSpacingInput:SetText(tostring(val))
-            VS.sliderSpacingInput:SetCursorPosition(0)
-        end
-    end
-
-    slidersFrame:SetScript("OnShow", function(self)
-        if VS.RefreshTextInputs then
-            VS:RefreshTextInputs()
-        end
-    end)
-    windowFrame:SetScript("OnShow", function(self)
-        -- Ensure height settings are refreshed on show
-        if VS.RefreshTextInputs then
-            VS:RefreshTextInputs()
-        end
-    end)
-
-    -- Pre-warm the UI elements immediately after creation
-    if VS.RefreshTextInputs then
-        VS:RefreshTextInputs()
-    end
-    
     -- Subcategory 3: Automation (formerly Zone Triggers)
     local triggerFrame = CreateFrame("Frame", "VolumeSlidersTriggerOptionsFrame", UIParent)
     local triggerCategory, triggerLayout = Settings.RegisterCanvasLayoutSubcategory(category, triggerFrame, "Automation")
@@ -232,6 +200,28 @@ function VS:CreateSettingsContents(parentFrame)
         db.showMinimapTooltip = self:GetChecked()
     end)
     AddTooltip(showTooltipCheck, "Show or hide the tooltip when hovering over the minimap icon.")
+
+    ---------------------------------------------------------------------------
+    -- Persistent Window Toggle
+    ---------------------------------------------------------------------------
+    local windowDivider = categoryFrame:CreateTexture(nil, "ARTWORK")
+    windowDivider:SetHeight(1)
+    windowDivider:SetPoint("TOPLEFT", showTooltipCheck, "BOTTOMLEFT", 5, -10)
+    windowDivider:SetWidth(560)
+    windowDivider:SetColorTexture(1, 1, 1, 0.2)
+
+    local windowBehaviorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    windowBehaviorLabel:SetPoint("TOPLEFT", windowDivider, "BOTTOMLEFT", 0, -15)
+    windowBehaviorLabel:SetText("Window Behavior")
+
+    local persistentCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    persistentCheck:SetPoint("TOPLEFT", windowBehaviorLabel, "BOTTOMLEFT", -5, -5)
+    persistentCheck.text:SetText("Persistent Window")
+    persistentCheck:SetChecked(db.persistentWindow == true)
+    persistentCheck:SetScript("OnClick", function(self)
+        db.persistentWindow = self:GetChecked()
+    end)
+    AddTooltip(persistentCheck, "When enabled, the slider window stays open when clicking outside.\nUse Escape or the X button to close.")
 end
 
 -------------------------------------------------------------------------------
@@ -1148,76 +1138,6 @@ function VS:CreateSlidersSettingsContents(parentFrame)
     AddTooltip(knobDropdown, "Select the visual style for the slider handle (knob).")
 
     ---------------------------------------------------------------------------
-    -- Slider Height Settings
-    ---------------------------------------------------------------------------
-    if db.sliderHeight == nil then
-        db.sliderHeight = 150
-    end
-
-    local heightLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    heightLabel:SetPoint("TOPLEFT", lowDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset - 10)
-    heightLabel:SetText("Slider Height")
-
-    local heightInput = CreateFrame("EditBox", "VolumeSlidersHeightInput", categoryFrame, "InputBoxTemplate")
-    heightInput:SetSize(40, 20)
-    heightInput:SetPoint("LEFT", heightLabel, "RIGHT", 10, 0)
-    heightInput:SetAutoFocus(false)
-    heightInput:SetNumeric(true)
-    heightInput:SetMaxLetters(3)
-    heightInput:SetFontObject("GameFontHighlight")
-    heightInput:SetText(tostring(db.sliderHeight or 150))
-
-    local heightSlider = CreateFrame("Slider", "VolumeSlidersHeightSlider", categoryFrame, "OptionsSliderTemplate")
-    heightSlider:SetPoint("TOPLEFT", heightLabel, "BOTTOMLEFT", -15, -15)
-    heightSlider:SetWidth(150)
-    heightSlider:SetMinMaxValues(100, 250)
-    heightSlider:SetValueStep(1)
-    heightSlider:SetObeyStepOnDrag(true)
-    heightSlider:SetValue(db.sliderHeight or 150)
-    if _G["VolumeSlidersHeightSliderLow"] then _G["VolumeSlidersHeightSliderLow"]:Hide() end
-    if _G["VolumeSlidersHeightSliderHigh"] then _G["VolumeSlidersHeightSliderHigh"]:Hide() end
-    if _G["VolumeSlidersHeightSliderText"] then _G["VolumeSlidersHeightSliderText"]:Hide() end
-
-    local math_floor = math.floor
-    local tonumber   = tonumber
-    local tostring   = tostring
-
-    -- Sync Input -> Slider
-    heightInput:SetScript("OnTextChanged", function(self, userInput)
-        if userInput then
-            local num = tonumber(self:GetText())
-            if num and num >= 100 and num <= 250 then
-                heightSlider:SetValue(num)
-            end
-        end
-    end)
-    heightInput:SetScript("OnEnterPressed", function(self)
-        self:ClearFocus()
-    end)
-    heightInput:SetScript("OnEscapePressed", function(self)
-        self:SetText(tostring(db.sliderHeight or 150))
-        self:ClearFocus()
-    end)
-
-    -- Sync Slider -> Input & Apply Settings
-    heightSlider:SetScript("OnValueChanged", function(self, value)
-        local num = math_floor(value + 0.5)
-        self:SetValue(num) -- snap to integer
-        heightInput:SetText(tostring(num))
-        if db.sliderHeight ~= num then
-            db.sliderHeight = num
-            VS:UpdateAppearance()
-        end
-    end)
-
-    VS.sliderHeightSlider = heightSlider
-    VS.sliderHeightInput = heightInput
-
-    local heightTooltipText = "Adjust the vertical height for the sliders in pixels.\nMin: 100, Max: 250\nChanges apply in real-time."
-    AddTooltip(heightSlider, heightTooltipText)
-    AddTooltip(heightInput, heightTooltipText)
-
-    ---------------------------------------------------------------------------
     -- Live Preview Column
     ---------------------------------------------------------------------------
     local previewLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
@@ -1246,6 +1166,7 @@ function VS:CreateSlidersSettingsContents(parentFrame)
     VS.previewSlider:ClearAllPoints()
     VS.previewSlider:SetPoint("CENTER", previewBackdrop, "CENTER", 0, 0)
     VS.previewSlider:SetScale(0.9)
+    VS.previewSlider:Show()
     VS.previewSlider:EnableMouse(false)
 
     -- Ensure the slider is drawn in front of the backdrop
@@ -1371,71 +1292,8 @@ function VS:CreateWindowSettingsContents(parentFrame)
     desc:SetJustifyH("LEFT")
 
     ---------------------------------------------------------------------------
-    -- Slider Spacing Settings
+    -- Window Background Color
     ---------------------------------------------------------------------------
-    if db.sliderSpacing == nil then
-        db.sliderSpacing = 10
-    end
-
-    local spacingLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    spacingLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 15, -30)
-    spacingLabel:SetText("Slider Spacing")
-
-    local spacingInput = CreateFrame("EditBox", "VolumeSlidersSpacingInput", categoryFrame, "InputBoxTemplate")
-    spacingInput:SetSize(40, 20)
-    spacingInput:SetPoint("LEFT", spacingLabel, "RIGHT", 10, 0)
-    spacingInput:SetAutoFocus(false)
-    spacingInput:SetNumeric(true)
-    spacingInput:SetMaxLetters(2)
-    spacingInput:SetFontObject("GameFontHighlight")
-    spacingInput:SetText(tostring(db.sliderSpacing or 10))
-
-    local spacingSlider = CreateFrame("Slider", "VolumeSlidersSpacingSlider", categoryFrame, "OptionsSliderTemplate")
-    spacingSlider:SetPoint("TOPLEFT", spacingLabel, "BOTTOMLEFT", 0, -15)
-    spacingSlider:SetWidth(150)
-    spacingSlider:SetMinMaxValues(0, 40)
-    spacingSlider:SetValueStep(1)
-    spacingSlider:SetObeyStepOnDrag(true)
-    spacingSlider:SetValue(db.sliderSpacing or 10)
-    if _G["VolumeSlidersSpacingSliderLow"] then _G["VolumeSlidersSpacingSliderLow"]:Hide() end
-    if _G["VolumeSlidersSpacingSliderHigh"] then _G["VolumeSlidersSpacingSliderHigh"]:Hide() end
-    if _G["VolumeSlidersSpacingSliderText"] then _G["VolumeSlidersSpacingSliderText"]:Hide() end
-
-    -- Sync Input -> Slider
-    spacingInput:SetScript("OnTextChanged", function(self, userInput)
-        if userInput then
-            local num = tonumber(self:GetText())
-            if num and num >= 0 and num <= 40 then
-                spacingSlider:SetValue(num)
-            end
-        end
-    end)
-    spacingInput:SetScript("OnEnterPressed", function(self)
-        self:ClearFocus()
-    end)
-    spacingInput:SetScript("OnEscapePressed", function(self)
-        self:SetText(tostring(db.sliderSpacing or 10))
-        self:ClearFocus()
-    end)
-
-    local math_floor = math.floor
-    local tonumber   = tonumber
-    local tostring   = tostring
-
-    -- Sync Slider -> Input & Apply Settings
-    spacingSlider:SetScript("OnValueChanged", function(self, value)
-        local num = math_floor(value + 0.5)
-        self:SetValue(num) -- snap to integer
-        spacingInput:SetText(tostring(num))
-        if db.sliderSpacing ~= num then
-            db.sliderSpacing = num
-            VS:UpdateAppearance()
-        end
-    end)
-
-    VS.sliderSpacingSlider = spacingSlider
-    VS.sliderSpacingInput = spacingInput
-
     local function AddTooltipLoc(frame, text)
         frame:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -1446,9 +1304,91 @@ function VS:CreateWindowSettingsContents(parentFrame)
             GameTooltip:Hide()
         end)
     end
-    local spacingTooltipText = "Adjust the horizontal spacing between the slider columns in pixels.\nMin: 0, Max: 40\nChanges apply in real-time."
-    AddTooltipLoc(spacingSlider, spacingTooltipText)
-    AddTooltipLoc(spacingInput, spacingTooltipText)
+
+    local bgColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    bgColorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 15, -30)
+    bgColorLabel:SetText("Window Background")
+
+    -- Color Swatch Button
+    local colorSwatch = CreateFrame("Button", nil, categoryFrame)
+    colorSwatch:SetSize(20, 20)
+    colorSwatch:SetPoint("TOPLEFT", bgColorLabel, "BOTTOMLEFT", 0, -8)
+
+    local swatchBorder = colorSwatch:CreateTexture(nil, "BORDER")
+    swatchBorder:SetAllPoints()
+    swatchBorder:SetColorTexture(1, 1, 1, 0.8)
+
+    local swatchInner = colorSwatch:CreateTexture(nil, "ARTWORK")
+    swatchInner:SetPoint("TOPLEFT", 1, -1)
+    swatchInner:SetPoint("BOTTOMRIGHT", -1, 1)
+    swatchInner:SetColorTexture(db.bgColorR or 0.05, db.bgColorG or 0.05, db.bgColorB or 0.05, 1)
+
+    local colorText = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    colorText:SetPoint("LEFT", colorSwatch, "RIGHT", 8, 0)
+    colorText:SetText("Click to change")
+
+    ---@diagnostic disable: undefined-global
+    colorSwatch:SetScript("OnClick", function()
+        local info = {}
+        info.r = db.bgColorR or 0.05
+        info.g = db.bgColorG or 0.05
+        info.b = db.bgColorB or 0.05
+        info.opacity = 1 - (db.bgColorA or 0.95) -- ColorPickerFrame uses inverted opacity
+        info.hasOpacity = true
+        info.swatchFunc = function()
+            local r, g, b = ColorPickerFrame:GetColorRGB()
+            db.bgColorR = r
+            db.bgColorG = g
+            db.bgColorB = b
+            swatchInner:SetColorTexture(r, g, b, 1)
+            VS:ApplyWindowBackground()
+        end
+        info.opacityFunc = function()
+            local a = 1 - ColorPickerFrame:GetColorAlpha()
+            db.bgColorA = a
+            VS:ApplyWindowBackground()
+        end
+        info.cancelFunc = function(previousValues)
+            db.bgColorR = previousValues.r
+            db.bgColorG = previousValues.g
+            db.bgColorB = previousValues.b
+            db.bgColorA = 1 - (previousValues.a or 0.05)
+            swatchInner:SetColorTexture(db.bgColorR, db.bgColorG, db.bgColorB, 1)
+            VS:ApplyWindowBackground()
+        end
+        ColorPickerFrame:SetupColorPickerAndShow(info)
+    end)
+    AddTooltipLoc(colorSwatch, "Click to choose a background color for the slider window.")
+    ---@diagnostic enable: undefined-global
+
+    -- Opacity Slider
+    local opacityLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    opacityLabel:SetPoint("TOPLEFT", colorSwatch, "BOTTOMLEFT", 0, -12)
+    opacityLabel:SetText("Opacity")
+
+    local opacitySlider = CreateFrame("Slider", "VolumeSlidersOpacitySlider", categoryFrame, "OptionsSliderTemplate")
+    opacitySlider:SetPoint("TOPLEFT", opacityLabel, "BOTTOMLEFT", 0, -8)
+    opacitySlider:SetWidth(150)
+    opacitySlider:SetMinMaxValues(0, 100)
+    opacitySlider:SetValueStep(1)
+    opacitySlider:SetObeyStepOnDrag(true)
+    opacitySlider:SetValue(math.floor((db.bgColorA or 0.95) * 100 + 0.5))
+    if _G["VolumeSlidersOpacitySliderLow"] then _G["VolumeSlidersOpacitySliderLow"]:Hide() end
+    if _G["VolumeSlidersOpacitySliderHigh"] then _G["VolumeSlidersOpacitySliderHigh"]:Hide() end
+    if _G["VolumeSlidersOpacitySliderText"] then _G["VolumeSlidersOpacitySliderText"]:Hide() end
+
+    local opacityValueText = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    opacityValueText:SetPoint("LEFT", opacityLabel, "RIGHT", 8, 0)
+    opacityValueText:SetText(tostring(math.floor((db.bgColorA or 0.95) * 100 + 0.5)) .. "%")
+
+    opacitySlider:SetScript("OnValueChanged", function(self, value)
+        local num = math.floor(value + 0.5)
+        self:SetValue(num)
+        db.bgColorA = num / 100
+        opacityValueText:SetText(tostring(num) .. "%")
+        VS:ApplyWindowBackground()
+    end)
+    AddTooltipLoc(opacitySlider, "Adjust the background opacity of the slider window.\n0% = fully transparent, 100% = fully opaque")
 
     ---------------------------------------------------------------------------
     -- Vertical Divider
@@ -1496,7 +1436,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     -- Channel Visibility
     ---------------------------------------------------------------------------
     local channelLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    channelLabel:SetPoint("TOPLEFT", spacingSlider, "BOTTOMLEFT", 0, -30)
+    channelLabel:SetPoint("TOPLEFT", opacitySlider, "BOTTOMLEFT", 0, -30)
     channelLabel:SetText("Channel Visibility")
 
     local channelSubLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -1556,7 +1496,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
         frame.checkbox:SetChecked(db[data.var] == true)
         frame.checkbox:SetScript("OnClick", function(self)
             db[data.var] = self:GetChecked()
-            VS:UpdateAppearance()
+            VS:FlagLayoutDirty()
         end)
 
         frame:SetScript("OnEnter", function(self)
@@ -1667,7 +1607,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
             local num = tonumber(self:GetText())
             if num and num > 0 and num <= 20 then
                 db.maxFooterCols = num
-                VS:UpdateAppearance()
+                VS:FlagLayoutDirty()
             end
         end
     end)
@@ -1737,7 +1677,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
         frame.checkbox:SetChecked(db[elementData] == true)
         frame.checkbox:SetScript("OnClick", function(self)
             db[elementData] = self:GetChecked()
-            VS:UpdateAppearance()
+            VS:FlagLayoutDirty()
         end)
 
         frame:SetScript("OnEnter", function(self)

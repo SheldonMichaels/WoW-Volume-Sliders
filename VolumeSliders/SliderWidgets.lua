@@ -54,7 +54,7 @@ local function CreateSliderBase(parent, name, label, tooltipText)
     local slider = CreateFrame("Slider", name, parent)
     slider:Hide() -- Force hide on creation. Let UpdateAppearance manage visibility.
     slider:SetOrientation("VERTICAL")
-    slider:SetHeight(db.sliderHeight or VS.SLIDER_HEIGHT)
+    slider:SetHeight(VS.currentTrackHeight or 160)
     slider:SetWidth(20)
 
     -- Expand the clickable area so the user doesn't have to hit the narrow

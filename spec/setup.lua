@@ -67,6 +67,7 @@ local function createMockFrame(frameType, name, parent, template)
         
         Hide = function(self) self.shown = false end,
         Show = function(self) self.shown = true end,
+        SetShown = function(self, state) self.shown = state end,
         IsShown = function(self) return self.shown end,
         GetName = function(self) return self.name end,
         SetParent = function(self, p) self.parent = p end,
@@ -100,9 +101,18 @@ local function createMockFrame(frameType, name, parent, template)
         SetClampedToScreen = function(self, clamped) end,
         EnableMouse = function(self, enable) end,
         RegisterForDrag = function(self, btn) end,
-        SetMovable = function(self, movable) end,
-        StartMoving = function(self) end,
-        StopMovingOrSizing = function(self) end,
+        SetMovable = function(self, movable) self.movable = movable end,
+        SetResizable = function(self, resizable) self.resizable = resizable end,
+        SetResizeBounds = function(self, minW, minH, maxW, maxH) 
+            self.minW, self.minH = minW, minH
+            self.maxW, self.maxH = maxW, maxH
+        end,
+        StartMoving = function(self) self.isMoving = true end,
+        StartSizing = function(self, anchor) self.isResizing = anchor end,
+        StopMovingOrSizing = function(self) 
+            self.isMoving = false
+            self.isResizing = nil
+        end,
         RegisterEvent = function(self, ev) end,
         UnregisterEvent = function(self, ev) end,
         UnregisterAllEvents = function(self) end,
@@ -110,38 +120,37 @@ local function createMockFrame(frameType, name, parent, template)
         
         -- Special elements
         CreateTexture = function() return createMockFrame("Texture") end,
-        CreateFontString = function() return {
-            SetPoint = function() end,
-            SetText = function() end,
-            GetText = function() return "" end,
-            SetTextColor = function() end,
-            SetFontObject = function() end,
-            SetWidth = function() end,
-            SetHeight = function() end,
-            SetJustifyH = function() end,
-            SetJustifyV = function() end,
-            SetWordWrap = function() end,
-            SetMaxLines = function() end,
-            SetSpacing = function() end,
-            GetStringWidth = function() return 100 end,
-            Show = function() end,
-            Hide = function() end,
-        } end,
+        CreateFontString = function() return createMockFrame("FontString") end,
         GetFontString = function() return nil end,
         SetNormalFontObject = function() end,
         SetHighlightFontObject = function() end,
         
-        -- Textures
+        -- Textures/FontStrings
         SetAtlas = function() end,
-        SetColorTexture = function() end,
+        SetNormalAtlas = function() end,
+        SetPushedAtlas = function() end,
+        SetHighlightTexture = function() end,
+        SetColorTexture = function(self, r, g, b, a) 
+            self.r, self.g, self.b, self.a = r, g, b, a
+        end,
         SetTexture = function() end,
         SetTexCoord = function() end,
-        SetDesaturated = function() end,
+        SetDesaturated = function(self, state) self.desaturated = state end,
         SetVertexColor = function() end,
         SetAlpha = function(self, a) self.alpha = a end,
         GetAlpha = function(self) return self.alpha or 1 end,
         SetBlendMode = function() end,
         SetAllPoints = function() end,
+        SetTextColor = function() end,
+        SetText = function() end,
+        GetText = function() return "" end,
+        GetStringWidth = function() return 100 end,
+        GetStringHeight = function() return 12 end,
+        SetJustifyH = function() end,
+        SetJustifyV = function() end,
+        SetWordWrap = function() end,
+        SetMaxLines = function() end,
+        SetSpacing = function() end,
         
         -- Sliders/Checkboxes
         SetValue = function() end,
@@ -172,29 +181,26 @@ local function createMockFrame(frameType, name, parent, template)
         SetThumbTexture = function() end,
         GetThumbTexture = function(self) return self.thumb end,
         SetHitRectInsets = function() end,
-        
-        -- Mocking children for templates
-        NineSlice = { Text = { SetText = function() end } },
-        ClosePanelButton = { SetScript = function() end },
-        Bg = { Hide = function() end },
-        thumb = { SetDesaturated = function() end, SetAlpha = function() end },
-        trackTop = { SetAlpha = function() end },
-        trackMiddle = { SetAlpha = function() end },
-        trackBottom = { SetAlpha = function() end },
-        upTex = { SetDesaturated = function() end, SetAlpha = function() end },
-        downTex = { SetDesaturated = function() end, SetAlpha = function() end },
-        valueText = { SetText = function() end, SetTextColor = function() end },
-        label = { SetTextColor = function() end },
-        muteCheck = { SetScript = function() end, EnableMouse = function() end, Show = function() end, muteLabel = { Show=function() end} },
-        upBtn = { SetScript = function() end, EnableMouse = function() end },
-        downBtn = { SetScript = function() end, EnableMouse = function() end },
-        text = { SetText=function() end, SetTextColor=function() end, SetFontObject=function() end }
     }
-    
-    -- Specific methods for ScrollBox
-    if template == "WowScrollBoxList" then
-        f.Init = function() end
-        f.SetDataProvider = function() end
+
+    -- Add common sub-components only for top-level frames to avoid infinite recursion
+    if not name or not name:find("Sub") then
+        f.NineSlice = { Text = createMockFrame("FontString", "SubText") }
+        f.ClosePanelButton = createMockFrame("Button", "SubClose")
+        f.Bg = createMockFrame("Frame", "SubBg")
+        f.thumb = createMockFrame("Frame", "SubThumb")
+        f.trackTop = createMockFrame("Frame", "SubTrackT")
+        f.trackMiddle = createMockFrame("Frame", "SubTrackM")
+        f.trackBottom = createMockFrame("Frame", "SubTrackB")
+        f.upTex = createMockFrame("Texture", "SubUpTex")
+        f.downTex = createMockFrame("Texture", "SubDownTex")
+        f.valueText = createMockFrame("FontString", "SubValue")
+        f.label = createMockFrame("FontString", "SubLabel")
+        f.muteCheck = createMockFrame("CheckButton", "SubMute")
+        f.muteCheck.muteLabel = createMockFrame("FontString", "SubMuteLabel")
+        f.upBtn = createMockFrame("Button", "SubUpBtn")
+        f.downBtn = createMockFrame("Button", "SubDownBtn")
+        f.text = createMockFrame("FontString", "SubText2")
     end
     
     return f
@@ -232,6 +238,13 @@ _G.VolumeSlidersMMDB = {
     showVoiceDucking = true,
     showMicVolume = true,
     showMicSensitivity = true,
+    -- v2.9.0 New Defaults
+    bgColorR = 0.05,
+    bgColorG = 0.05,
+    bgColorB = 0.05,
+    bgColorA = 0.95,
+    persistentWindow = false,
+    layoutDirty = true,
 }
 
 _G.VolumeSlidersDB = {}
@@ -294,6 +307,12 @@ _G.VERY_LIGHT_GRAY_COLOR = { GetRGB = function() return 0.9, 0.9, 0.9 end }
 -- Global API Tables
 _G.C_Sound = {
     GetOutputDevices = function() return {} end,
+    GetCurrentAudioDevice = function() return "System Default" end,
+}
+_G.ColorPickerFrame = {
+    SetupColorPickerAndShow = function(self, info) self.info = info end,
+    GetColorRGB = function() return 0.5, 0.5, 0.5 end,
+    GetColorAlpha = function() return 0.5 end,
 }
 _G.Sound_GameSystem_GetNumOutputDrivers = function() return 1 end
 _G.Sound_GameSystem_GetOutputDriverNameByIndex = function(index) return "System Default" end

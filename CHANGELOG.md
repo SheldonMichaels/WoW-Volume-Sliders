@@ -1,3 +1,19 @@
+## v2.9.0 — 2026-03-05
+
+### Added
+- **Dynamic Window Resizing**: The popup window now supports free-form resizing. Handles on edges and corners allow for custom width and height.
+- **Dynamic Layout Engine**: Sliders now automatically reflow and adjust their spacing based on the window width. 
+- **Adaptive Spacing Floor**: Intelligently switches between tight packing (-20px) when titles are hidden and cleaner spacing (-5px) when titles are shown.
+- **Background Color Picker**: Accessible via Settings > Window, allowing for custom background colors and opacity levels.
+- **Persistent Window Toggle**: A new "Keep Open" option prevents the window from closing when clicking outside of it.
+- **Automated Resize Bounds**: The window's minimum size is now dynamically calculated based on the number of visible sliders to prevent layout breakage.
+
+### Fixed
+- Fixed a crash when canceling the Background Color Picker.
+- Fixed an issue where the background color preview swatch had incorrect draw layering.
+- Fixed a visibility bug where the preview slider in the settings was hidden by default.
+- Corrected various padding and spacing inconsistencies in the footer and slider columns.
+
 ## v2.8.0
 
 - **Under the Hood:** Completely overhauled the internal rendering and event tracking engine to dramatically improve performance. 
