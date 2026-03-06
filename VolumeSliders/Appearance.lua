@@ -423,6 +423,9 @@ function VS:UpdateAppearance()
 
     -- Dynamically resize the main popup frame if it exists
     if VS.container then
+        if not db.layoutDirty then 
+            return 
+        end
         local hTop, hBottom, hTrack = VS:GetSliderHeightExtent()
 
         -- Header: Dynamic height based on instruction text wrapping
@@ -498,6 +501,19 @@ function VS:UpdateAppearance()
                 end
             end
         end
+        
+        -- Only flag the layout as clean if we actually populated sliders this pass
+        if VS.sliders and next(VS.sliders) ~= nil then
+            db.layoutDirty = false
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
+function VS:FlagLayoutDirty()
+    VolumeSlidersMMDB.layoutDirty = true
+    if VS.container and VS.container:IsShown() then
+        VS:UpdateAppearance()
     end
 end
 

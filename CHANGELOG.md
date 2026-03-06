@@ -1,3 +1,10 @@
+## v2.8.0
+
+- **Under the Hood:** Completely overhauled the internal rendering and event tracking engine to dramatically improve performance. 
+- **Optimization:** The custom minimalist minimap icon now dynamically reduces its polling rate while the mouse is away, saving CPU cycles during gameplay.
+- **Optimization:** Eliminated garbage collection spikes triggered during rapid mouse wheel volume adjustments.
+- **Optimization:** Rewrote the main sliding panel rendering loop to use a "dirty-flag" model, preventing the game from executing thousands of unnecessary math calculations when the UI hasn't structurally changed.
+
 ## v2.7.0
 
 ### Added

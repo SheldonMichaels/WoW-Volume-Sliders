@@ -1,0 +1,31 @@
+name: Busted Tests
+
+on:
+  push:
+    branches: [ "master", "dev/*" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Lua
+      uses: leafo/gh-actions-lua@v9
+      with:
+        luaVersion: "5.1.5"
+
+    - name: Setup Luarocks
+      uses: leafo/gh-actions-luarocks@v4
+
+    - name: Install dependencies
+      run: |
+        luarocks install busted
+        luarocks install luacov
+
+    - name: Run Busted
+      run: |
+        busted . --verbose

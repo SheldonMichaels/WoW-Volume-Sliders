@@ -26,13 +26,29 @@ _G.GameTooltip = {
 _G.Minimap = {
     IsMouseOver = function() return false end,
     GetScript = function() end,
+    HookScript = function() end,
     HasScript = function() return false end,
     GetFrameLevel = function() return 10 end,
     GetEffectiveScale = function() return 1.0 end,
     GetRight = function() return 100 end,
     GetBottom = function() return 100 end,
-    ZoomIn = { IsMouseOver = function() return false end },
-    ZoomOut = { IsMouseOver = function() return false end },
+    ZoomIn = { 
+        IsMouseOver = function() return false end,
+        HookScript = function() end,
+    },
+    ZoomOut = { 
+        IsMouseOver = function() return false end,
+        HookScript = function() end,
+    },
+}
+
+_G.MinimapZoomIn = {
+    IsMouseOver = function() return false end,
+    HookScript = function() end,
+}
+_G.MinimapZoomOut = {
+    IsMouseOver = function() return false end,
+    HookScript = function() end,
 }
 
 -- Basic Frame Creation Mock
@@ -122,7 +138,9 @@ local function createMockFrame(frameType, name, parent, template)
         SetTexCoord = function() end,
         SetDesaturated = function() end,
         SetVertexColor = function() end,
-        SetAlpha = function() end,
+        SetAlpha = function(self, a) self.alpha = a end,
+        GetAlpha = function(self) return self.alpha or 1 end,
+        SetBlendMode = function() end,
         SetAllPoints = function() end,
         
         -- Sliders/Checkboxes
@@ -281,10 +299,59 @@ _G.Sound_GameSystem_GetNumOutputDrivers = function() return 1 end
 _G.Sound_GameSystem_GetOutputDriverNameByIndex = function(index) return "System Default" end
 _G.Sound_GameSystem_RestartSoundSystem = function() end
 
+-- C_Timer Mocking Engine
+local mockTime = 0
+local activeTickers = {}
+
+_G.AdvanceTime = function(delta)
+    mockTime = mockTime + delta
+    for i = #activeTickers, 1, -1 do
+        local ticker = activeTickers[i]
+        if not ticker.cancelled then
+            ticker.elapsed = ticker.elapsed + delta
+            while ticker.elapsed >= ticker.duration and not ticker.cancelled do
+                ticker.elapsed = ticker.elapsed - ticker.duration
+                ticker.callback()
+                if ticker.iterations then
+                    ticker.currentIteration = ticker.currentIteration + 1
+                    if ticker.currentIteration >= ticker.iterations then
+                        ticker.cancelled = true
+                    end
+                end
+            end
+        end
+        if ticker.cancelled then
+            table.remove(activeTickers, i)
+        end
+    end
+end
+
 _G.C_Timer = {
-    After = function(t, cb) cb() end,
-    NewTicker = function(t, cb) return { Cancel = function() end } end,
-    NewTimer = function(t, cb) return { Cancel = function() end } end,
+    After = function(duration, cb)
+        table.insert(activeTickers, {
+            duration = duration,
+            elapsed = 0,
+            callback = cb,
+            iterations = 1,
+            currentIteration = 0,
+            cancelled = false
+        })
+    end,
+    NewTicker = function(duration, cb, iterations)
+        local ticker = {
+            duration = duration,
+            elapsed = 0,
+            callback = cb,
+            iterations = iterations,
+            currentIteration = 0,
+            cancelled = false
+        }
+        table.insert(activeTickers, ticker)
+        return { Cancel = function() ticker.cancelled = true end }
+    end,
+    NewTimer = function(duration, cb)
+        return _G.C_Timer.NewTicker(duration, cb, 1)
+    end,
 }
 
 _G.C_AddOns = {

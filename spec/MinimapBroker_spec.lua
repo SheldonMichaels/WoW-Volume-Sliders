@@ -12,10 +12,6 @@ describe("MinimapBroker Module", function()
         
         -- Mock the GetVolumeText dependency which is usually in another file
         VS.GetVolumeText = function() return "50%" end
-        VS.VolumeSliders_ToggleMute = function()
-            local current = _G.GetCVar("Sound_EnableAllSound")
-            _G.SetCVar("Sound_EnableAllSound", current == "1" and "0" or "1")
-        end
         VS.CreateOptionsFrame = function() 
             VS.container = _G.CreateFrame("Frame") 
             VS.container:Hide()

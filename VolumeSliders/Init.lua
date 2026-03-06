@@ -87,6 +87,10 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- Layout Defaults
     db.sliderHeight = db.sliderHeight or 150
     db.sliderSpacing = db.sliderSpacing or 10
+    
+    -- The layout must unconditionally update at least once upon session startup 
+    -- to map all newly instantiated UI frames before they are cached as clean.
+    db.layoutDirty = true
 
     -- Slider Order Defaults
     if not db.sliderOrder then

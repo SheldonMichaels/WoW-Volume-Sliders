@@ -314,10 +314,19 @@ end
 -----------------------------------------
 
 function VS:GetActiveTriggerString(button, delta)
+    local isShift = IsShiftKeyDown()
+    local isCtrl = IsControlKeyDown()
+    local isAlt = IsAltKeyDown()
+    
     local mods = ""
-    if IsShiftKeyDown() then mods = mods .. "Shift+" end
-    if IsControlKeyDown() then mods = mods .. "Ctrl+" end
-    if IsAltKeyDown() then mods = mods .. "Alt+" end
+    if isShift and isCtrl and isAlt then mods = "Shift+Ctrl+Alt+"
+    elseif isShift and isCtrl then mods = "Shift+Ctrl+"
+    elseif isShift and isAlt then mods = "Shift+Alt+"
+    elseif isCtrl and isAlt then mods = "Ctrl+Alt+"
+    elseif isShift then mods = "Shift+"
+    elseif isCtrl then mods = "Ctrl+"
+    elseif isAlt then mods = "Alt+"
+    end
     
     if delta then
         return mods .. (delta > 0 and "WheelUp" or "WheelDown")

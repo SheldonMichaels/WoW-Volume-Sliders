@@ -130,11 +130,20 @@ end
 -- Hover Evaluation Helper
 -----------------------------------------
 local hoverTimer = 0
+local checkInterval = 0.15
+
 local function HoverPolling_OnUpdate(self, elapsed)
     hoverTimer = hoverTimer + elapsed
-    if hoverTimer > 0.15 then
+    if hoverTimer > checkInterval then
         hoverTimer = 0
-        VS:CheckMinimapHover()
+        local isOver = VS:CheckMinimapHover()
+        -- Dynamic Throttling: If we are actively hovering, check frequently (0.15s) for snappy response.
+        -- If we aren't, back off the polling rate to 0.5s to save CPU cycles.
+        if isOver then
+            checkInterval = 0.15
+        else
+            checkInterval = 0.5
+        end
     end
 end
 
@@ -144,6 +153,7 @@ function VS:StartHoverPolling()
     VS.minimalistButton:SetAlpha(1)
     if VS.minimalistButton:GetScript("OnUpdate") ~= HoverPolling_OnUpdate then
         hoverTimer = 0
+        checkInterval = 0.15 -- Reset to fast polling when newly entering
         VS.minimalistButton:SetScript("OnUpdate", HoverPolling_OnUpdate)
     end
 end

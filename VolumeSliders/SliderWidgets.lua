@@ -52,6 +52,7 @@ local function CreateSliderBase(parent, name, label, tooltipText)
     local db = VolumeSlidersMMDB
 
     local slider = CreateFrame("Slider", name, parent)
+    slider:Hide() -- Force hide on creation. Let UpdateAppearance manage visibility.
     slider:SetOrientation("VERTICAL")
     slider:SetHeight(db.sliderHeight or VS.SLIDER_HEIGHT)
     slider:SetWidth(20)
