@@ -337,6 +337,14 @@ function VS:CreateMinimalistButton()
         GameTooltip:Hide()
     end)
     
+    VS.minimalistButton = btn
+end
+
+--- Apply hooks to the native Minimap and zoom buttons to trigger the custom
+--- hover polling logic. Only applied once per session.
+function VS:ApplyMinimapHoverHooks()
+    if VS.minimapHooksApplied then return end
+
     local function HookHover(frame)
         if not frame then return end
         frame:HookScript("OnEnter", function() VS:StartHoverPolling() end)
@@ -347,8 +355,8 @@ function VS:CreateMinimalistButton()
     HookHover(Minimap.ZoomOut)
     HookHover(MinimapZoomIn)
     HookHover(MinimapZoomOut)
-    
-    VS.minimalistButton = btn
+
+    VS.minimapHooksApplied = true
 end
 
 --- Toggle visibility between the Standard LibDBIcon minimap button
@@ -371,6 +379,7 @@ function VS:UpdateMiniMapButtonVisibility()
         
         if VolumeSlidersMMDB.bindToMinimap then
             VS.minimalistButton:SetParent(Minimap)
+            VS:ApplyMinimapHoverHooks()
             if VS:CheckMinimapHover() then
                 VS:StartHoverPolling()
             end

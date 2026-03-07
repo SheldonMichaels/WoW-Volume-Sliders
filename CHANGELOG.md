@@ -1,3 +1,11 @@
+## v2.9.2 — 2026-03-06
+
+### Added
+- **Minimap Performance Optimization**: Significantly reduced CPU overhead for users who have the minimap button disabled or un-bound. Native Minimap and zoom button hooks are now deferred and only applied when actually needed.
+
+### Improved
+- **Settings Transparency**: Added "Requires Reload" notifications to the Minimap Icon settings to clearly inform users when a UI reload is necessary to fully purge deferred hooks.
+
 ## v2.9.1 — 2026-03-06
 
 ### Fixed

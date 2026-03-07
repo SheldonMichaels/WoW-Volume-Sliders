@@ -20,6 +20,7 @@ luacheck_output.txt
 log*.txt
 luac.out
 .luac
+.luacheck_log/
 
 # Agents
 GEMINI.md

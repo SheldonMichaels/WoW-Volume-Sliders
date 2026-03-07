@@ -172,7 +172,7 @@ function VS:CreateSettingsContents(parentFrame)
             VS:UpdateMiniMapButtonVisibility()
         end
     end)
-    AddTooltip(customIconCheck, "Show a minimalist speaker near the zoom controls instead of the standard ringed minimap button.")
+    AddTooltip(customIconCheck, "Show a minimalist speaker near the zoom controls instead of the standard ringed minimap button.\n\n|cffff0000Note:|r Disabling this after it has been enabled requires a UI reload to fully remove the Minimap hooks.")
     
     bindMinimapCheck:SetScript("OnClick", function(self)
         db.bindToMinimap = self:GetChecked()
@@ -180,7 +180,7 @@ function VS:CreateSettingsContents(parentFrame)
             VS:UpdateMiniMapButtonVisibility()
         end
     end)
-    AddTooltip(bindMinimapCheck, "If checked, the custom icon fades in when hovering the Minimap and scales with it.\nIf unchecked, it remains permanently visible and uses standard UI scaling.")
+    AddTooltip(bindMinimapCheck, "If checked, the custom icon fades in when hovering the Minimap and scales with it.\nIf unchecked, it remains permanently visible and uses standard UI scaling.\n\n|cffff0000Note:|r Disabling this requires a UI reload to fully remove the Minimap hooks.")
 
     resetBtn:SetScript("OnClick", function()
         VolumeSlidersMMDB.minimalistOffsetX = -35
