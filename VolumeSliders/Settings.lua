@@ -67,8 +67,8 @@ function VS:InitializeSettings()
         if VS.RefreshTriggerSettings then
             VS:RefreshTriggerSettings()
         end
-        if VS.RefreshAutomationTextInputs then
-            VS:RefreshAutomationTextInputs()
+        if VS.RefreshAutomationProfiles then
+            VS:RefreshAutomationProfiles()
         end
     end)
     
@@ -327,151 +327,73 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     separator1:SetColorTexture(1, 1, 1, 0.2)
 
     ---------------------------------------------------------------------------
-    -- Volume Slider Helpers
+    -- Automation Preset Selectors
     ---------------------------------------------------------------------------
-    local function CreateVolSlider(label, dbKey, dbToggleKey, anchorFrame, xOff, yOff, tooltip)
-        local toggleCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
-        toggleCheck:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", xOff, yOff)
-        toggleCheck.text:SetFontObject("GameFontNormal")
-        toggleCheck.text:SetText(label)
-        toggleCheck:SetChecked(db[dbToggleKey] ~= false) -- Default true if nil
+    --- Helper to create a dropdown for selecting a preset profile.
+    -- @param label The text to display above the dropdown.
+    -- @param dbKey The key in the database where the index is stored.
+    -- @param anchorFrame The frame to anchor the label to.
+    -- @param xOff, yOff Offsets for the label.
+    -- @param tooltip Descriptive text shown on hover.
+    -- @param anchorPoint The relative point on the anchorFrame (defaults to BOTTOMLEFT).
+    local function CreatePresetSelector(label, dbKey, anchorFrame, xOff, yOff, tooltip, anchorPoint)
+        local fontString = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        fontString:SetPoint("TOPLEFT", anchorFrame, anchorPoint or "BOTTOMLEFT", xOff, yOff)
+        fontString:SetText(label)
 
-        toggleCheck:SetScript("OnClick", function(self)
-            db[dbToggleKey] = self:GetChecked()
-            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-        end)
-        AddTooltip(toggleCheck, "Toggle volume override for this specific channel.")
-
-        local input = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
-        input:SetSize(45, 20)
-        input:SetPoint("LEFT", toggleCheck.text, "RIGHT", 10, 0)
-        input:SetAutoFocus(false)
-        input:SetNumeric(true)
-        input:SetMaxLetters(3)
-        input:SetText(tostring(math.floor((db[dbKey] or 1.0) * 100)))
-        input:SetCursorPosition(0)
-
-        local slider = CreateFrame("Slider", nil, contentFrame, "OptionsSliderTemplate")
-        slider:SetPoint("TOPLEFT", toggleCheck, "BOTTOMLEFT", 0, -5)
-        slider:SetWidth(150)
-        slider:SetMinMaxValues(0, 100)
-        slider:SetValueStep(1)
-        slider:SetObeyStepOnDrag(true)
-        slider:SetValue(math.floor((db[dbKey] or 1.0) * 100))
+        local dropdown = CreateFrame("DropdownButton", nil, contentFrame, "WowStyle1DropdownTemplate")
+        dropdown:SetPoint("TOPLEFT", fontString, "BOTTOMLEFT", -5, -5)
+        dropdown:SetWidth(150)
+        AddTooltip(dropdown, tooltip)
         
-        local tooltipText = tooltip .. " (0-100)"
-        AddTooltip(slider, tooltipText)
-        AddTooltip(input, tooltipText)
-        
-        -- Hide default UI elements on the template
-        for _, region in ipairs({slider:GetRegions()}) do
-            if region:GetObjectType() == "FontString" then region:Hide() end
-        end
-
-        input:SetScript("OnTextChanged", function(self, userInput)
-            if userInput then
-                local num = tonumber(self:GetText())
-                if num and num >= 0 and num <= 100 then
-                    slider:SetValue(num)
-                end
-            end
-        end)
-        input:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
-        input:SetScript("OnEscapePressed", function(self)
-            self:SetText(tostring(math.floor((db[dbKey] or 1.0) * 100)))
-            self:SetCursorPosition(0)
-            self:ClearFocus()
-        end)
-
-        slider:SetScript("OnValueChanged", function(self, value)
-            local num = math.floor(value + 0.5)
-            self:SetValue(num)
-            input:SetText(tostring(num))
-            input:SetCursorPosition(0)
-            db[dbKey] = num / 100.0
-        end)
-        
-        -- Initialize value AFTER registering scripts so the data cascades correctly
-        local initialVal = math.floor((db[dbKey] or 1.0) * 100)
-        slider:SetValue(initialVal)
-        input:SetText(tostring(initialVal))
-
-        return slider, input, toggleCheck, toggleCheck.text
+        return dropdown, fontString
     end
 
-    ---------------------------------------------------------------------------
-    -- Fishing Settings
-    ---------------------------------------------------------------------------
-    local fishingLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    fishingLabel:SetPoint("TOPLEFT", separator1, "BOTTOMLEFT", 0, -15)
-    fishingLabel:SetText("Fishing Splash Levels")
+    local fishingDropdown, fishingLabel = CreatePresetSelector("Fishing Profile", "fishingPresetIndex", fishingCheck, 0, -15, "Select a preset profile to apply while fishing.")
+    local lfgDropdown, lfgLabel = CreatePresetSelector("LFG Profile", "lfgPresetIndex", lfgCheck, 0, -15, "Select a preset profile to apply when a group queue pops.")
 
-    local fMasterSlider, fMasterInput, fMasterToggle, fMasterLabel = CreateVolSlider("Master Volume %", "fishingTargetMaster", "enableFishingMaster", fishingLabel, 0, -15, "Target Master Volume while fishing.")
-    local fSFXSlider, fSFXInput, fSFXToggle, fSFXLabel = CreateVolSlider("SFX Volume %", "fishingTargetSFX", "enableFishingSFX", fishingLabel, 240, -15, "Target SFX Volume while fishing.")
+    --- Populates the dropdown menu with "None" and all user-defined presets.
+    local function PopulateAutomationDropdown(dropdown, rootDescription, dbKey)
+        rootDescription:CreateButton("None", function()
+            db[dbKey] = nil
+            dropdown:SetDefaultText("None")
+            VS.Presets:RefreshEventState()
+        end)
+        
+        for i, preset in ipairs(db.presets) do
+            rootDescription:CreateButton(preset.name, function()
+                db[dbKey] = i
+                dropdown:SetDefaultText(preset.name)
+                VS.Presets:RefreshEventState()
+            end)
+        end
+    end
 
-    VS.fishingMasterSlider = fMasterSlider
-    VS.fishingMasterInput = fMasterInput
-    VS.fishingSFXSlider = fSFXSlider
-    VS.fishingSFXInput = fSFXInput
+    function VS:RefreshAutomationProfiles()
+        fishingDropdown:SetupMenu(function(dropdown, rootDescription)
+            PopulateAutomationDropdown(dropdown, rootDescription, "fishingPresetIndex")
+        end)
+        
+        lfgDropdown:SetupMenu(function(dropdown, rootDescription)
+            PopulateAutomationDropdown(dropdown, rootDescription, "lfgPresetIndex")
+        end)
 
-    local separator2 = contentFrame:CreateTexture(nil, "ARTWORK")
-    separator2:SetHeight(1)
-    separator2:SetPoint("LEFT", separator1, "LEFT", 0, 0)
-    separator2:SetPoint("TOP", fMasterSlider, "BOTTOM", 0, -20)
-    separator2:SetWidth(540)
-    separator2:SetColorTexture(1, 1, 1, 0.2)
+        local fishingPreset = db.fishingPresetIndex and db.presets[db.fishingPresetIndex]
+        fishingDropdown:SetDefaultText(fishingPreset and fishingPreset.name or "None")
 
-    ---------------------------------------------------------------------------
-    -- LFG Queue Settings
-    ---------------------------------------------------------------------------
-    local lfgQueueLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    lfgQueueLabel:SetPoint("TOPLEFT", separator2, "BOTTOMLEFT", 0, -15)
-    lfgQueueLabel:SetText("LFG Queue Levels")
+        local lfgPreset = db.lfgPresetIndex and db.presets[db.lfgPresetIndex]
+        lfgDropdown:SetDefaultText(lfgPreset and lfgPreset.name or "None")
+    end
 
-    local lMasterSlider, lMasterInput, lMasterToggle, lMasterLabel = CreateVolSlider("Master Volume %", "lfgTargetMaster", "enableLfgMaster", lfgQueueLabel, 0, -15, "Target Master Volume when LFG queue pops.")
-    local lSFXSlider, lSFXInput, lSFXToggle, lSFXLabel = CreateVolSlider("SFX Volume %", "lfgTargetSFX", "enableLfgSFX", lfgQueueLabel, 240, -15, "Target SFX Volume when LFG queue pops.")
+    VS.fishingDropdown = fishingDropdown
+    VS.lfgDropdown = lfgDropdown
 
-    VS.lfgMasterSlider = lMasterSlider
-    VS.lfgMasterInput = lMasterInput
-    VS.lfgSFXSlider = lSFXSlider
-    VS.lfgSFXInput = lSFXInput
-    
     local separatorTop = contentFrame:CreateTexture(nil, "ARTWORK")
     separatorTop:SetHeight(2)
-    separatorTop:SetPoint("LEFT", separator1, "LEFT", 0, 0)
-    separatorTop:SetPoint("TOP", lMasterSlider, "BOTTOM", 0, -20)
+    separatorTop:SetPoint("LEFT", enableCheck, "LEFT", -10, 0)
+    separatorTop:SetPoint("TOP", lfgDropdown, "BOTTOM", 0, -20)
     separatorTop:SetWidth(540)
     separatorTop:SetColorTexture(1, 1, 1, 0.2)
-    
-    function VS:RefreshAutomationTextInputs()
-        if VS.fishingMasterSlider then 
-            local val = math.floor((db.fishingTargetMaster or 1.0) * 100)
-            VS.fishingMasterSlider:SetValue(val)
-            VS.fishingMasterInput:SetText(tostring(val))
-            VS.fishingMasterInput:SetCursorPosition(0)
-        end
-        if VS.fishingSFXSlider then 
-            local val = math.floor((db.fishingTargetSFX or 1.0) * 100)
-            VS.fishingSFXSlider:SetValue(val) 
-            VS.fishingSFXInput:SetText(tostring(val))
-            VS.fishingSFXInput:SetCursorPosition(0)
-        end
-        if VS.lfgMasterSlider then 
-            local val = math.floor((db.lfgTargetMaster or 1.0) * 100)
-            VS.lfgMasterSlider:SetValue(val) 
-            VS.lfgMasterInput:SetText(tostring(val))
-            VS.lfgMasterInput:SetCursorPosition(0)
-        end
-        if VS.lfgSFXSlider then 
-            local val = math.floor((db.lfgTargetSFX or 1.0) * 100)
-            VS.lfgSFXSlider:SetValue(val) 
-            VS.lfgSFXInput:SetText(tostring(val))
-            VS.lfgSFXInput:SetCursorPosition(0)
-        end
-    end
-    
-    -- Initialize values on creation
-    VS:RefreshAutomationTextInputs()
 
     ---------------------------------------------------------------------------
     -- State & Management
@@ -799,6 +721,10 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         else
             -- Ensure New Profile is selected if none is active or list is empty
             SelectNewProfile()
+        end
+
+        if VS.RefreshAutomationProfiles then
+            VS:RefreshAutomationProfiles()
         end
     end
 

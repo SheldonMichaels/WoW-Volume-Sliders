@@ -1,3 +1,10 @@
+## v2.10.0 — 2026-03-07
+
+### Added
+- **Automation Preset Overhaul**: Fishing and LFG Queue Pop boosts now use the Preset Profile system. You can now select specific profiles for these automations in the settings panel.
+- **Prioritized Automation Engine**: Improved the backend logic to handle multiple concurrent automations (Zones, Fishing, LFG) with a robust priority system.
+- **LEGACY Migration**: Existing Fishing and LFG boost settings are automatically converted to new "LEGACY" preset profiles upon login.
+
 ## v2.9.2 — 2026-03-06
 
 ### Added

@@ -74,7 +74,12 @@ describe("LFG Queue volume tests", function()
         end
 
         local addonName = "VolumeSliders"
-        local addonTable = {}
+        local addonTable = {
+            Presets = {
+                SetStateActive = spy.new(function() end),
+                RefreshEventState = function() end
+            }
+        }
         
         local coreChunk = loadfile("VolumeSliders/Core.lua")
         coreChunk(addonName, addonTable)
@@ -98,7 +103,7 @@ describe("LFG Queue volume tests", function()
         mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_UPDATE")
         mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SHOW")
         
-        assert.spy(_G.setCvarSpy).was_not_called()
+        assert.spy(VS.Presets.SetStateActive).was_not_called()
     end)
     
     it("registers proposal events only when actively queued", function()
@@ -118,69 +123,33 @@ describe("LFG Queue volume tests", function()
         assert.is_false(mockLFGFrame.events["LFG_PROPOSAL_SHOW"] == true)
     end)
     
-    it("boosts volume on LFG Proposal Show and restores on conclusion", function()
+    it("toggles LFG state on Proposal Show and restores on conclusion", function()
         -- Queue pops
         mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SHOW")
         
-        assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 1.0)
-        assert.spy(_G.setCvarSpy).was_called_with("Sound_SFXVolume", 1.0)
-        
-        assert.are.equal(1.0, _G.cvarStorage["Sound_MasterVolume"])
-        assert.are.equal(1.0, _G.cvarStorage["Sound_SFXVolume"])
-        
-        assert.are.equal(0.5, _G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
-        assert.are.equal(0.5, _G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "lfg", true)
         
         -- Proposal succeeds
         mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SUCCEEDED")
         
-        assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 0.5)
-        assert.spy(_G.setCvarSpy).was_called_with("Sound_SFXVolume", 0.5)
-        
-        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
-        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "lfg", false)
     end)
     
-    it("ignores restoring volume if it was already higher than target", function()
-        -- Reset cvars to be higher than targets
-        _G.cvarStorage["Sound_MasterVolume"] = 1.0
-        _G.cvarStorage["Sound_SFXVolume"] = 1.0
-        
-        _G.VolumeSlidersMMDB.lfgTargetMaster = 0.8
-        _G.VolumeSlidersMMDB.lfgTargetSFX = 0.8
-        
+    it("toggles state off on LFG Proposal Failed", function()
         -- Queue pops
         mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SHOW")
-        
-        assert.spy(_G.setCvarSpy).was_not_called()
-        
-        assert.are.equal("LFG_IGNORE", _G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
-        assert.are.equal("LFG_IGNORE", _G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "lfg", true)
         
         -- Proposal fails
         mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_FAILED")
         
-        -- Should not override with 1.0 or attempt restore
-        assert.spy(_G.setCvarSpy).was_not_called()
-        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
-        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "lfg", false)
     end)
 
-    it("should return early and NOT boost volume if soundID is a secret value (Midnight)", function()
-        VolumeSlidersMMDB.enableLfgVolume = true
-        
-        -- Mock issecretvalue to return true for this specific test
-        _G.issecretvalue = function() return true end
-        
-        VS.LFGQueue:Initialize()
-        
-        -- Trigger hook with what would normally be READY_CHECK
-        local readyCheckID = 8960
-        _G.PlaySound(readyCheckID)
-        
-        assert.spy(_G.setCvarSpy).was_not_called()
-        
-        -- Cleanup mock
-        _G.issecretvalue = function() return false end
+    it("should still trigger state if soundID might be a secret value (logic is now in Presets)", function()
+        -- The check is now in Presets.lua which handles the PlaySound hook.
+        -- LFGQueue.lua just listens for LFG_PROPOSAL_SHOW event which is not impacted.
+        mockLFGFrame.scripts["OnEvent"](mockLFGFrame, "LFG_PROPOSAL_SHOW")
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "lfg", true)
     end)
 end)

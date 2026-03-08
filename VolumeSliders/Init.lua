@@ -140,6 +140,64 @@ initFrame:SetScript("OnEvent", function(self, event)
         db.triggers = nil -- Unset old table
     end
 
+    -- Automation Migration: Convert legacy sliders to the new Preset system.
+    -- This handles users who had the old "Fishing Splash Boost" or "LFG Queue Pop Boost"
+    -- enabled, creating appropriate LEGACY presets so their automation still works.
+    
+    -- Migration for Fishing
+    if db.enableFishingVolume and not db.fishingPresetIndex and (db.fishingTargetMaster or db.fishingTargetSFX) then
+        db.presets = db.presets or {}
+        local newPreset = {
+            name = "Fishing LEGACY",
+            priority = 2,
+            zones = {},
+            volumes = {
+                ["Sound_MasterVolume"] = db.fishingTargetMaster or 1.0,
+                ["Sound_SFXVolume"] = db.fishingTargetSFX or 1.0,
+                ["Sound_MusicVolume"] = 1.0,
+                ["Sound_AmbienceVolume"] = 1.0,
+                ["Sound_DialogVolume"] = 1.0,
+            },
+            ignored = {
+                ["Sound_MasterVolume"] = not db.enableFishingMaster,
+                ["Sound_SFXVolume"] = not db.enableFishingSFX,
+                ["Sound_MusicVolume"] = true,
+                ["Sound_AmbienceVolume"] = true,
+                ["Sound_DialogVolume"] = true,
+            },
+            showInDropdown = true
+        }
+        table.insert(db.presets, newPreset)
+        db.fishingPresetIndex = #db.presets
+    end
+
+    -- Migration for LFG
+    if db.enableLfgVolume and not db.lfgPresetIndex and (db.lfgTargetMaster or db.lfgTargetSFX) then
+        db.presets = db.presets or {}
+        local newPreset = {
+            name = "LFG LEGACY",
+            priority = 2,
+            zones = {},
+            volumes = {
+                ["Sound_MasterVolume"] = db.lfgTargetMaster or 1.0,
+                ["Sound_SFXVolume"] = db.lfgTargetSFX or 1.0,
+                ["Sound_MusicVolume"] = 1.0,
+                ["Sound_AmbienceVolume"] = 1.0,
+                ["Sound_DialogVolume"] = 1.0,
+            },
+            ignored = {
+                ["Sound_MasterVolume"] = not db.enableLfgMaster,
+                ["Sound_SFXVolume"] = not db.enableLfgSFX,
+                ["Sound_MusicVolume"] = true,
+                ["Sound_AmbienceVolume"] = true,
+                ["Sound_DialogVolume"] = true,
+            },
+            showInDropdown = true
+        }
+        table.insert(db.presets, newPreset)
+        db.lfgPresetIndex = #db.presets
+    end
+
     -- Mouse Actions Table
     if not db.mouseActions then
         db.mouseActions = {

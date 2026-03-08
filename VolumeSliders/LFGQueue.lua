@@ -30,10 +30,6 @@ local NUM_LE_LFG_CATEGORYS = _G.NUM_LE_LFG_CATEGORYS or 5
 local lfgFrame = CreateFrame("Frame")
 lfgFrame:Hide()
 
--- The sound channels we boost
-local MASTER_CHANNEL = "Sound_MasterVolume"
-local SFX_CHANNEL = "Sound_SFXVolume"
-
 -- Flag to track if we currently have an override active
 local isVolumeOverridden = false
 
@@ -60,91 +56,16 @@ end
 
 local function RestoreVolumes()
     if not isVolumeOverridden then return end
-    
-    local db = VolumeSlidersMMDB
     isVolumeOverridden = false
-    
-    local changed = false
-
-    -- Restore Master Volume
-    if db.originalVolumes[MASTER_CHANNEL] and db.originalVolumes[MASTER_CHANNEL] ~= "LFG_IGNORE" then
-        SetCVar(MASTER_CHANNEL, db.originalVolumes[MASTER_CHANNEL])
-        changed = true
-    end
-    db.originalVolumes[MASTER_CHANNEL] = nil
-
-    -- Restore SFX Volume
-    if db.originalVolumes[SFX_CHANNEL] and db.originalVolumes[SFX_CHANNEL] ~= "LFG_IGNORE" then
-        SetCVar(SFX_CHANNEL, db.originalVolumes[SFX_CHANNEL])
-        changed = true
-    end
-    db.originalVolumes[SFX_CHANNEL] = nil
-
-    if changed then
-        -- Sync the sliders UI
-        if VS.sliders and VS.sliders[MASTER_CHANNEL] and VS.sliders[MASTER_CHANNEL].RefreshValue then
-            VS.sliders[MASTER_CHANNEL]:RefreshValue()
-        end
-        if VS.sliders and VS.sliders[SFX_CHANNEL] and VS.sliders[SFX_CHANNEL].RefreshValue then
-            VS.sliders[SFX_CHANNEL]:RefreshValue()
-        end
-    end
+    -- Signal the Preset logic to deactivate the LFG state.
+    VS.Presets:SetStateActive("lfg", false)
 end
 
 local function ApplyLFGVolumes()
     if isVolumeOverridden then return end
-    
-    local db = VolumeSlidersMMDB
-    local currentMaster = tonumber(GetCVar(MASTER_CHANNEL)) or 1
-    local currentSFX = tonumber(GetCVar(SFX_CHANNEL)) or 1
-    
-    local targetMaster = db.lfgTargetMaster or 1.0
-    local targetSFX = db.lfgTargetSFX or 1.0
-
-    local changed = false
-    
-    db.originalVolumes = db.originalVolumes or {}
-
-    -- Master Volume Logic
-    if db.enableLfgMaster and currentMaster < targetMaster then
-        if db.originalVolumes[MASTER_CHANNEL] == nil then
-            db.originalVolumes[MASTER_CHANNEL] = currentMaster
-        end
-        SetCVar(MASTER_CHANNEL, targetMaster)
-        changed = true
-    else
-        -- Mark as ignored so we don't restore it if it wasn't adjusted
-        if db.originalVolumes[MASTER_CHANNEL] == nil then
-            db.originalVolumes[MASTER_CHANNEL] = "LFG_IGNORE"
-        end
-    end
-
-    -- SFX Volume Logic
-    if db.enableLfgSFX and currentSFX < targetSFX then
-        if db.originalVolumes[SFX_CHANNEL] == nil then
-            db.originalVolumes[SFX_CHANNEL] = currentSFX
-        end
-        SetCVar(SFX_CHANNEL, targetSFX)
-        changed = true
-    else
-        -- Mark as ignored so we don't restore it if it wasn't adjusted
-        if db.originalVolumes[SFX_CHANNEL] == nil then
-            db.originalVolumes[SFX_CHANNEL] = "LFG_IGNORE"
-        end
-    end
-
-    -- We always set this to true so RestoreVolumes cleans up the IGNORE flags
     isVolumeOverridden = true
-    
-    if changed then
-        -- Sync the sliders UI
-        if VS.sliders and VS.sliders[MASTER_CHANNEL] and VS.sliders[MASTER_CHANNEL].RefreshValue then
-            VS.sliders[MASTER_CHANNEL]:RefreshValue()
-        end
-        if VS.sliders and VS.sliders[SFX_CHANNEL] and VS.sliders[SFX_CHANNEL].RefreshValue then
-            VS.sliders[SFX_CHANNEL]:RefreshValue()
-        end
-    end
+    -- Signal the Preset logic to apply the user's selected LFG preset.
+    VS.Presets:SetStateActive("lfg", true)
 end
 
 local function RegisterProposalEvents()
@@ -234,10 +155,14 @@ function VS.LFGQueue:Initialize()
             RegisterProposalEvents()
         else
             UnregisterProposalEvents()
-            RestoreVolumes()
+            if isVolumeOverridden then
+                RestoreVolumes()
+            end
         end
     else
         lfgFrame:UnregisterAllEvents()
-        RestoreVolumes()
+        if isVolumeOverridden then
+            RestoreVolumes()
+        end
     end
 end

@@ -59,7 +59,12 @@ describe("Fishing volume tests", function()
         }
 
         local addonName = "VolumeSliders"
-        local addonTable = {}
+        local addonTable = {
+            Presets = {
+                SetStateActive = spy.new(function() end),
+                RefreshEventState = function() end
+            }
+        }
         
         local coreChunk = loadfile("VolumeSliders/Core.lua")
         coreChunk(addonName, addonTable)
@@ -80,44 +85,40 @@ describe("Fishing volume tests", function()
         -- Trigger event
         mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 131474)
         
-        assert.spy(_G.setCvarSpy).was_not_called()
+        assert.spy(VS.Presets.SetStateActive).was_not_called()
     end)
     
-    it("boosts volume on fishing cast and restores on stop", function()
+    it("toggles fishing state on cast and stop", function()
         -- Start cast
         mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 131474)
         
-        assert.spy(_G.setCvarSpy).was_called_with("Sound_SFXVolume", 1.0)
-        assert.are.equal(1.0, _G.cvarStorage["Sound_SFXVolume"])
-        assert.are.equal(0.5, _G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "fishing", true)
         
         -- Stop cast
         mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "UNIT_SPELLCAST_CHANNEL_STOP", "player")
         
-        assert.spy(_G.setCvarSpy).was_called_with("Sound_SFXVolume", 0.5)
-        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "fishing", false)
     end)
 
-    it("does not boost if in combat", function()
+    it("does not trigger state if in combat", function()
         _G.affectingCombat = true
         mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 131474)
-        assert.spy(_G.setCvarSpy).was_not_called()
+        assert.spy(VS.Presets.SetStateActive).was_not_called()
     end)
 
-    it("restores volume aggressively if combat starts", function()
+    it("clears state aggressively if combat starts", function()
         -- Start cast
         mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 131474)
-        assert.spy(_G.setCvarSpy).was_called_with("Sound_SFXVolume", 1.0)
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "fishing", true)
         
         -- Combat starts
         mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "PLAYER_REGEN_DISABLED")
         
-        assert.spy(_G.setCvarSpy).was_called_with("Sound_SFXVolume", 0.5)
-        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_SFXVolume"])
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "fishing", false)
     end)
 
     it("ignores non-fishing spells", function()
         mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 1234)
-        assert.spy(_G.setCvarSpy).was_not_called()
+        assert.spy(VS.Presets.SetStateActive).was_not_called()
     end)
 end)

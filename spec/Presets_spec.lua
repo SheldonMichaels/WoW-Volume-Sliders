@@ -95,4 +95,40 @@ describe("Presets tests", function()
         assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 1.0)
         assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
     end)
+
+    it("handles automation states and priority interactions", function()
+        _G.VolumeSlidersMMDB.presets = {
+            {
+                name = "Zone Preset", priority = 10,
+                zones = {"Elwynn Forest"},
+                volumes = { ["Sound_MasterVolume"] = 0.5 },
+                ignored = {}
+            },
+            {
+                name = "Fishing Preset", priority = 50,
+                zones = {},
+                volumes = { ["Sound_MasterVolume"] = 0.8 },
+                ignored = {}
+            }
+        }
+        _G.VolumeSlidersMMDB.fishingPresetIndex = 2
+        _G.VolumeSlidersMMDB.enableFishingVolume = true
+        
+        -- 1. Only zone active
+        VS.Presets:RefreshEventState()
+        assert.are.equal(0.5, _G.cvarStorage["Sound_MasterVolume"])
+        
+        -- 2. Activate fishing state (higher priority than zone)
+        VS.Presets:SetStateActive("fishing", true)
+        assert.are.equal(0.8, _G.cvarStorage["Sound_MasterVolume"])
+        
+        -- 3. Deactivate fishing (should fall back to zone)
+        VS.Presets:SetStateActive("fishing", false)
+        assert.are.equal(0.5, _G.cvarStorage["Sound_MasterVolume"])
+        
+        -- 4. Move away from zone (should restore original 1.0)
+        _G.zoneStates.real = "Unknown"
+        VS.Presets:RefreshEventState()
+        assert.are.equal(1.0, _G.cvarStorage["Sound_MasterVolume"])
+    end)
 end)
