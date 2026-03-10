@@ -40,6 +40,7 @@ local FISHING_SPELL_IDS = {
     [131474] = true, -- Retail Generic Fishing
     [131476] = true, -- Fishing rank / cast ID
     [7620] = true,   -- Old rank 1
+    [1224771] = true, -- Void Hole Fishing (Midnight)
     -- The API often provides spell info on cast, so checking names/IDs is dynamic
 }
 
@@ -94,12 +95,12 @@ local function OnEvent(self, event, ...)
             local spellName = spellInfo and spellInfo.name
 
             -- Guard against secret values in Midnight (13.x)
-            if VS:IsSecret(spellID) or VS:IsSecret(spellName) then return end
+            -- We skip the manual secret check because simple equality with a secret value natively evaluates to false.
             
             -- We check if it's explicitly the fishing spell ID OR if the localized name evaluates to "Fishing"
             -- (To support various language clients, using the ID is ideal, but name is a good fallback)
             -- Note: 131474 is the modern Retail fishing spell ID.
-            if FISHING_SPELL_IDS[spellID] or (spellName and GetSafeSpellName(131474) == spellName) then
+            if FISHING_SPELL_IDS[spellID] or isVoidHole or (spellName and GetSafeSpellName(131474) == spellName) then
                 ApplyFishingVolume()
             end
         end

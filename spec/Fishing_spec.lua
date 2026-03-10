@@ -121,4 +121,24 @@ describe("Fishing volume tests", function()
         mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "UNIT_SPELLCAST_CHANNEL_START", "player", "guid", 1234)
         assert.spy(VS.Presets.SetStateActive).was_not_called()
     end)
+
+    it("handles Void Hole Fishing even if flagged as secret (engine comparison fallback)", function()
+        local voidHoleID = 1224771
+        local voidHoleName = "Void Hole Fishing"
+        
+        -- Mock spell info
+        local oldGetSpellInfo = _G.C_Spell.GetSpellInfo
+        _G.C_Spell.GetSpellInfo = function(id)
+            if id == voidHoleID then return {name = voidHoleName} end
+            return oldGetSpellInfo(id)
+        end
+        
+        -- Trigger event
+        mockFishingFrame.scripts["OnEvent"](mockFishingFrame, "UNIT_SPELLCAST_CHANNEL_START", "player", "guid", voidHoleID)
+        
+        assert.spy(VS.Presets.SetStateActive).was_called_with(VS.Presets, "fishing", true)
+        
+        -- Cleanup
+        _G.C_Spell.GetSpellInfo = oldGetSpellInfo
+    end)
 end)

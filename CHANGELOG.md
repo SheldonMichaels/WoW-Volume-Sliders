@@ -1,3 +1,9 @@
+## v2.11.0 — 2026-03-10
+
+### Added
+- **Midnight Compatibility**: Added explicit support for "Void Hole Fishing" in the Midnight expansion.
+- **Performance Optimization**: Optimized high-frequency event listeners by leveraging native engine taint protections, reducing CPU overhead during combat and fishing.
+
 ## v2.10.0 — 2026-03-07
 
 ### Added
