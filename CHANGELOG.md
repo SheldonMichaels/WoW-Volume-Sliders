@@ -1,3 +1,12 @@
+## v2.12.0 — 2026-03-11
+
+### Added
+- **Gameplay & Pings Sliders**: Added two optional new sliders to the main window supporting the "Gameplay Sound Effects" (combat rotational acoustics) and "Ping System" channels. You can toggle their visibility inside the Settings > Window page.
+- **Improved Settings Sections**: The settings UI has been refined. Categories are now appropriately labeled "Slider Customization" and "Window Customization".
+
+### Known Issues
+- The main volume window may not automatically expand its width when new sliders are enabled in the settings. You may need to manually drag the window edge to resize it so the new slider fits correctly.
+
 ## v2.11.0 — 2026-03-10
 
 ### Added

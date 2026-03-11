@@ -37,14 +37,14 @@ function VS:InitializeSettings()
     
     -- Subcategory 1: Sliders
     local slidersFrame = CreateFrame("Frame", "VolumeSlidersSlidersOptionsFrame", UIParent)
-    local slidersCategory, slidersLayout = Settings.RegisterCanvasLayoutSubcategory(category, slidersFrame, "Sliders")
+    local slidersCategory, slidersLayout = Settings.RegisterCanvasLayoutSubcategory(category, slidersFrame, "Slider Customization")
     Settings.RegisterAddOnCategory(slidersCategory)
     
     VS:CreateSlidersSettingsContents(slidersFrame)
     
     -- Subcategory 2: Window
     local windowFrame = CreateFrame("Frame", "VolumeSlidersWindowOptionsFrame", UIParent)
-    local windowCategory, windowLayout = Settings.RegisterCanvasLayoutSubcategory(category, windowFrame, "Window")
+    local windowCategory, windowLayout = Settings.RegisterCanvasLayoutSubcategory(category, windowFrame, "Window Customization")
     Settings.RegisterAddOnCategory(windowCategory)
     
     VS:CreateWindowSettingsContents(windowFrame)
@@ -1232,7 +1232,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     end
 
     local bgColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    bgColorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 15, -30)
+    bgColorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 245, -20)
     bgColorLabel:SetText("Window Background")
 
     -- Color Swatch Button
@@ -1289,12 +1289,12 @@ function VS:CreateWindowSettingsContents(parentFrame)
 
     -- Opacity Slider
     local opacityLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    opacityLabel:SetPoint("TOPLEFT", colorSwatch, "BOTTOMLEFT", 0, -12)
+    opacityLabel:SetPoint("LEFT", colorText, "RIGHT", 30, 0)
     opacityLabel:SetText("Opacity")
 
     local opacitySlider = CreateFrame("Slider", "VolumeSlidersOpacitySlider", categoryFrame, "OptionsSliderTemplate")
-    opacitySlider:SetPoint("TOPLEFT", opacityLabel, "BOTTOMLEFT", 0, -8)
-    opacitySlider:SetWidth(150)
+    opacitySlider:SetPoint("LEFT", opacityLabel, "RIGHT", 15, 0)
+    opacitySlider:SetWidth(120)
     opacitySlider:SetMinMaxValues(0, 100)
     opacitySlider:SetValueStep(1)
     opacitySlider:SetObeyStepOnDrag(true)
@@ -1304,7 +1304,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     if _G["VolumeSlidersOpacitySliderText"] then _G["VolumeSlidersOpacitySliderText"]:Hide() end
 
     local opacityValueText = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    opacityValueText:SetPoint("LEFT", opacityLabel, "RIGHT", 8, 0)
+    opacityValueText:SetPoint("LEFT", opacitySlider, "RIGHT", 8, 0)
     opacityValueText:SetText(tostring(math.floor((db.bgColorA or 0.95) * 100 + 0.5)) .. "%")
 
     opacitySlider:SetScript("OnValueChanged", function(self, value)
@@ -1322,14 +1322,20 @@ function VS:CreateWindowSettingsContents(parentFrame)
     local dividerV = categoryFrame:CreateTexture(nil, "ARTWORK")
     dividerV:SetWidth(1)
     dividerV:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 220, -10)
-    dividerV:SetPoint("BOTTOMLEFT", categoryFrame, "TOPLEFT", 220, -500)
+    dividerV:SetPoint("BOTTOMLEFT", categoryFrame, "TOPLEFT", 220, -600)
     dividerV:SetColorTexture(1, 1, 1, 0.2)
 
     ---------------------------------------------------------------------------
     -- Visibility Checkboxes (Window Header Elements)
     ---------------------------------------------------------------------------
+    local dividerBgH = categoryFrame:CreateTexture(nil, "ARTWORK")
+    dividerBgH:SetHeight(1)
+    dividerBgH:SetPoint("TOPLEFT", bgColorLabel, "BOTTOMLEFT", -25, -45)
+    dividerBgH:SetWidth(400)
+    dividerBgH:SetColorTexture(1, 1, 1, 0.2)
+
     local headerElementsLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    headerElementsLabel:SetPoint("TOPLEFT", dividerV, "TOPRIGHT", 25, -20)
+    headerElementsLabel:SetPoint("TOPLEFT", dividerBgH, "BOTTOMLEFT", 25, -20)
     headerElementsLabel:SetText("Header Elements")
 
     local helpTextCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
@@ -1362,7 +1368,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     -- Channel Visibility
     ---------------------------------------------------------------------------
     local channelLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    channelLabel:SetPoint("TOPLEFT", opacitySlider, "BOTTOMLEFT", 0, -30)
+    channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 15, -20)
     channelLabel:SetText("Channel Visibility")
 
     local channelSubLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -1376,6 +1382,8 @@ function VS:CreateWindowSettingsContents(parentFrame)
         ["Sound_MusicVolume"] = { name = "Music Slider", var = "showMusic", tooltip = "Show or hide the Music volume slider." },
         ["Sound_AmbienceVolume"] = { name = "Ambience Slider", var = "showAmbience", tooltip = "Show or hide the Ambience volume slider." },
         ["Sound_DialogVolume"] = { name = "Dialog Slider", var = "showDialog", tooltip = "Show or hide the Dialog volume slider." },
+        ["Sound_GameplaySFX"] = { name = "Gameplay Slider", var = "showGameplay", tooltip = "Show or hide the Gameplay volume slider (combat rotational acoustics)." },
+        ["Sound_PingVolume"] = { name = "Pings Slider", var = "showPings", tooltip = "Show or hide the Ping System volume slider." },
         ["Sound_EncounterWarningsVolume"] = { name = "Warnings Slider", var = "showWarnings", tooltip = "Show or hide the dedicated slider for Encounter Warnings (combat alerts)." },
         ["Voice_ChatVolume"] = { name = "Voice Volume Slider", var = "showVoiceChat", tooltip = "Show or hide the Voice Chat Volume slider." },
         ["Voice_ChatDucking"] = { name = "Voice Ducking Slider", var = "showVoiceDucking", tooltip = "Show or hide the Voice Chat Ducking slider." },
@@ -1384,7 +1392,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     }
 
     local scrollBox = CreateFrame("Frame", nil, categoryFrame, "WowScrollBoxList")
-    scrollBox:SetSize(145, 360)
+    scrollBox:SetSize(145, 480)
     scrollBox:SetPoint("TOPLEFT", channelSubLabel, "BOTTOMLEFT", -5, -8)
 
     local dragBehavior -- Forward declare for access in RowInitializer

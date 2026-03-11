@@ -411,29 +411,39 @@ function VS:CreateOptionsFrame()
     dialogSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 4 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_DialogVolume"] = dialogSlider
 
-    -- Warnings Volume (Gameplay Sound Effects)
+    -- Warnings Volume
     local warningsSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderWarnings", "Warnings", "Sound_EncounterWarningsVolume", "Sound_EnableEncounterWarningsSounds", 0, 1, 0.01, "Encounter Warnings Volume")
     warningsSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 5 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Sound_EncounterWarningsVolume"] = warningsSlider
 
+    -- Gameplay Volume
+    local gameplaySlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderGameplay", "Gameplay", "Sound_GameplaySFX", "Sound_EnableGameplaySFX", 0, 1, 0.01, "Gameplay Sound Effects Volume")
+    gameplaySlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 6 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    VS.sliders["Sound_GameplaySFX"] = gameplaySlider
+
+    -- Pings Volume
+    local pingsSlider = VS:CreateVerticalSlider(VS.contentFrame, "VolumeSlidersSliderPings", "Pings", "Sound_PingVolume", "Sound_EnablePingSounds", 0, 1, 0.01, "Ping System Volume")
+    pingsSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 7 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    VS.sliders["Sound_PingVolume"] = pingsSlider
+
     -- Voice Chat Volume
     local voiceChatSlider = VS:CreateVoiceSlider(VS.contentFrame, "VolumeSlidersSliderVoiceChat", "Voice", C_VoiceChat.GetOutputVolume, C_VoiceChat.SetOutputVolume, false, "Voice Chat Output Volume", "Voice_ChatVolume")
-    voiceChatSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 6 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    voiceChatSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 8 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Voice_ChatVolume"] = voiceChatSlider
 
     -- Voice Chat Ducking (Inverted: Game value is ducking 0-1 scale. UI value is 'ducking strength%')
     local duckingSlider = VS:CreateVoiceSlider(VS.contentFrame, "VolumeSlidersSliderVoiceDucking", "Voice BG", function() return C_VoiceChat.GetMasterVolumeScale() * 100 end, function(val) C_VoiceChat.SetMasterVolumeScale(val / 100) end, true, "Voice Chat Ducking\nLow = Game sound mutes entirely when players speak.\nHigh = Game sound ignores speaking players.", nil)
-    duckingSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 7 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    duckingSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 9 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Voice_ChatDucking"] = duckingSlider
 
     -- Microphone Volume
     local micVolSlider = VS:CreateVoiceSlider(VS.contentFrame, "VolumeSlidersSliderMicVolume", "Mic Vol", C_VoiceChat.GetInputVolume, C_VoiceChat.SetInputVolume, false, "Microphone Input Volume", "Voice_MicVolume")
-    micVolSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 8 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    micVolSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 10 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Voice_MicVolume"] = micVolSlider
 
     -- Microphone Sensitivity (Inverted)
     local micSensSlider = VS:CreateVoiceSlider(VS.contentFrame, "VolumeSlidersSliderMicSensitivity", "Mic Sens", C_VoiceChat.GetVADSensitivity, C_VoiceChat.SetVADSensitivity, true, "Microphone Activation Sensitivity", nil)
-    micSensSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 9 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
+    micSensSlider:SetPoint("TOPLEFT", VS.contentFrame, "TOPLEFT", startX + (VS.SLIDER_COLUMN_WIDTH + spacing) * 11 + (VS.SLIDER_COLUMN_WIDTH / 2) - 8, startY)
     VS.sliders["Voice_MicSensitivity"] = micSensSlider
 
     ---------------------------------------------------------------------------

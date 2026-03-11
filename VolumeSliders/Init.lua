@@ -78,6 +78,8 @@ initFrame:SetScript("OnEvent", function(self, event)
     if db.showMusic == nil then db.showMusic = true end
     if db.showAmbience == nil then db.showAmbience = false end
     if db.showDialog == nil then db.showDialog = true end
+    if db.showGameplay == nil then db.showGameplay = false end
+    if db.showPings == nil then db.showPings = false end
     if db.showVoiceChat == nil then db.showVoiceChat = true end
     if db.showVoiceDucking == nil then db.showVoiceDucking = false end
     if db.showMicVolume == nil then db.showMicVolume = false end

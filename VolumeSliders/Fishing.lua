@@ -99,8 +99,7 @@ local function OnEvent(self, event, ...)
             
             -- We check if it's explicitly the fishing spell ID OR if the localized name evaluates to "Fishing"
             -- (To support various language clients, using the ID is ideal, but name is a good fallback)
-            -- Note: 131474 is the modern Retail fishing spell ID.
-            if FISHING_SPELL_IDS[spellID] or isVoidHole or (spellName and GetSafeSpellName(131474) == spellName) then
+            if FISHING_SPELL_IDS[spellID] or (spellName and GetSafeSpellName(131474) == spellName) then
                 ApplyFishingVolume()
             end
         end

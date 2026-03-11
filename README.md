@@ -9,7 +9,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 - **LFG Queue Pop Boost** — dynamically adjusts your volume when a Dungeon, Raid, or PvP queue prompt appears, automatically restoring your original levels after the sound finishes.
 - **Fishing Splash Boost** — dynamically adjusts your volume while fishing, so you never miss a catch. Reverts after the "fishing" spell ends.
 - **Volume Presets & Automation** — Save volume profiles and automate them to trigger in specific zones.
-- **Nine vertical volume sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Voice Chat Volume, Voice Ducking, Mic Volume, and Mic Sensitivity. Last used volume values persist between mute/unmute
+- **Twelve vertical volume sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Gameplay, Pings, Voice Chat Volume, Voice Ducking, Mic Volume, and Mic Sensitivity. Last used volume values persist between mute/unmute
 - **Per-channel mute** — mute each channel individually
 - **Two Minimap styles** — choose between the classic ringed minimap button or a "minimalist" bare gold speaker icon that gracefully fades out when your mouse leaves the minimap.
 - **Scroll wheel** — scroll over the minimap icon to adjust master volume (hold Ctrl for fine 1% steps)
@@ -29,10 +29,9 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ## Planned Future Features
 
-- Convert settings button to a proper icon
+- Convert lock/unlock button to a proper icon
 - More customization options for minimap button
 - More texture choices
-- Control for "emote" sounds and specifically combat only sound effects
 
 ## Installation
 
