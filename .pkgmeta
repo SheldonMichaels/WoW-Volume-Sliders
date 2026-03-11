@@ -10,9 +10,10 @@ manual-changelog:
 
 ignore:
   - README.md
-  - .local_dev_assets
+  - local_dev_assets
   - GEMINI.md
   - .agent
   - spec
   - .luarc.json
   - .busted
+  - .logs

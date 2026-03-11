@@ -12,15 +12,10 @@ Thumbs.db
 *.code-workspace
 
 # Internal docs
-.local_dev_assets/
-luacheck_output.txt
+local_dev_assets/
 
 # Testing & Logs
-*.log
-log*.txt
-luac.out
-.luac
-.luacheck_log/
+.logs/
 
 # Agents
 GEMINI.md
