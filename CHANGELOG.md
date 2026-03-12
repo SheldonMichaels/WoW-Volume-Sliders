@@ -1,3 +1,9 @@
+## v2.12.1 — 2026-03-12
+
+### Fixed
+- **Combat Taint Error**: Resolved an issue where a "secret value" returned by the game engine during LFG Queue Pops or Fishing casts could trigger a Lua taint error (`attempt to compare local soundID`) while in combat.
+- **Safety Rollback**: Restored explicit `issecretvalue` checks in `LFGQueue.lua` and `Fishing.lua` to properly filter opaque engine payloads before they cause comparison errors in secure execution paths.
+
 ## v2.12.0 — 2026-03-11
 
 ### Added

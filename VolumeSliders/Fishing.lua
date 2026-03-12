@@ -88,14 +88,16 @@ local function OnEvent(self, event, ...)
         
         local unitTarget, castGUID, spellID = ...
         if unitTarget == "player" then
+            -- Guard against secret values in Midnight (13.x)
+            -- Comparing or indexing secret values directly during secure execution paths
+            -- (like combat) will cause taint errors, so we explicitly filter them out first.
+            if VS:IsSecret(spellID) then return end
+
             -- Verify if the spell being cast is Fishing
             -- In retail, the spell info is provided. If not in the hardcoded list, we could fallback
             -- to a localized string match, but IDs are safer.
             local spellInfo = C_Spell and C_Spell.GetSpellInfo(spellID)
             local spellName = spellInfo and spellInfo.name
-
-            -- Guard against secret values in Midnight (13.x)
-            -- We skip the manual secret check because simple equality with a secret value natively evaluates to false.
             
             -- We check if it's explicitly the fishing spell ID OR if the localized name evaluates to "Fishing"
             -- (To support various language clients, using the ID is ideal, but name is a good fallback)
