@@ -479,6 +479,24 @@ function VS:UpdateAppearance()
 
         VS.container:SetResizeBounds(minW, minH)
 
+        -- Force layout expansion if new sliders were added 
+        local currW = VS.container:GetWidth()
+        local currH = VS.container:GetHeight()
+        local needsResize = false
+
+        if currW < minW then
+            currW = minW
+            needsResize = true
+        end
+        if currH < minH then
+            currH = minH
+            needsResize = true
+        end
+
+        if needsResize then
+            VS.container:SetSize(currW, currH)
+        end
+
         -- Anchor sliders with dynamic spacing and height
         local startY = -(headerHeight + hTop)
         local startX = VS.SLIDER_PADDING_X

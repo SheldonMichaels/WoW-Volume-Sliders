@@ -23,7 +23,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 - **Dynamic Footer Elements** — quick-access toggles in the main window for Output, Voice Mode, Fishing, Triggers, and more. Highly customizable with drag-and-drop reordering and column limits.
 - **Extensive Customization Options** — access via the WoW Interface options to customize slider height, toggle visibility of any channel or UI element (including the help text), change visual themes (gold/silver, diamond/minimal knobs, text colors), and freely drag-to-reorder the sliders to your preference.
 - **Mouse Actions** — Configure what mouse buttons, modifiers, and scroll wheel behaviors perform on the minimap button, slider buttons, and slider scroll wheel from a dedicated settings page.
-- **Dynamic Window Resizing** — The main slider window is now fully dynamic and resizable. Grab edges to set your preferred size; sliders and footers will reflow automatically to fit the space.
+- **Dynamic Window Resizing** — The main slider window is now fully dynamic and resizable in two dimensions simultaneously. Grab corners or edges to set your preferred size; sliders and footers will reflow automatically to fit the space. Visual highlights glow softly on hover to indicate draggable areas.
 - **Custom Background Colors** — Change the window's background color and opacity via the new color picker in Settings > Window.
 - **Persistent Window Toggle** — Added a "Keep Open" option to prevent the window from closing when clicking outside of it.
 

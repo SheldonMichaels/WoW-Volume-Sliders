@@ -170,6 +170,93 @@ function VS:CreateOptionsFrame()
         end
     end)
 
+    -- Resize Edges and Corners
+    local function CreateResizeFrame(name, parent, width, height, anchorPoint, anchorRel, x, y, sizingPoint, gradients)
+        local f = CreateFrame("Frame", name, parent)
+        if width then f:SetWidth(width) end
+        if height then f:SetHeight(height) end
+        f:SetPoint(anchorPoint, parent, anchorRel, x, y)
+        f:EnableMouse(true)
+        f:RegisterForDrag("LeftButton")
+        f:SetScript("OnDragStart", function()
+            if not VolumeSlidersMMDB.isLocked then
+                parent:StartSizing(sizingPoint)
+            end
+        end)
+        f:SetScript("OnDragStop", function()
+            parent:StopMovingOrSizing()
+            if not VolumeSlidersMMDB.isLocked then
+                VolumeSlidersMMDB.windowWidth = parent:GetWidth()
+                VolumeSlidersMMDB.windowHeight = parent:GetHeight()
+            end
+        end)
+
+        -- Generate multi-layered golden highlights to form soft edge/corner glows
+        f.highlightTextures = {}
+        if gradients then
+            for _, grad in ipairs(gradients) do
+                local highlight = f:CreateTexture(nil, "OVERLAY")
+                highlight:SetAllPoints(f)
+                highlight:SetTexture("Interface\\ChatFrame\\ChatFrameBackground")
+                highlight:SetBlendMode("ADD")
+                
+                if grad.orientation then
+                    highlight:SetGradient(grad.orientation, CreateColor(1, 0.82, 0, grad.minAlpha), CreateColor(1, 0.82, 0, grad.maxAlpha))
+                else
+                    highlight:SetColorTexture(1, 0.82, 0, grad.minAlpha)
+                end
+                
+                highlight:Hide()
+                table.insert(f.highlightTextures, highlight)
+            end
+        end
+
+        f:SetScript("OnEnter", function() 
+            for _, tex in ipairs(f.highlightTextures) do tex:Show() end 
+        end)
+        f:SetScript("OnLeave", function() 
+            for _, tex in ipairs(f.highlightTextures) do tex:Hide() end 
+        end)
+        return f
+    end
+
+    -- Edge thickness and corner size
+    local eT = 8
+    local cS = 18
+    local lInset = 4 -- SettingsFrameTemplate has an asymmetrical left shadow/inset
+
+    -- Create edges (omitting top edge/corners per user request)
+    -- Right Edge: gradient fades out to the left (0 alpha left, 0.4 alpha right)
+    local rEdge = CreateResizeFrame("VolumeSlidersResizeRight", VS.container, eT, nil, "RIGHT", "RIGHT", 0, 0, "RIGHT", {
+        {orientation="HORIZONTAL", minAlpha=0, maxAlpha=0.4}
+    })
+    rEdge:SetPoint("TOP", VS.container, "TOP", 0, -40) -- Avoid title bar
+    rEdge:SetPoint("BOTTOM", VS.container, "BOTTOM", 0, cS)
+
+    -- Left Edge: gradient fades out to the right (0.4 alpha left, 0 alpha right)
+    local lEdge = CreateResizeFrame("VolumeSlidersResizeLeft", VS.container, eT, nil, "LEFT", "LEFT", lInset, 0, "LEFT", {
+        {orientation="HORIZONTAL", minAlpha=0.4, maxAlpha=0}
+    })
+    lEdge:SetPoint("TOP", VS.container, "TOP", lInset, -40) -- Avoid title bar
+    lEdge:SetPoint("BOTTOM", VS.container, "BOTTOM", lInset, cS)
+
+    -- Bottom Edge: gradient fades out upwards (0.4 alpha bottom, 0 alpha top)
+    local bEdge = CreateResizeFrame("VolumeSlidersResizeBottom", VS.container, nil, eT, "BOTTOM", "BOTTOM", 0, 0, "BOTTOM", {
+        {orientation="VERTICAL", minAlpha=0.4, maxAlpha=0}
+    })
+    bEdge:SetPoint("LEFT", VS.container, "LEFT", cS + lInset, 0)
+    bEdge:SetPoint("RIGHT", VS.container, "RIGHT", -cS, 0)
+
+    -- Create corners: Cross-hatch dual gradients to synthesize a 2D corner blur
+    local brCorner = CreateResizeFrame("VolumeSlidersResizeBottomRight", VS.container, cS, cS, "BOTTOMRIGHT", "BOTTOMRIGHT", 0, 0, "BOTTOMRIGHT", {
+        {orientation="HORIZONTAL", minAlpha=0, maxAlpha=0.4},
+        {orientation="VERTICAL", minAlpha=0.4, maxAlpha=0}
+    })
+    local blCorner = CreateResizeFrame("VolumeSlidersResizeBottomLeft", VS.container, cS, cS, "BOTTOMLEFT", "BOTTOMLEFT", lInset, 0, "BOTTOMLEFT", {
+        {orientation="HORIZONTAL", minAlpha=0.4, maxAlpha=0},
+        {orientation="VERTICAL", minAlpha=0.4, maxAlpha=0}
+    })
+
     -- Replace the template's default light background with a darker one
     -- for better contrast against the volume controls.
     if VS.container.Bg then VS.container.Bg:Hide() end
@@ -217,6 +304,10 @@ function VS:CreateOptionsFrame()
     VS.container:SetScript("OnShow", function(self)
         -- Start listening for outside clicks when the panel opens.
         self:RegisterEvent("GLOBAL_MOUSE_DOWN")
+
+        if VolumeSlidersMMDB.layoutDirty then
+            VS:UpdateAppearance()
+        end
 
         -- Refresh all slider positions from current CVar values in case
         -- they were changed externally (e.g., via Blizzard Sound settings).

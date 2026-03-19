@@ -1,3 +1,12 @@
+## v2.13.0 — 2026-03-18
+
+### Added
+- **Multi-Directional Resizing**: You can now grab the bottom-left and bottom-right corners of the main volume window to resize width and height simultaneously.
+- **Visual Edge Highlights**: Replaced standard bounding areas with a soft golden outer glow that  highlights resizable edges and corners when your mouse hovers over them.
+
+### Fixed
+- **Automatic Expansion Bug**: Fixed the known issue where enabling new sliders (like Pings or Dialog) from the Settings menu would cause them to bleed off the edge of the window. The volume window will now automatically expand its width to instantly accommodate newly toggled channels.
+
 ## v2.12.1 — 2026-03-12
 
 ### Fixed

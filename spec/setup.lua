@@ -130,6 +130,7 @@ local function createMockFrame(frameType, name, parent, template)
         SetNormalAtlas = function() end,
         SetPushedAtlas = function() end,
         SetHighlightTexture = function() end,
+        SetGradient = function() end,
         SetColorTexture = function(self, r, g, b, a) 
             self.r, self.g, self.b, self.a = r, g, b, a
         end,
@@ -305,6 +306,7 @@ _G.print = function(...) end
 _G.NORMAL_FONT_COLOR = { GetRGB = function() return 1, 0.82, 0 end }
 _G.HIGHLIGHT_FONT_COLOR = { GetRGB = function() return 1, 1, 1 end }
 _G.VERY_LIGHT_GRAY_COLOR = { GetRGB = function() return 0.9, 0.9, 0.9 end }
+_G.CreateColor = function(r, g, b, a) return {r=r, g=g, b=b, a=a, GetRGB = function() return r,g,b end, GetRGBA = function() return r,g,b,a end} end
 
 -- Global API Tables
 _G.C_Sound = {
