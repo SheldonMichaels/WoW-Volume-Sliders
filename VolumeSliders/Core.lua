@@ -402,6 +402,8 @@ function VS:ProcessSliderAction(triggerStr)
             if eff == "ADJUST_1" then return 0.01 end
             if eff == "ADJUST_5" then return 0.05 end
             if eff == "ADJUST_10" then return 0.10 end
+            if eff == "ADJUST_15" then return 0.15 end
+            if eff == "ADJUST_20" then return 0.20 end
             if eff == "ADJUST_25" then return 0.25 end
         end
     end
@@ -418,6 +420,8 @@ function VS:ProcessScrollAction(triggerStr)
             if eff == "ADJUST_1" then return 0.01
             elseif eff == "ADJUST_5" then return 0.05
             elseif eff == "ADJUST_10" then return 0.10
+            elseif eff == "ADJUST_15" then return 0.15
+            elseif eff == "ADJUST_20" then return 0.20
             elseif eff == "ADJUST_25" then return 0.25
             end
         end
@@ -445,6 +449,8 @@ function VS:AppendActionTooltipLines(tooltip, elementKey, defaultActions)
             if eff == "ADJUST_1" then return "Change by 1%" end
             if eff == "ADJUST_5" then return "Change by 5%" end
             if eff == "ADJUST_10" then return "Change by 10%" end
+            if eff == "ADJUST_15" then return "Change by 15%" end
+            if eff == "ADJUST_20" then return "Change by 20%" end
             if eff == "ADJUST_25" then return "Change by 25%" end
         end
         if string.match(eff, "^PRESET_") then

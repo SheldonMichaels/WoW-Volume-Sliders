@@ -1758,6 +1758,8 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         { id = "ADJUST_1", name = "Change by 1%" },
         { id = "ADJUST_5", name = "Change by 5%" },
         { id = "ADJUST_10", name = "Change by 10%" },
+        { id = "ADJUST_15", name = "Change by 15%" },
+        { id = "ADJUST_20", name = "Change by 20%" },
         { id = "ADJUST_25", name = "Change by 25%" }
     }
     
@@ -1765,6 +1767,8 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         { id = "ADJUST_1", name = "Change by 1%" },
         { id = "ADJUST_5", name = "Change by 5%" },
         { id = "ADJUST_10", name = "Change by 10%" },
+        { id = "ADJUST_15", name = "Change by 15%" },
+        { id = "ADJUST_20", name = "Change by 20%" },
         { id = "ADJUST_25", name = "Change by 25%" }
     }
     
@@ -1775,87 +1779,397 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         return "Select Effect..."
     end
 
-    local columns = {}
-    local NUM_COLUMNS = 3
-    local COLUMN_GAP = 40           -- space between columns (includes divider)
-    local COLUMN_PADDING = 10       -- inner padding for elements inside each column
-    local TOTAL_WIDTH = 560         -- usable content width
-    local COL_WIDTH = math.floor((TOTAL_WIDTH - (COLUMN_GAP * (NUM_COLUMNS - 1))) / NUM_COLUMNS)
-    local ELEMENT_WIDTH = COL_WIDTH - (COLUMN_PADDING * 2)
-    local DELETE_BTN_SIZE = 20      -- approximate width of close button
-    local CAPTURE_WIDTH = ELEMENT_WIDTH - DELETE_BTN_SIZE + 2  -- captureBtn sits next to delBtn
-    
-    -- Check if a trigger already exists in the given column's action list
-    local function IsDuplicateTrigger(colKey, triggerStr, currentAction)
+    local function IsDuplicateTrigger(colKey, triggerStr, currentEffectId)
         local actions = db.mouseActions[colKey] or {}
         for _, action in ipairs(actions) do
-            if action ~= currentAction and action.trigger == triggerStr then
+            if action.effect ~= currentEffectId and action.trigger == triggerStr then
                 return true
             end
         end
         return false
     end
+
+    local TOTAL_WIDTH = 560
+    local sections = {}
+
+    local MODIFIER_OPTIONS = {
+        { id = "None", name = "No Modifier" },
+        { id = "Shift", name = "Shift" },
+        { id = "Ctrl", name = "Ctrl" },
+        { id = "Alt", name = "Alt" },
+        { id = "Shift+Ctrl", name = "Shift+Ctrl" },
+        { id = "Shift+Alt", name = "Shift+Alt" },
+        { id = "Ctrl+Alt", name = "Ctrl+Alt" },
+        { id = "Shift+Ctrl+Alt", name = "Shift+Ctrl+Alt" }
+    }
     
-    local function RefreshColumn(colKey)
-        local col = columns[colKey]
-        if not col then return end
+    local SCROLL_MODIFIER_OPTIONS = {
+        { id = "Disabled", name = "Disabled" },
+        { id = "None", name = "No Modifier" },
+        { id = "Shift", name = "Shift" },
+        { id = "Ctrl", name = "Ctrl" },
+        { id = "Alt", name = "Alt" },
+        { id = "Shift+Ctrl", name = "Shift+Ctrl" },
+        { id = "Shift+Alt", name = "Shift+Alt" },
+        { id = "Ctrl+Alt", name = "Ctrl+Alt" },
+        { id = "Shift+Ctrl+Alt", name = "Shift+Ctrl+Alt" }
+    }
+    
+    local BUTTON_OPTIONS = {
+        { id = "None", name = "None" },
+        { id = "LeftButton", name = "Left Click" },
+        { id = "RightButton", name = "Right Click" },
+        { id = "MiddleButton", name = "Middle Click" },
+        { id = "Button4", name = "Mouse Button 4" },
+        { id = "Button5", name = "Mouse Button 5" }
+    }
+
+    local function ParseTriggerParts(triggerStr)
+        if not triggerStr or triggerStr == "" then return "None", "None" end
+        local mods = {}
+        if string.find(triggerStr, "Shift") then table.insert(mods, "Shift") end
+        if string.find(triggerStr, "Ctrl") then table.insert(mods, "Ctrl") end
+        if string.find(triggerStr, "Alt") then table.insert(mods, "Alt") end
         
-        -- Hide old rows
-        for _, row in ipairs(col.rows) do
-            row:Hide()
+        local modStr = #mods > 0 and table.concat(mods, "+") or "None"
+        
+        local lastPlus = string.reverse(triggerStr):find("%+")
+        local btnStr = lastPlus and string.sub(triggerStr, #triggerStr - lastPlus + 2) or triggerStr
+        if btnStr == "None" or btnStr == "" or string.find(btnStr, "Shift") or string.find(btnStr, "Ctrl") or string.find(btnStr, "Alt") then 
+            btnStr = "None" 
         end
         
-        local yOffset = -30
-        local actions = db.mouseActions[colKey] or {}
-        local getEffectsFunc = col.getEffectsFunc
+        return modStr, btnStr
+    end
+
+    local function GetIntrinsicDefault(colKey, effectId)
+        if colKey == "sliders" then
+            return effectId == "ADJUST_5" and "LeftButton" or "None"
+        elseif colKey == "scrollWheel" then
+            return effectId == "ADJUST_1" and "None" or "Disabled"
+        end
+        return "None"
+    end
+
+    local function SaveGridAction(colKey, effectId, newTrigger)
+        local defaultTrigger = GetIntrinsicDefault(colKey, effectId)
+        if newTrigger == defaultTrigger then
+            newTrigger = nil
+        end
+        
+        -- Remove exact duplicate triggers within the same section to prevent overlap
+        if newTrigger and newTrigger ~= "Disabled" then
+            for i = #db.mouseActions[colKey], 1, -1 do
+                if db.mouseActions[colKey][i].trigger == newTrigger and db.mouseActions[colKey][i].effect ~= effectId then
+                    table.remove(db.mouseActions[colKey], i)
+                end
+            end
+        end
+
+        local found = false
+        for _, action in ipairs(db.mouseActions[colKey]) do
+            if action.effect == effectId then
+                action.trigger = newTrigger
+                found = true
+                break
+            end
+        end
+        
+        if not found and newTrigger then
+            table.insert(db.mouseActions[colKey], { trigger = newTrigger, effect = effectId })
+        end
+        
+        -- Clean up empty actions
+        for i = #db.mouseActions[colKey], 1, -1 do
+            local a = db.mouseActions[colKey][i]
+            if not a.trigger or a.trigger == "" then
+                table.remove(db.mouseActions[colKey], i)
+            end
+        end
+
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+        VS.RefreshMouseActionsUI()
+    end
+
+    -- Function to create a fixed grid section for sliders/scrollWheel
+    local function CreateGridSection(key, titleText, effectsList, yOffset)
+        local section = CreateFrame("Frame", nil, contentFrame)
+        local isDual = (key == "sliders")
+        local rowHeight = isDual and 95 or 60
+        local sectionHeight = 40 + (2 * rowHeight)
+        
+        section:SetSize(TOTAL_WIDTH, sectionHeight)
+        section:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 0, yOffset)
+        
+        local header = section:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        header:SetPoint("TOPLEFT", section, "TOPLEFT", 10, 0)
+        header:SetText(titleText)
+        
+        local divider = section:CreateTexture(nil, "ARTWORK")
+        divider:SetColorTexture(1, 1, 1, 0.3)
+        divider:SetSize(TOTAL_WIDTH - 20, 1)
+        divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -5)
+
+        section.cells = {}
+        
+        local colWidth = (TOTAL_WIDTH - 20) / 3
+        local dropWidth = colWidth - 15
+        
+        for i, eff in ipairs(effectsList) do
+            local cell = CreateFrame("Frame", nil, section)
+            cell:SetSize(colWidth, rowHeight)
+            
+            local row = math.floor((i - 1) / 3)
+            local col = (i - 1) % 3
+            cell:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", col * colWidth, -10 - (row * rowHeight))
+            
+            local label = cell:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+            label:SetPoint("TOPLEFT", cell, "TOPLEFT", 0, 0)
+            label:SetText(eff.name)
+            
+            local resetBtn = CreateFrame("Button", nil, cell, "UIPanelButtonTemplate")
+            resetBtn:SetSize(55, 20)
+            resetBtn:SetPoint("LEFT", label, "RIGHT", 10, 0)
+            resetBtn:SetText("Reset")
+            
+            local modDrop = CreateFrame("DropdownButton", nil, cell, "WowStyle1DropdownTemplate")
+            modDrop:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -8) -- slightly more padding
+            modDrop:SetWidth(dropWidth)
+            
+            local btnDrop = nil
+            if isDual then
+                btnDrop = CreateFrame("DropdownButton", nil, cell, "WowStyle1DropdownTemplate")
+                btnDrop:SetPoint("TOPLEFT", modDrop, "BOTTOMLEFT", 0, -5)
+                btnDrop:SetWidth(dropWidth)
+            end
+            
+            cell.modDrop = modDrop
+            cell.btnDrop = btnDrop
+            cell.resetBtn = resetBtn
+            cell.effId = eff.id
+            cell.isDual = isDual
+            cell.key = key
+            
+            resetBtn:SetScript("OnClick", function()
+                SaveGridAction(key, eff.id, nil)
+                if modDrop.SetSelectionText then modDrop:SetSelectionText(nil) end
+                if btnDrop and btnDrop.SetSelectionText then btnDrop:SetSelectionText(nil) end
+            end)
+            
+            table.insert(section.cells, cell)
+        end
+        
+        sections[key] = section
+        return section, -(sectionHeight + 10)
+    end
+
+    -- Function to create the dynamic list section for Minimap
+    local function CreateListSection(key, titleText, getEffectsFunc, yOffset)
+        local section = CreateFrame("Frame", nil, contentFrame)
+        section:SetSize(TOTAL_WIDTH, 400) -- Will adjust dynamically
+        section:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 0, yOffset)
+        
+        local header = section:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+        header:SetPoint("TOPLEFT", section, "TOPLEFT", 10, 0)
+        header:SetText(titleText)
+        
+        local divider = section:CreateTexture(nil, "ARTWORK")
+        divider:SetColorTexture(1, 1, 1, 0.3)
+        divider:SetSize(TOTAL_WIDTH - 20, 1)
+        divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -5)
+        
+        local addBtn = CreateFrame("Button", nil, section, "UIPanelButtonTemplate")
+        addBtn:SetSize(150, 22)
+        addBtn:SetText("Add Action")
+        addBtn:SetScript("OnClick", function()
+            table.insert(db.mouseActions[key], { trigger = nil, effect = nil })
+            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+            VS.RefreshMouseActionsUI()
+        end)
+        
+        section.addBtn = addBtn
+        section.rows = {}
+        section.getEffectsFunc = getEffectsFunc
+        sections[key] = section
+        return section
+    end
+
+    local yOff = -30
+    local _, sectionHeight = CreateGridSection("sliders", "Slider Buttons", sliderEffects, yOff)
+    yOff = yOff + sectionHeight
+    _, sectionHeight = CreateGridSection("scrollWheel", "Slider Scroll Wheel", scrollWheelEffects, yOff)
+    yOff = yOff + sectionHeight
+    CreateListSection("minimap", "Minimap Icon", GetMinimapEffects, yOff)
+
+    VS.RefreshMouseActionsUI = function()
+        -- Refresh Grid Sections
+        for _, key in ipairs({"sliders", "scrollWheel"}) do
+            local sec = sections[key]
+            for _, cell in ipairs(sec.cells) do
+                local triggerStr = nil
+                for _, action in ipairs(db.mouseActions[key]) do
+                    if action.effect == cell.effId then
+                        triggerStr = action.trigger
+                        break
+                    end
+                end
+                
+                local intrinsicDefault = GetIntrinsicDefault(key, cell.effId)
+                
+                if not triggerStr then
+                    if key == "sliders" and intrinsicDefault == "LeftButton" then
+                        -- Is LeftButton used by *any* custom action?
+                        local leftUsed = false
+                        for _, action in ipairs(db.mouseActions.sliders) do
+                            if string.match(action.trigger or "", "LeftButton") and action.trigger == "LeftButton" then 
+                                leftUsed = true 
+                                break 
+                            end
+                        end
+                        triggerStr = leftUsed and "None" or "LeftButton"
+                    elseif key == "scrollWheel" and intrinsicDefault == "None" then
+                        -- Is None used by *any* custom action?
+                        local noneUsed = false
+                        for _, action in ipairs(db.mouseActions.scrollWheel) do
+                            if action.trigger == "None" then 
+                                noneUsed = true 
+                                break 
+                            end
+                        end
+                        triggerStr = noneUsed and "Disabled" or "None"
+                    else
+                        triggerStr = intrinsicDefault
+                    end
+                end
+                
+                local isDefault = (triggerStr == intrinsicDefault)
+                
+                local activeMod, activeBtn = ParseTriggerParts(triggerStr)
+                if key == "scrollWheel" then activeMod = triggerStr end -- Pure modifier string
+                if activeMod == "" then activeMod = "None" end
+                
+                local activeModOpts = cell.isDual and MODIFIER_OPTIONS or SCROLL_MODIFIER_OPTIONS
+                cell.modDrop:SetupMenu(function(dropdown, rootDescription)
+                    for _, modOpt in ipairs(activeModOpts) do
+                        rootDescription:CreateButton(modOpt.name, function()
+                            local newMod = modOpt.id
+                            local newTrigger
+                            if cell.isDual then
+                                if newMod == "None" and activeBtn == "None" then
+                                    newTrigger = nil
+                                elseif newMod == "None" then
+                                    newTrigger = activeBtn
+                                elseif activeBtn == "None" then
+                                    -- Assigning a modifier without a button means we need a button. Default to LeftButton if they just clicked the modifier dropdown.
+                                    newTrigger = newMod .. "+LeftButton"
+                                else
+                                    newTrigger = newMod .. "+" .. activeBtn
+                                end
+                            else
+                                newTrigger = newMod
+                            end
+                            SaveGridAction(cell.key, cell.effId, newTrigger)
+                        end)
+                    end
+                end)
+                
+                if cell.isDual then
+                    cell.btnDrop:SetupMenu(function(dropdown, rootDescription)
+                        for _, btnOpt in ipairs(BUTTON_OPTIONS) do
+                            rootDescription:CreateButton(btnOpt.name, function()
+                                local newBtn = btnOpt.id
+                                local newTrigger
+                                if newBtn == "None" then
+                                    newTrigger = nil
+                                elseif activeMod == "None" then
+                                    newTrigger = newBtn
+                                else
+                                    newTrigger = activeMod .. "+" .. newBtn
+                                end
+                                SaveGridAction(cell.key, cell.effId, newTrigger)
+                            end)
+                        end
+                    end)
+                end
+                
+                -- Set Dropdown Selected Text
+                local searchOpts = cell.isDual and MODIFIER_OPTIONS or SCROLL_MODIFIER_OPTIONS
+                local displayModName = activeMod
+                for _, m in ipairs(searchOpts) do if m.id == activeMod then displayModName = m.name; break end end
+                local modText = isDefault and string.format("%s (Default)", displayModName) or displayModName
+                cell.modDrop:SetDefaultText(modText)
+                cell.modDrop:SetText(modText)
+                if cell.modDrop.selectionText ~= nil then cell.modDrop.selectionText = nil end
+                
+                if cell.isDual then
+                    local displayBtnName = "None"
+                    for _, b in ipairs(BUTTON_OPTIONS) do if b.id == activeBtn then displayBtnName = b.name; break end end
+                    local btnText = isDefault and string.format("%s (Default)", displayBtnName) or displayBtnName
+                    cell.btnDrop:SetDefaultText(btnText)
+                    cell.btnDrop:SetText(btnText)
+                    if cell.btnDrop.selectionText ~= nil then cell.btnDrop.selectionText = nil end
+                end
+                
+                -- Toggle Reset button
+                local hasCustomBinding = false
+                if db.mouseActions[key] then
+                    for _, action in ipairs(db.mouseActions[key]) do
+                        if action.effect == cell.effId and action.trigger then
+                            hasCustomBinding = true
+                            break
+                        end
+                    end
+                end
+                
+                if not hasCustomBinding then
+                    cell.resetBtn:Hide()
+                else
+                    cell.resetBtn:Show()
+                end
+            end
+        end
+
+        -- Refresh List Section (Minimap)
+        local minSec = sections["minimap"]
+        local actions = db.mouseActions["minimap"] or {}
+        local rowYOffset = -35
+        
+        for _, row in ipairs(minSec.rows) do row:Hide() end
         
         for i, action in ipairs(actions) do
-            local row = col.rows[i]
+            local row = minSec.rows[i]
             if not row then
-                row = CreateFrame("Frame", nil, col.frame)
-                row:SetSize(COL_WIDTH, 65)
+                row = CreateFrame("Frame", nil, minSec)
+                local rowWidth = TOTAL_WIDTH - 20
+                row:SetSize(rowWidth, 30)
                 
-                -- Capture Input Button
+                local delBtnWidth = 32
+                local padding = 20 -- 10px between capture/drop, 10px between drop/del
+                local remainingWidth = rowWidth - delBtnWidth - padding
+                local captureBtnWidth = math.floor(remainingWidth * 0.40)
+                local effectDropWidth = math.floor(remainingWidth * 0.60)
+                
                 row.captureBtn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-                row.captureBtn:SetSize(CAPTURE_WIDTH, 22)
-                row.captureBtn:SetPoint("TOPLEFT", row, "TOPLEFT", COLUMN_PADDING, 0)
+                row.captureBtn:SetSize(captureBtnWidth, 22)
+                row.captureBtn:SetPoint("LEFT", row, "LEFT", 0, 0)
                 row.captureBtn:RegisterForClicks("AnyUp")
                 row.captureBtn:EnableMouseWheel(true)
                 
-                -- Capture Input Tooltips
-                row.captureBtn:SetScript("OnEnter", function(self)
-                    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                    local txt = self:GetText()
-                    if txt then
-                        GameTooltip:SetText(txt, nil, nil, nil, nil, true)
-                        GameTooltip:Show()
-                    end
-                end)
-                row.captureBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-                
-                -- Effect Dropdown
                 row.effectDrop = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
-                row.effectDrop:SetPoint("TOPLEFT", row.captureBtn, "BOTTOMLEFT", 0, -10)
-                row.effectDrop:SetWidth(ELEMENT_WIDTH)
+                row.effectDrop:SetPoint("LEFT", row.captureBtn, "RIGHT", 10, 0)
+                row.effectDrop:SetWidth(effectDropWidth)
                 
-                -- Delete Button
                 row.delBtn = CreateFrame("Button", nil, row, "UIPanelCloseButton")
-                row.delBtn:SetPoint("LEFT", row.captureBtn, "RIGHT", -2, 0)
+                row.delBtn:SetPoint("RIGHT", row, "RIGHT", 0, 0)
                 
-                -- Subtle bottom divider
-                row.divider = row:CreateTexture(nil, "ARTWORK")
-                row.divider:SetColorTexture(1, 1, 1, 0.15)
-                row.divider:SetSize(ELEMENT_WIDTH, 1)
-                row.divider:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", COLUMN_PADDING, 0)
-                
-                table.insert(col.rows, row)
+                table.insert(minSec.rows, row)
             end
             
             row:Show()
-            row:SetPoint("TOPLEFT", col.frame, "TOPLEFT", 0, yOffset)
-            yOffset = yOffset - 80
+            row:SetPoint("TOPLEFT", minSec, "TOPLEFT", 10, rowYOffset)
+            rowYOffset = rowYOffset - 35
             
-            row.captureBtn:SetText(action.trigger or (colKey == "scrollWheel" and "Record Modifier..." or "Record Input..."))
+            row.captureBtn:SetText(action.trigger or "Record Input...")
             
             row.captureBtn:SetScript("OnClick", function(self, btn)
                 if self.isCapturing then
@@ -1863,85 +2177,51 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                     if IsShiftKeyDown() then mods = mods .. "Shift+" end
                     if IsControlKeyDown() then mods = mods .. "Ctrl+" end
                     if IsAltKeyDown() then mods = mods .. "Alt+" end
+                    local triggerStr = mods .. btn
                     
-                    if colKey == "scrollWheel" then
-                        -- Only capture modifier keys, ignore the mouse button
-                        if mods == "" then
-                            self:SetText("|cffffffffModifier Required|r")
-                            C_Timer.After(1, function()
-                                self:SetText(action.trigger or "Record Modifier...")
-                                self.isCapturing = false
-                            end)
-                            return
-                        end
-                        -- Trim trailing '+' to produce clean trigger like "Shift" or "Ctrl+Alt"
-                        local triggerStr = string.sub(mods, 1, -2)
-                        
-                        -- Prevent duplicate triggers within the same column
-                        if IsDuplicateTrigger(colKey, triggerStr, action) then
-                            self:SetText("|cffffffffAlready Assigned|r")
-                            C_Timer.After(1, function()
-                                self:SetText(action.trigger or "Record Modifier...")
-                                self.isCapturing = false
-                            end)
-                            return
-                        end
-                        
-                        action.trigger = triggerStr
-                        self:SetText(triggerStr)
-                        self.isCapturing = false
-                    else
-                        local triggerStr = mods .. btn
-                        
-                        -- Prevent duplicate triggers within the same column
-                        if IsDuplicateTrigger(colKey, triggerStr, action) then
-                            self:SetText("|cffffffffAlready Assigned|r")
-                            C_Timer.After(1, function()
-                                self:SetText(action.trigger or "Record Input...")
-                                self.isCapturing = false
-                            end)
-                            return
-                        end
-                        
-                        action.trigger = triggerStr
-                        self:SetText(triggerStr)
-                        self.isCapturing = false
+                    if IsDuplicateTrigger("minimap", triggerStr, nil) and triggerStr ~= action.trigger then
+                        self:SetText("|cffffffffAlready Assigned|r")
+                        C_Timer.After(1, function()
+                            VS.RefreshMouseActionsUI()
+                        end)
+                        return
                     end
+                    
+                    action.trigger = triggerStr
+                    self.isCapturing = false
+                    PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+                    VS.RefreshMouseActionsUI()
                 else
-                    self:SetText(colKey == "scrollWheel" and "Hold Modifier + Click..." or "Press Bind Now...")
+                    self:SetText("Press Bind Now...")
                     self.isCapturing = true
                 end
             end)
             
             row.captureBtn:SetScript("OnMouseWheel", function(self, delta)
                 if self.isCapturing then
-                    -- Scroll Wheel column only captures modifier keys, not scroll input
-                    if colKey == "scrollWheel" then return end
-                    
                     local mods = ""
                     if IsShiftKeyDown() then mods = mods .. "Shift+" end
                     if IsControlKeyDown() then mods = mods .. "Ctrl+" end
                     if IsAltKeyDown() then mods = mods .. "Alt+" end
                     local triggerStr = mods .. (delta > 0 and "WheelUp" or "WheelDown")
                     
-                    -- Prevent duplicate triggers within the same column
-                    if IsDuplicateTrigger(colKey, triggerStr, action) then
+                    if IsDuplicateTrigger("minimap", triggerStr, nil) and triggerStr ~= action.trigger then
                         self:SetText("|cffffffffAlready Assigned|r")
                         C_Timer.After(1, function()
-                            self:SetText(action.trigger or "Record Input...")
-                            self.isCapturing = false
+                            VS.RefreshMouseActionsUI()
                         end)
                         return
                     end
                     
                     action.trigger = triggerStr
-                    self:SetText(triggerStr)
                     self.isCapturing = false
+                    PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+                    VS.RefreshMouseActionsUI()
                 end
             end)
             
             row.effectDrop:SetupMenu(function(dropdown, rootDescription)
-                local effects = type(getEffectsFunc) == "function" and getEffectsFunc() or getEffectsFunc
+                local effects = type(minSec.getEffectsFunc) == "function" and minSec.getEffectsFunc() or minSec.getEffectsFunc
                 for _, eff in ipairs(effects) do
                     rootDescription:CreateButton(eff.name, function()
                         action.effect = eff.id
@@ -1950,67 +2230,20 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                 end
             end)
             
-            local currentEffects = type(getEffectsFunc) == "function" and getEffectsFunc() or getEffectsFunc
+            local currentEffects = type(minSec.getEffectsFunc) == "function" and minSec.getEffectsFunc() or minSec.getEffectsFunc
             row.effectDrop:SetDefaultText(GetEffectName(action.effect, currentEffects))
             
             row.delBtn:SetScript("OnClick", function()
-                table.remove(db.mouseActions[colKey], i)
-                RefreshColumn(colKey)
+                table.remove(db.mouseActions["minimap"], i)
                 PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+                VS.RefreshMouseActionsUI()
             end)
         end
         
-        col.addBtn:SetPoint("TOPLEFT", col.frame, "TOPLEFT", COLUMN_PADDING, yOffset)
+        minSec.addBtn:SetPoint("TOPLEFT", minSec, "TOPLEFT", 10, rowYOffset)
     end
-    
-    local function CreateColumn(key, titleText, colIndex, getEffectsFunc)
-        local xOffset = (colIndex - 1) * (COL_WIDTH + COLUMN_GAP)
-        
-        local frame = CreateFrame("Frame", nil, contentFrame)
-        frame:SetSize(COL_WIDTH, 600)
-        frame:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", xOffset, -20)
-        
-        if colIndex > 1 then
-            local divider = contentFrame:CreateTexture(nil, "ARTWORK")
-            divider:SetColorTexture(1, 1, 1, 0.3)
-            divider:SetSize(1, 550)
-            divider:SetPoint("TOPLEFT", frame, "TOPLEFT", -(COLUMN_GAP / 2), 10)
-        end
-        
-        local header = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-        header:SetPoint("TOP", frame, "TOP", 0, 0)
-        header:SetText(titleText)
-        header:SetJustifyH("CENTER")
-        
-        local addBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-        addBtn:SetSize(ELEMENT_WIDTH, 22)
-        addBtn:SetText("Add Action")
-        addBtn:SetPoint("TOPLEFT", frame, "TOPLEFT", COLUMN_PADDING, -30)
-        addBtn:SetScript("OnClick", function()
-            table.insert(db.mouseActions[key], { trigger = nil, effect = nil })
-            RefreshColumn(key)
-            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-        end)
-        
-        columns[key] = {
-            frame = frame,
-            addBtn = addBtn,
-            rows = {},
-            getEffectsFunc = getEffectsFunc
-        }
-        
-        RefreshColumn(key)
-    end
-    
-    CreateColumn("minimap", "Minimap Icon", 1, GetMinimapEffects)
-    CreateColumn("sliders", "Slider Buttons", 2, sliderEffects)
-    CreateColumn("scrollWheel", "Slider Scroll Wheel", 3, scrollWheelEffects)
-    
-    VS.RefreshMouseActionsUI = function()
-        RefreshColumn("minimap")
-        RefreshColumn("sliders")
-        RefreshColumn("scrollWheel")
-    end
+
+    VS.RefreshMouseActionsUI()
 end
 
 

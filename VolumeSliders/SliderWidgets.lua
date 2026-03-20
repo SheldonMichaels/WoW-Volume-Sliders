@@ -240,17 +240,31 @@ local function CreateSliderBase(parent, name, label, tooltipText)
     -- value direction is inverted.
     ---------------------------------------------------------------------------
     slider:SetScript("OnMouseWheel", function(self, delta)
-        local customStep = nil
-        -- Build modifier-only string to match scrollWheel triggers
         local mods = ""
         if IsShiftKeyDown() then mods = mods .. "Shift+" end
         if IsControlKeyDown() then mods = mods .. "Ctrl+" end
         if IsAltKeyDown() then mods = mods .. "Alt+" end
-        if mods ~= "" then
-            local modTrigger = string.sub(mods, 1, -2) -- trim trailing '+'
-            customStep = VS:ProcessScrollAction(modTrigger)
+        
+        local modTrigger = mods ~= "" and string.sub(mods, 1, -2) or "None"
+        local step = VS:ProcessScrollAction(modTrigger)
+        
+        if not step and modTrigger == "None" then
+            local adjust1Bound = false
+            local db = VolumeSlidersMMDB
+            if db and db.mouseActions and db.mouseActions.scrollWheel then
+                for _, action in ipairs(db.mouseActions.scrollWheel) do
+                    if action.effect == "ADJUST_1" then
+                        adjust1Bound = true
+                        break
+                    end
+                end
+            end
+            if not adjust1Bound then
+                step = 0.01
+            end
         end
-        local step = customStep or 0.01
+        
+        if not step then return end
         
         local val = self:GetValue()
         if delta > 0 then

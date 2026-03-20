@@ -1,3 +1,9 @@
+## v2.14.0 — 2026-03-20
+
+### Added
+- **Expanded Mouse Actions**: Added two new quick-increment values (Change by 15%, Change by 20%) to the Mouse Actions section.
+- **Dynamic Dropdown Selection**: Converted the Mouse Actions binding interfaces into structured Dropdown menus to cleanly prevent string malformations and provide explicit access to the full Modifier mapping list.
+
 ## v2.13.0 — 2026-03-18
 
 ### Added
