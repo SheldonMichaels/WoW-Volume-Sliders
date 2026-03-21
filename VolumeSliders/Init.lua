@@ -1,4 +1,4 @@
--------------------------------------------------------------------------------
+﻿-------------------------------------------------------------------------------
 -- Init.lua
 --
 -- Addon initialization (PLAYER_LOGIN) and Addon Compartment integration.
@@ -41,7 +41,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     db.valueColor = db.valueColor or 1
     db.highColor = db.highColor or 2
     db.lowColor = db.lowColor or 2
-    
+
     if db.bindToMinimap == nil then db.bindToMinimap = true end
     if db.minimalistOffsetX == nil then db.minimalistOffsetX = -35 end
     if db.minimalistOffsetY == nil then db.minimalistOffsetY = -5 end
@@ -65,7 +65,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     if db.enableFishingSFX == nil then db.enableFishingSFX = true end
     if db.fishingTargetMaster == nil then db.fishingTargetMaster = 1.0 end
     if db.fishingTargetSFX == nil then db.fishingTargetSFX = 1.0 end
-    
+
     if db.enableLfgVolume == nil then db.enableLfgVolume = false end
     if db.enableLfgMaster == nil then db.enableLfgMaster = true end
     if db.enableLfgSFX == nil then db.enableLfgSFX = true end
@@ -98,8 +98,8 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Persistent Window (click-outside doesn't close)
     if db.persistentWindow == nil then db.persistentWindow = false end
-    
-    -- The layout must unconditionally update at least once upon session startup 
+
+    -- The layout must unconditionally update at least once upon session startup
     -- to map all newly instantiated UI frames before they are cached as clean.
     db.layoutDirty = true
 
@@ -145,7 +145,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- Automation Migration: Convert legacy sliders to the new Preset system.
     -- This handles users who had the old "Fishing Splash Boost" or "LFG Queue Pop Boost"
     -- enabled, creating appropriate LEGACY presets so their automation still works.
-    
+
     -- Migration for Fishing
     if db.enableFishingVolume and not db.fishingPresetIndex and (db.fishingTargetMaster or db.fishingTargetSFX) then
         db.presets = db.presets or {}
@@ -270,7 +270,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- Update the minimap icon to the correct mute state and pre-create the
     -- options frame so it's ready for instant display.
     VS:InitializeSettings()
-    
+
     -- Smart Auto-Detection for Minimalist Minimap Icon
     if db.minimalistMinimap == nil then
         local useStandardIcon = false
@@ -281,24 +281,24 @@ initFrame:SetScript("OnEvent", function(self, event)
                 break
             end
         end
-        
+
         -- If a minimap manager is found, default to standard ringed icon.
         -- Otherwise default to the new Minimalist aesthetic.
         db.minimalistMinimap = not useStandardIcon
     end
-    
+
     if VS.Presets and VS.Presets.RefreshEventState then
         VS.Presets:RefreshEventState()
     end
-    
+
     if VS.Fishing and VS.Fishing.Initialize then
         VS.Fishing:Initialize()
     end
-    
+
     if VS.LFGQueue and VS.LFGQueue.Initialize then
         VS.LFGQueue:Initialize()
     end
-    
+
     VS:UpdateMiniMapButtonVisibility()
 
     -- This event only needs to fire once.

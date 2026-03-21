@@ -1,4 +1,4 @@
--------------------------------------------------------------------------------
+﻿-------------------------------------------------------------------------------
 -- MinimapBroker.lua
 --
 -- LibDataBroker data object, minimap icon texture helpers, scroll-to-adjust
@@ -63,7 +63,7 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
         if triggerStr and VS:ProcessMinimapAction(triggerStr, clickedFrame) then
             return
         end
-        
+
         if button == "LeftButton" then
              if not VS.container then
                  VS:CreateOptionsFrame()
@@ -131,7 +131,7 @@ function VS:UpdateMiniMapVolumeIcon()
     if minimapButton and minimapButton.icon then
         VS:UpdateVolumeTexture(minimapButton.icon)
     end
-    
+
     if VS.minimalistButton and VS.minimalistButton.minimalistIcon then
         if GetCVar("Sound_EnableAllSound") == "0" then
             VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker-mute")
@@ -164,7 +164,7 @@ end
 
 function VS:StartHoverPolling()
     if not VolumeSlidersMMDB.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.bindToMinimap then return end
-    
+
     VS.minimalistButton:SetAlpha(1)
     if VS.minimalistButton:GetScript("OnUpdate") ~= HoverPolling_OnUpdate then
         hoverTimer = 0
@@ -174,11 +174,11 @@ function VS:StartHoverPolling()
 end
 
 function VS:CheckMinimapHover()
-    if not VolumeSlidersMMDB.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.bindToMinimap then 
+    if not VolumeSlidersMMDB.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.bindToMinimap then
         if VS.minimalistButton then VS.minimalistButton:SetScript("OnUpdate", nil) end
-        return false 
+        return false
     end
-    
+
     local isOver = Minimap:IsMouseOver() or VS.minimalistButton:IsMouseOver()
     if Minimap.ZoomIn and Minimap.ZoomIn:IsMouseOver() then isOver = true end
     if Minimap.ZoomOut and Minimap.ZoomOut:IsMouseOver() then isOver = true end
@@ -190,7 +190,7 @@ function VS:CheckMinimapHover()
     else
         VS.minimalistButton:SetAlpha(0)
         VS.minimalistButton:SetScript("OnUpdate", nil)
-        
+
         -- Force the native Minimap to clean up its zoom buttons since the cursor
         -- has explicitly left our custom interactive area and into free space.
         if Minimap and Minimap:HasScript("OnLeave") then
@@ -198,7 +198,7 @@ function VS:CheckMinimapHover()
             if onLeave then onLeave(Minimap) end
         end
     end
-    
+
     return isOver
 end
 
@@ -207,12 +207,12 @@ end
 -----------------------------------------
 function VS:CreateMinimalistButton()
     if VS.minimalistButton then return end
-    
+
     -- We use a plain Frame instead of a Button! This completely blinds third-party Minimap
     -- skinning addons (SexyMap, ElvUI, etc.) which aggressively scan for "Button" objects and ruin their textures.
     local btn = CreateFrame("Frame", "VS_MinimalistSpeakerBtn", Minimap)
     btn:SetSize(17, 17)
-    
+
     -- Hidden by default until mouseover (if bound)
     if VolumeSlidersMMDB.bindToMinimap then
         btn:SetParent(Minimap)
@@ -221,14 +221,14 @@ function VS:CreateMinimalistButton()
         btn:SetParent(UIParent)
         btn:SetAlpha(1)
     end
-    
+
     local xOffset = VolumeSlidersMMDB.minimalistOffsetX or -35
     local yOffset = VolumeSlidersMMDB.minimalistOffsetY or -5
     btn:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", xOffset, yOffset)
-    
+
     btn:SetFrameStrata("MEDIUM")
     btn:SetFrameLevel(Minimap:GetFrameLevel() + 10)
-    
+
     -- Simulated Drop Shadow
     -- Placed on ARTWORK to avoid Minimap Skinning addons auto-detecting BACKGROUND textures
     local shadow = btn:CreateTexture(nil, "ARTWORK", nil, 1)
@@ -237,7 +237,7 @@ function VS:CreateMinimalistButton()
     shadow:SetAtlas("voicechat-icon-speaker")
     shadow:SetVertexColor(0, 0, 0, 0.7)
     btn.shadow = shadow
-    
+
     -- Instead of SetNormalAtlas (which can get hijacked by button border templates),
     -- we use a dedicated child texture layer to guarantee it renders exactly as the Atlas intends.
     local icon = btn:CreateTexture(nil, "ARTWORK", nil, 2)
@@ -245,7 +245,7 @@ function VS:CreateMinimalistButton()
     icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
     icon:SetAtlas("voicechat-icon-speaker")
     btn.minimalistIcon = icon
-    
+
     -- Visual feedback for clicks and hovers
     local highlight = btn:CreateTexture(nil, "HIGHLIGHT")
     highlight:SetSize(17, 17)
@@ -253,7 +253,7 @@ function VS:CreateMinimalistButton()
     highlight:SetAtlas("voicechat-icon-speaker")
     highlight:SetBlendMode("ADD")
     highlight:SetAlpha(0.2)
-    
+
     btn:SetScript("OnMouseDown", function(self, button)
         self.minimalistIcon:SetPoint("CENTER", self, "CENTER", 1, -1)
         self.shadow:SetPoint("CENTER", self, "CENTER", 2, -2)
@@ -261,14 +261,14 @@ function VS:CreateMinimalistButton()
     btn:SetScript("OnMouseUp", function(self, button)
         self.minimalistIcon:SetPoint("CENTER", self, "CENTER", 0, 0)
         self.shadow:SetPoint("CENTER", self, "CENTER", 1, -1)
-        
+
         -- We handle clicks here now since Frames don't have OnClick
         if not self.isMoving and self:IsMouseOver() then
             local triggerStr = VS:GetActiveTriggerString(button)
             if triggerStr and VS:ProcessMinimapAction(triggerStr, self) then
                 return
             end
-            
+
             if button == "LeftButton" then
                  if not VS.container then
                      VS:CreateOptionsFrame()
@@ -286,15 +286,15 @@ function VS:CreateMinimalistButton()
             end
         end
     end)
-    
+
     -- Ensure the interactive hit rect maintains its intended 17x17 size
     btn:SetSize(17, 17)
-    
+
     btn:EnableMouse(true)
     btn:EnableMouseWheel(true)
     btn:SetMovable(true)
     btn:RegisterForDrag("LeftButton")
-    
+
     btn:SetScript("OnDragStart", function(self)
         if IsShiftKeyDown() then
             self.isMoving = true
@@ -306,7 +306,7 @@ function VS:CreateMinimalistButton()
         if self.isMoving then
             self:StopMovingOrSizing()
             self.isMoving = false
-            
+
             -- Because StopMovingOrSizing changes the anchor and parent coordinates,
             -- we explicitly recalculate our offset from the Minimap's BOTTOMRIGHT.
             local mmScale = Minimap:GetEffectiveScale()
@@ -316,24 +316,24 @@ function VS:CreateMinimalistButton()
             local mmBottom = Minimap:GetBottom() * mmScale
             local btnRight = self:GetRight() * btnScale
             local btnBottom = self:GetBottom() * btnScale
-            
+
             -- Convert absolute difference back into the button's local scale
             local rawX = (btnRight - mmRight) / btnScale
             local rawY = (btnBottom - mmBottom) / btnScale
-            
+
             VolumeSlidersMMDB.minimalistOffsetX = rawX
             VolumeSlidersMMDB.minimalistOffsetY = rawY
-            
+
             -- Re-lock the anchor formally so resizing the screen doesn't skew it
             self:ClearAllPoints()
             self:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", rawX, rawY)
         end
     end)
-    
+
     btn:SetScript("OnMouseWheel", function(self, delta)
         VS:AdjustVolume(delta)
     end)
-    
+
     btn:SetScript("OnEnter", function(self)
         VS:StartHoverPolling()
         if VolumeSlidersMMDB and VolumeSlidersMMDB.showMinimapTooltip == false then return end
@@ -347,11 +347,11 @@ function VS:CreateMinimalistButton()
         GameTooltip:AddLine("|cff00ff00Shift+Drag|r to move icon")
         GameTooltip:Show()
     end)
-    
+
     btn:SetScript("OnLeave", function(self)
         GameTooltip:Hide()
     end)
-    
+
     VS.minimalistButton = btn
 end
 
@@ -380,18 +380,18 @@ function VS:UpdateMiniMapButtonVisibility()
     if not VS.minimalistButton then
         VS:CreateMinimalistButton()
     end
-    
+
     local isMinimalist = VolumeSlidersMMDB.minimalistMinimap
-    
+
     if isMinimalist then
         if VS.LDBIcon:IsRegistered("Volume Sliders") then
             VS.LDBIcon:Hide("Volume Sliders")
         end
-        
+
         -- Store coordinates before parenting reparent scrub
         local xOffset = VolumeSlidersMMDB.minimalistOffsetX or -35
         local yOffset = VolumeSlidersMMDB.minimalistOffsetY or -5
-        
+
         if VolumeSlidersMMDB.bindToMinimap then
             VS.minimalistButton:SetParent(Minimap)
             VS:ApplyMinimapHoverHooks()
@@ -403,14 +403,14 @@ function VS:UpdateMiniMapButtonVisibility()
             VS.minimalistButton:SetAlpha(1)
             VS.minimalistButton:SetScript("OnUpdate", nil)
         end
-        
+
         -- Restore Point
         VS.minimalistButton:ClearAllPoints()
         VS.minimalistButton:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", xOffset, yOffset)
-        
+
         VS.minimalistButton:SetFrameStrata("MEDIUM")
         VS.minimalistButton:SetFrameLevel(Minimap:GetFrameLevel() + 10)
-        
+
         VS.minimalistButton:Show()
     else
         if VS.LDBIcon:IsRegistered("Volume Sliders") then
@@ -422,7 +422,7 @@ function VS:UpdateMiniMapButtonVisibility()
         end
         VS.minimalistButton:Hide()
     end
-    
+
     VS:UpdateMiniMapVolumeIcon()
 end
 

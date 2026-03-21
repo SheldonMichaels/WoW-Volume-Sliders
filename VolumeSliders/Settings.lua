@@ -34,33 +34,33 @@ function VS:InitializeSettings()
 
     Settings.RegisterAddOnCategory(category)
     VS.settingsCategory = category
-    
+
     -- Subcategory 1: Sliders
     local slidersFrame = CreateFrame("Frame", "VolumeSlidersSlidersOptionsFrame", UIParent)
     local slidersCategory, slidersLayout = Settings.RegisterCanvasLayoutSubcategory(category, slidersFrame, "Slider Customization")
     Settings.RegisterAddOnCategory(slidersCategory)
-    
+
     VS:CreateSlidersSettingsContents(slidersFrame)
-    
+
     -- Subcategory 2: Window
     local windowFrame = CreateFrame("Frame", "VolumeSlidersWindowOptionsFrame", UIParent)
     local windowCategory, windowLayout = Settings.RegisterCanvasLayoutSubcategory(category, windowFrame, "Window Customization")
     Settings.RegisterAddOnCategory(windowCategory)
-    
+
     VS:CreateWindowSettingsContents(windowFrame)
 
     -- Subcategory 3: Automation (formerly Zone Triggers)
     local triggerFrame = CreateFrame("Frame", "VolumeSlidersTriggerOptionsFrame", UIParent)
     local triggerCategory, triggerLayout = Settings.RegisterCanvasLayoutSubcategory(category, triggerFrame, "Automation")
     Settings.RegisterAddOnCategory(triggerCategory)
-    
+
     VS:CreateAutomationSettingsContents(triggerFrame)
 
     -- Subcategory 4: Mouse Actions
     local mouseActionsFrame = CreateFrame("Frame", "VolumeSlidersMouseActionsOptionsFrame", UIParent)
     local mouseActionsCategory, mouseActionsLayout = Settings.RegisterCanvasLayoutSubcategory(category, mouseActionsFrame, "Mouse Actions")
     Settings.RegisterAddOnCategory(mouseActionsCategory)
-    
+
     VS:CreateMouseActionsSettingsContents(mouseActionsFrame)
 
     triggerFrame:SetScript("OnShow", function(self)
@@ -71,7 +71,7 @@ function VS:InitializeSettings()
             VS:RefreshAutomationProfiles()
         end
     end)
-    
+
     mouseActionsFrame:SetScript("OnShow", function(self)
         if VS.RefreshMouseActionsUI then
             VS:RefreshMouseActionsUI()
@@ -91,13 +91,13 @@ function VS:CreateSettingsContents(parentFrame)
     local scrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 10, -10)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
-    
+
     local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
 
     local categoryFrame = CreateFrame("Frame", "VolumeSlidersSettingsContentFrame", scrollFrame)
-    categoryFrame:SetSize(600, 250) 
+    categoryFrame:SetSize(600, 250)
     scrollFrame:SetScrollChild(categoryFrame)
 
     scrollFrame:SetScript("OnSizeChanged", function(self, width, height)
@@ -147,11 +147,11 @@ function VS:CreateSettingsContents(parentFrame)
     resetBtn:SetSize(115, 22)
     resetBtn:SetPoint("LEFT", customIconLabel, "RIGHT", 15, 0)
     resetBtn:SetText("Reset Position")
-    
+
     local bindMinimapCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
     bindMinimapCheck:SetPoint("TOPLEFT", customIconCheck, "BOTTOMLEFT", 0, 5)
     bindMinimapCheck.text:SetText("Bind to Minimap")
-    
+
     local function UpdateBindMinimapState()
         if db.minimalistMinimap then
             bindMinimapCheck:Enable()
@@ -173,7 +173,7 @@ function VS:CreateSettingsContents(parentFrame)
         end
     end)
     AddTooltip(customIconCheck, "Show a minimalist speaker near the zoom controls instead of the standard ringed minimap button.\n\n|cffff0000Note:|r Disabling this after it has been enabled requires a UI reload to fully remove the Minimap hooks.")
-    
+
     bindMinimapCheck:SetScript("OnClick", function(self)
         db.bindToMinimap = self:GetChecked()
         if VS.UpdateMiniMapButtonVisibility then
@@ -237,13 +237,13 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     local scrollFrame = CreateFrame("ScrollFrame", "VSAutomationSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 10, -10)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
-    
+
     local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
 
     local contentFrame = CreateFrame("Frame", "VSAutomationSettingsContentFrame", scrollFrame)
-    contentFrame:SetSize(600, 800) 
+    contentFrame:SetSize(600, 800)
     scrollFrame:SetScrollChild(contentFrame)
 
     scrollFrame:SetScript("OnSizeChanged", function(self, width, height)
@@ -345,7 +345,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         dropdown:SetPoint("TOPLEFT", fontString, "BOTTOMLEFT", -5, -5)
         dropdown:SetWidth(150)
         AddTooltip(dropdown, tooltip)
-        
+
         return dropdown, fontString
     end
 
@@ -359,7 +359,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             dropdown:SetDefaultText("None")
             VS.Presets:RefreshEventState()
         end)
-        
+
         for i, preset in ipairs(db.presets) do
             rootDescription:CreateButton(preset.name, function()
                 db[dbKey] = i
@@ -373,7 +373,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         fishingDropdown:SetupMenu(function(dropdown, rootDescription)
             PopulateAutomationDropdown(dropdown, rootDescription, "fishingPresetIndex")
         end)
-        
+
         lfgDropdown:SetupMenu(function(dropdown, rootDescription)
             PopulateAutomationDropdown(dropdown, rootDescription, "lfgPresetIndex")
         end)
@@ -505,7 +505,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     -- Split the list order arrows to surround the input field with reduced padding
     btnMoveUp:ClearAllPoints()
     btnMoveUp:SetPoint("TOPRIGHT", inputListOrder, "TOPLEFT", -3, 1)
-    
+
     btnMoveDown:ClearAllPoints()
     btnMoveDown:SetPoint("TOPLEFT", inputListOrder, "TOPRIGHT", -1, 1)
 
@@ -541,13 +541,13 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     btnAddCurrent:SetPoint("LEFT", zonesLabel, "LEFT", 320, 0)
     btnAddCurrent:SetText("Add Current Zone")
 
-    local scrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersZoneScrollFrame", contentFrame, "UIPanelScrollFrameTemplate")
+    local zoneScrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersZoneScrollFrame", contentFrame, "UIPanelScrollFrameTemplate")
     local INPUT_WIDTH = 500
-    scrollFrame:SetSize(INPUT_WIDTH, 70) 
-    scrollFrame:SetPoint("TOPLEFT", zonesLabel, "BOTTOMLEFT", 0, -10)
-    
+    zoneScrollFrame:SetSize(INPUT_WIDTH, 70)
+    zoneScrollFrame:SetPoint("TOPLEFT", zonesLabel, "BOTTOMLEFT", 0, -10)
+
     -- Add a visual backing frame so it looks like an input box
-    local scrollBg = CreateFrame("Frame", nil, scrollFrame, "BackdropTemplate")
+    local scrollBg = CreateFrame("Frame", nil, zoneScrollFrame, "BackdropTemplate")
     scrollBg:SetPoint("TOPLEFT", -7, 7)
     scrollBg:SetPoint("BOTTOMRIGHT", 30, -7)
     scrollBg:SetBackdrop({
@@ -558,14 +558,14 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     })
     scrollBg:SetBackdropColor(0.05, 0.05, 0.05, 0.8)
     scrollBg:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
-    scrollBg:SetFrameLevel(scrollFrame:GetFrameLevel() - 1)
-    
-    local inputZones = CreateFrame("EditBox", nil, scrollFrame)
+    scrollBg:SetFrameLevel(zoneScrollFrame:GetFrameLevel() - 1)
+
+    local inputZones = CreateFrame("EditBox", nil, zoneScrollFrame)
     inputZones:SetMultiLine(true)
     inputZones:SetFontObject("ChatFontNormal")
     inputZones:SetWidth(INPUT_WIDTH)
     inputZones:SetAutoFocus(false)
-    scrollFrame:SetScrollChild(inputZones)
+    zoneScrollFrame:SetScrollChild(inputZones)
 
     -- Hook cursor movement to standard scrolling logic
     inputZones:SetScript("OnCursorChanged", ScrollingEdit_OnCursorChanged)
@@ -588,10 +588,10 @@ function VS:CreateAutomationSettingsContents(parentFrame)
 
     local separatorMid = contentFrame:CreateTexture(nil, "ARTWORK")
     separatorMid:SetHeight(1)
-    separatorMid:SetPoint("TOPLEFT", scrollFrame, "BOTTOMLEFT", -15, -35)
+    separatorMid:SetPoint("TOPLEFT", zoneScrollFrame, "BOTTOMLEFT", -15, -35)
     separatorMid:SetWidth(540)
     separatorMid:SetColorTexture(1, 1, 1, 0.2)
-    
+
     ---------------------------------------------------------------------------
     -- Faux Sliders Display Area
     ---------------------------------------------------------------------------
@@ -607,15 +607,15 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         { key="Sound_AmbienceVolume", label="Ambience"},
         { key="Sound_DialogVolume", label="Dialog"}
     }
-    
+
     local sliderWidth = VS.SLIDER_COLUMN_WIDTH or 60
     local sliderSpacing = 20
     local totalWidth = (#channels * sliderWidth) + ((#channels - 1) * sliderSpacing)
     local startX = (540 - totalWidth) / 2
-    
+
     for i, chan in ipairs(channels) do
         local slider = VS:CreateTriggerSlider(slidersContainer, "VSPresetSlider"..chan.label, chan.label, chan.key, VS.PresetWorkingState, 0, 1, 0.01)
-        
+
         -- Start hidden
         slider:Hide()
         slider:SetPoint("TOPLEFT", slidersContainer, "TOPLEFT", startX + (i-1) * (sliderWidth + sliderSpacing), -130)
@@ -640,13 +640,12 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         inputPriority:SetText(tostring(VS.PresetWorkingState.priority))
         inputListOrder:SetText(tostring(VS.PresetWorkingState.index or (#db.presets + 1)))
         showDropdownCheck:SetChecked(VS.PresetWorkingState.showInDropdown)
-        
-        local zStr = ""
-        zStr = table.concat(VS.PresetWorkingState.zones, "; ")
+
+        local zStr = table.concat(VS.PresetWorkingState.zones, "; ")
         inputZones:SetText(zStr)
 
         RefreshSliderUI()
-        
+
         if currentSelectedIndex then
             btnSave:Enable()
             btnCopy:Enable()
@@ -667,7 +666,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         VS.PresetWorkingState.priority = preset and (preset.priority or 10) or 10
         VS.PresetWorkingState.showInDropdown = preset and (preset.showInDropdown ~= false) or (preset == nil)
         VS.PresetWorkingState.index = index
-        
+
         VS.PresetWorkingState.zones = {}
         VS.PresetWorkingState.volumes = {}
         VS.PresetWorkingState.ignored = {}
@@ -677,7 +676,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             for k,v in pairs(preset.volumes or {}) do VS.PresetWorkingState.volumes[k] = v end
             for k,v in pairs(preset.ignored or {}) do VS.PresetWorkingState.ignored[k] = v end
         end
-        
+
         -- Fill in any missing channels with the current CVar values so the sliders don't default to 100% incorrectly
         for channelKey, _ in pairs(VS.CVAR_TO_VAR) do
             if VS.PresetWorkingState.volumes[channelKey] == nil then
@@ -697,15 +696,15 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         rootDescription:CreateButton("Create New Preset", function()
             SelectNewProfile()
             -- Force text update after dropdown closes
-            dropdown:SetDefaultText("Create New Preset") 
+            dropdown:SetDefaultText("Create New Preset")
         end)
-        
+
         for i, preset in ipairs(db.presets) do
             rootDescription:CreateButton(preset.name .. " (Priority: " .. (preset.priority or 0) .. ")", function()
                 currentSelectedIndex = i
                 -- Deep copy preset so edits aren't live until saved
                 LoadWorkingState(preset, i)
-                
+
                 presetDropdown:SetDefaultText(preset.name)
                 UpdateFormFromWorkingState()
             end)
@@ -715,7 +714,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     local function RefreshDropdown()
         presetDropdown:SetupMenu(GenerateDropdownMenu)
         presetDropdown:GenerateMenu()
-        
+
         if currentSelectedIndex and db.presets[currentSelectedIndex] then
             presetDropdown:SetDefaultText(db.presets[currentSelectedIndex].name)
         else
@@ -730,12 +729,12 @@ function VS:CreateAutomationSettingsContents(parentFrame)
 
     VS.RefreshPresetSettings = function()
         RefreshDropdown()
-        
+
         -- If we have an active profile selected, ensure the working state matches it so the UI populates
         if currentSelectedIndex and db.presets[currentSelectedIndex] then
             LoadWorkingState(db.presets[currentSelectedIndex], currentSelectedIndex)
         end
-        
+
         UpdateFormFromWorkingState()
     end
 
@@ -760,9 +759,9 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         VS.PresetWorkingState.priority = tonumber(inputPriority:GetText()) or 10
         VS.PresetWorkingState.zones = ParseZones(inputZones:GetText())
         VS.PresetWorkingState.showInDropdown = showDropdownCheck:GetChecked()
-        
+
         local desiredIndex = tonumber(inputListOrder:GetText()) or (#db.presets + 1)
-        
+
         -- Serialize to DB
         local newObj = {
             name = VS.PresetWorkingState.name,
@@ -778,7 +777,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         if currentSelectedIndex then
             table.remove(db.presets, currentSelectedIndex)
         end
-        
+
         -- Insert into array at the new desired position and shift boundaries
         desiredIndex = math.max(1, math.min(desiredIndex, #db.presets + 1))
         table.insert(db.presets, desiredIndex, newObj)
@@ -814,7 +813,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
                 LoadWorkingState(nil, nil)
                 RefreshDropdown()
                 UpdateFormFromWorkingState()
-                
+
                 if VS.Presets and VS.Presets.RefreshEventState then
                      VS.Presets:RefreshEventState()
                 end
@@ -833,13 +832,13 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             StaticPopup_Show("VolumeSlidersDeletePresetConfirm")
         end
     end)
-    
+
     local function SwapPresets(idxA, idxB)
         local temp = db.presets[idxA]
         db.presets[idxA] = db.presets[idxB]
         db.presets[idxB] = temp
         RefreshDropdown()
-        
+
         if VS.Presets and VS.Presets.RefreshEventState then VS.Presets:RefreshEventState() end
         if VS.RefreshPopupDropdown then VS.RefreshPopupDropdown() end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -867,7 +866,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     btnSave:Disable()
     btnCopy:Disable()
     btnDelete:Disable()
-    
+
     RefreshDropdown()
 end
 
@@ -881,13 +880,13 @@ function VS:CreateSlidersSettingsContents(parentFrame)
     local scrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersSlidersSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 10, -10)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
-    
+
     local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
 
     local categoryFrame = CreateFrame("Frame", "VolumeSlidersSlidersSettingsContentFrame", scrollFrame)
-    categoryFrame:SetSize(600, 450) 
+    categoryFrame:SetSize(600, 450)
     scrollFrame:SetScrollChild(categoryFrame)
 
     -- Initial dummy resize, overwritten at end of function for dynamic columns
@@ -908,7 +907,7 @@ function VS:CreateSlidersSettingsContents(parentFrame)
     -- Dropdown Menus
     ---------------------------------------------------------------------------
     local dropdownWidth = 160
-    local dropdownSpacingOffset = -15 
+    local dropdownSpacingOffset = -15
 
     local function AddTooltip(frame, text)
         frame:SetScript("OnEnter", function(self)
@@ -1134,7 +1133,7 @@ function VS:CreateSlidersSettingsContents(parentFrame)
     }
 
     local previousCheckbox = nil
-    for i, data in ipairs(checkboxes) do
+    for _, data in ipairs(checkboxes) do
         local checkbox = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
         if previousCheckbox then
             checkbox:SetPoint("TOPLEFT", previousCheckbox, "BOTTOMLEFT", 0, 8)
@@ -1171,11 +1170,11 @@ function VS:CreateSlidersSettingsContents(parentFrame)
         categoryFrame:SetWidth(width)
         local usableWidth = width - 40
         if usableWidth < 400 then usableWidth = 400 end
-        
+
         local col1X = 10
         local col2X = col1X + (usableWidth * 0.42)
         local col3X = col2X + (usableWidth * 0.26)
-        
+
         titleColorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", col1X, -35)
         previewLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", col2X, -35)
         visibilityLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", col3X, -35)
@@ -1194,13 +1193,13 @@ function VS:CreateWindowSettingsContents(parentFrame)
     local scrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersWindowSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 10, -10)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
-    
+
     local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
 
     local categoryFrame = CreateFrame("Frame", "VolumeSlidersWindowSettingsContentFrame", scrollFrame)
-    categoryFrame:SetSize(600, 650) 
+    categoryFrame:SetSize(600, 650)
     scrollFrame:SetScrollChild(categoryFrame)
 
     -- Initial dummy resize, overwritten at end of function for dynamic columns
@@ -1535,7 +1534,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     maxFooterInput:SetFontObject("GameFontHighlight")
     maxFooterInput:SetText(tostring(db.maxFooterCols))
     maxFooterInput:SetCursorPosition(0)
-    
+
     maxFooterInput:SetScript("OnTextChanged", function(self, userInput)
         if userInput then
             local num = tonumber(self:GetText())
@@ -1576,7 +1575,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     footerBox:SetSize(145, 230)
     footerBox:SetPoint("TOPLEFT", footerSubLabel, "BOTTOMLEFT", -5, -8)
 
-    local footerDragBehavior 
+    local footerDragBehavior
 
     local function FooterRowInitializer(frame, elementData)
         local data = footerMap[elementData]
@@ -1718,7 +1717,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
     local scrollFrame = CreateFrame("ScrollFrame", "VSMouseActionsSettingsScrollFrame", parentFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 10, -10)
     scrollFrame:SetPoint("BOTTOMRIGHT", -30, 10)
-    
+
     local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
@@ -1737,7 +1736,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
     desc:SetText("Configure custom actions for clicking the Minimap Icon, Slider Buttons, or modifiers for the Slider Scroll Wheel. Click 'Record Input' then press a modifier (Shift/Ctrl/Alt) + Mouse Button or Scroll Wheel combination.")
     desc:SetJustifyH("LEFT")
     desc:SetWordWrap(true)
-    
+
     local function GetMinimapEffects()
         local list = {
             { id = "TOGGLE_WINDOW", name = "Toggle Slider Window" },
@@ -1753,7 +1752,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         end
         return list
     end
-    
+
     local sliderEffects = {
         { id = "ADJUST_1", name = "Change by 1%" },
         { id = "ADJUST_5", name = "Change by 5%" },
@@ -1762,7 +1761,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         { id = "ADJUST_20", name = "Change by 20%" },
         { id = "ADJUST_25", name = "Change by 25%" }
     }
-    
+
     local scrollWheelEffects = {
         { id = "ADJUST_1", name = "Change by 1%" },
         { id = "ADJUST_5", name = "Change by 5%" },
@@ -1771,7 +1770,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         { id = "ADJUST_20", name = "Change by 20%" },
         { id = "ADJUST_25", name = "Change by 25%" }
     }
-    
+
     local function GetEffectName(id, list)
         for _, eff in ipairs(list) do
             if eff.id == id then return eff.name end
@@ -1802,7 +1801,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         { id = "Ctrl+Alt", name = "Ctrl+Alt" },
         { id = "Shift+Ctrl+Alt", name = "Shift+Ctrl+Alt" }
     }
-    
+
     local SCROLL_MODIFIER_OPTIONS = {
         { id = "Disabled", name = "Disabled" },
         { id = "None", name = "No Modifier" },
@@ -1814,7 +1813,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         { id = "Ctrl+Alt", name = "Ctrl+Alt" },
         { id = "Shift+Ctrl+Alt", name = "Shift+Ctrl+Alt" }
     }
-    
+
     local BUTTON_OPTIONS = {
         { id = "None", name = "None" },
         { id = "LeftButton", name = "Left Click" },
@@ -1830,15 +1829,15 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         if string.find(triggerStr, "Shift") then table.insert(mods, "Shift") end
         if string.find(triggerStr, "Ctrl") then table.insert(mods, "Ctrl") end
         if string.find(triggerStr, "Alt") then table.insert(mods, "Alt") end
-        
+
         local modStr = #mods > 0 and table.concat(mods, "+") or "None"
-        
+
         local lastPlus = string.reverse(triggerStr):find("%+")
         local btnStr = lastPlus and string.sub(triggerStr, #triggerStr - lastPlus + 2) or triggerStr
-        if btnStr == "None" or btnStr == "" or string.find(btnStr, "Shift") or string.find(btnStr, "Ctrl") or string.find(btnStr, "Alt") then 
-            btnStr = "None" 
+        if btnStr == "None" or btnStr == "" or string.find(btnStr, "Shift") or string.find(btnStr, "Ctrl") or string.find(btnStr, "Alt") then
+            btnStr = "None"
         end
-        
+
         return modStr, btnStr
     end
 
@@ -1856,7 +1855,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         if newTrigger == defaultTrigger then
             newTrigger = nil
         end
-        
+
         -- Remove exact duplicate triggers within the same section to prevent overlap
         if newTrigger and newTrigger ~= "Disabled" then
             for i = #db.mouseActions[colKey], 1, -1 do
@@ -1874,11 +1873,11 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                 break
             end
         end
-        
+
         if not found and newTrigger then
             table.insert(db.mouseActions[colKey], { trigger = newTrigger, effect = effectId })
         end
-        
+
         -- Clean up empty actions
         for i = #db.mouseActions[colKey], 1, -1 do
             local a = db.mouseActions[colKey][i]
@@ -1897,68 +1896,68 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         local isDual = (key == "sliders")
         local rowHeight = isDual and 95 or 60
         local sectionHeight = 40 + (2 * rowHeight)
-        
+
         section:SetSize(TOTAL_WIDTH, sectionHeight)
         section:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 0, yOffset)
-        
+
         local header = section:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
         header:SetPoint("TOPLEFT", section, "TOPLEFT", 10, 0)
         header:SetText(titleText)
-        
+
         local divider = section:CreateTexture(nil, "ARTWORK")
         divider:SetColorTexture(1, 1, 1, 0.3)
         divider:SetSize(TOTAL_WIDTH - 20, 1)
         divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -5)
 
         section.cells = {}
-        
+
         local colWidth = (TOTAL_WIDTH - 20) / 3
         local dropWidth = colWidth - 15
-        
+
         for i, eff in ipairs(effectsList) do
             local cell = CreateFrame("Frame", nil, section)
             cell:SetSize(colWidth, rowHeight)
-            
+
             local row = math.floor((i - 1) / 3)
             local col = (i - 1) % 3
             cell:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", col * colWidth, -10 - (row * rowHeight))
-            
+
             local label = cell:CreateFontString(nil, "ARTWORK", "GameFontNormal")
             label:SetPoint("TOPLEFT", cell, "TOPLEFT", 0, 0)
             label:SetText(eff.name)
-            
+
             local resetBtn = CreateFrame("Button", nil, cell, "UIPanelButtonTemplate")
             resetBtn:SetSize(55, 20)
             resetBtn:SetPoint("LEFT", label, "RIGHT", 10, 0)
             resetBtn:SetText("Reset")
-            
+
             local modDrop = CreateFrame("DropdownButton", nil, cell, "WowStyle1DropdownTemplate")
             modDrop:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -8) -- slightly more padding
             modDrop:SetWidth(dropWidth)
-            
+
             local btnDrop = nil
             if isDual then
                 btnDrop = CreateFrame("DropdownButton", nil, cell, "WowStyle1DropdownTemplate")
                 btnDrop:SetPoint("TOPLEFT", modDrop, "BOTTOMLEFT", 0, -5)
                 btnDrop:SetWidth(dropWidth)
             end
-            
+
             cell.modDrop = modDrop
             cell.btnDrop = btnDrop
             cell.resetBtn = resetBtn
             cell.effId = eff.id
             cell.isDual = isDual
             cell.key = key
-            
+
             resetBtn:SetScript("OnClick", function()
                 SaveGridAction(key, eff.id, nil)
                 if modDrop.SetSelectionText then modDrop:SetSelectionText(nil) end
                 if btnDrop and btnDrop.SetSelectionText then btnDrop:SetSelectionText(nil) end
             end)
-            
+
             table.insert(section.cells, cell)
         end
-        
+
         sections[key] = section
         return section, -(sectionHeight + 10)
     end
@@ -1968,16 +1967,16 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         local section = CreateFrame("Frame", nil, contentFrame)
         section:SetSize(TOTAL_WIDTH, 400) -- Will adjust dynamically
         section:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 0, yOffset)
-        
+
         local header = section:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
         header:SetPoint("TOPLEFT", section, "TOPLEFT", 10, 0)
         header:SetText(titleText)
-        
+
         local divider = section:CreateTexture(nil, "ARTWORK")
         divider:SetColorTexture(1, 1, 1, 0.3)
         divider:SetSize(TOTAL_WIDTH - 20, 1)
         divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -5)
-        
+
         local addBtn = CreateFrame("Button", nil, section, "UIPanelButtonTemplate")
         addBtn:SetSize(150, 22)
         addBtn:SetText("Add Action")
@@ -1986,7 +1985,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
             PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
             VS.RefreshMouseActionsUI()
         end)
-        
+
         section.addBtn = addBtn
         section.rows = {}
         section.getEffectsFunc = getEffectsFunc
@@ -2013,17 +2012,17 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                         break
                     end
                 end
-                
+
                 local intrinsicDefault = GetIntrinsicDefault(key, cell.effId)
-                
+
                 if not triggerStr then
                     if key == "sliders" and intrinsicDefault == "LeftButton" then
                         -- Is LeftButton used by *any* custom action?
                         local leftUsed = false
                         for _, action in ipairs(db.mouseActions.sliders) do
-                            if string.match(action.trigger or "", "LeftButton") and action.trigger == "LeftButton" then 
-                                leftUsed = true 
-                                break 
+                            if string.match(action.trigger or "", "LeftButton") and action.trigger == "LeftButton" then
+                                leftUsed = true
+                                break
                             end
                         end
                         triggerStr = leftUsed and "None" or "LeftButton"
@@ -2031,9 +2030,9 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                         -- Is None used by *any* custom action?
                         local noneUsed = false
                         for _, action in ipairs(db.mouseActions.scrollWheel) do
-                            if action.trigger == "None" then 
-                                noneUsed = true 
-                                break 
+                            if action.trigger == "None" then
+                                noneUsed = true
+                                break
                             end
                         end
                         triggerStr = noneUsed and "Disabled" or "None"
@@ -2041,13 +2040,13 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                         triggerStr = intrinsicDefault
                     end
                 end
-                
+
                 local isDefault = (triggerStr == intrinsicDefault)
-                
+
                 local activeMod, activeBtn = ParseTriggerParts(triggerStr)
                 if key == "scrollWheel" then activeMod = triggerStr end -- Pure modifier string
                 if activeMod == "" then activeMod = "None" end
-                
+
                 local activeModOpts = cell.isDual and MODIFIER_OPTIONS or SCROLL_MODIFIER_OPTIONS
                 cell.modDrop:SetupMenu(function(dropdown, rootDescription)
                     for _, modOpt in ipairs(activeModOpts) do
@@ -2072,7 +2071,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                         end)
                     end
                 end)
-                
+
                 if cell.isDual then
                     cell.btnDrop:SetupMenu(function(dropdown, rootDescription)
                         for _, btnOpt in ipairs(BUTTON_OPTIONS) do
@@ -2091,7 +2090,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                         end
                     end)
                 end
-                
+
                 -- Set Dropdown Selected Text
                 local searchOpts = cell.isDual and MODIFIER_OPTIONS or SCROLL_MODIFIER_OPTIONS
                 local displayModName = activeMod
@@ -2100,7 +2099,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                 cell.modDrop:SetDefaultText(modText)
                 cell.modDrop:SetText(modText)
                 if cell.modDrop.selectionText ~= nil then cell.modDrop.selectionText = nil end
-                
+
                 if cell.isDual then
                     local displayBtnName = "None"
                     for _, b in ipairs(BUTTON_OPTIONS) do if b.id == activeBtn then displayBtnName = b.name; break end end
@@ -2109,7 +2108,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                     cell.btnDrop:SetText(btnText)
                     if cell.btnDrop.selectionText ~= nil then cell.btnDrop.selectionText = nil end
                 end
-                
+
                 -- Toggle Reset button
                 local hasCustomBinding = false
                 if db.mouseActions[key] then
@@ -2120,7 +2119,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                         end
                     end
                 end
-                
+
                 if not hasCustomBinding then
                     cell.resetBtn:Hide()
                 else
@@ -2133,44 +2132,44 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         local minSec = sections["minimap"]
         local actions = db.mouseActions["minimap"] or {}
         local rowYOffset = -35
-        
+
         for _, row in ipairs(minSec.rows) do row:Hide() end
-        
+
         for i, action in ipairs(actions) do
             local row = minSec.rows[i]
             if not row then
                 row = CreateFrame("Frame", nil, minSec)
                 local rowWidth = TOTAL_WIDTH - 20
                 row:SetSize(rowWidth, 30)
-                
+
                 local delBtnWidth = 32
                 local padding = 20 -- 10px between capture/drop, 10px between drop/del
                 local remainingWidth = rowWidth - delBtnWidth - padding
                 local captureBtnWidth = math.floor(remainingWidth * 0.40)
                 local effectDropWidth = math.floor(remainingWidth * 0.60)
-                
+
                 row.captureBtn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
                 row.captureBtn:SetSize(captureBtnWidth, 22)
                 row.captureBtn:SetPoint("LEFT", row, "LEFT", 0, 0)
                 row.captureBtn:RegisterForClicks("AnyUp")
                 row.captureBtn:EnableMouseWheel(true)
-                
+
                 row.effectDrop = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
                 row.effectDrop:SetPoint("LEFT", row.captureBtn, "RIGHT", 10, 0)
                 row.effectDrop:SetWidth(effectDropWidth)
-                
+
                 row.delBtn = CreateFrame("Button", nil, row, "UIPanelCloseButton")
                 row.delBtn:SetPoint("RIGHT", row, "RIGHT", 0, 0)
-                
+
                 table.insert(minSec.rows, row)
             end
-            
+
             row:Show()
             row:SetPoint("TOPLEFT", minSec, "TOPLEFT", 10, rowYOffset)
             rowYOffset = rowYOffset - 35
-            
+
             row.captureBtn:SetText(action.trigger or "Record Input...")
-            
+
             row.captureBtn:SetScript("OnClick", function(self, btn)
                 if self.isCapturing then
                     local mods = ""
@@ -2178,7 +2177,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                     if IsControlKeyDown() then mods = mods .. "Ctrl+" end
                     if IsAltKeyDown() then mods = mods .. "Alt+" end
                     local triggerStr = mods .. btn
-                    
+
                     if IsDuplicateTrigger("minimap", triggerStr, nil) and triggerStr ~= action.trigger then
                         self:SetText("|cffffffffAlready Assigned|r")
                         C_Timer.After(1, function()
@@ -2186,7 +2185,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                         end)
                         return
                     end
-                    
+
                     action.trigger = triggerStr
                     self.isCapturing = false
                     PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -2196,7 +2195,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                     self.isCapturing = true
                 end
             end)
-            
+
             row.captureBtn:SetScript("OnMouseWheel", function(self, delta)
                 if self.isCapturing then
                     local mods = ""
@@ -2204,7 +2203,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                     if IsControlKeyDown() then mods = mods .. "Ctrl+" end
                     if IsAltKeyDown() then mods = mods .. "Alt+" end
                     local triggerStr = mods .. (delta > 0 and "WheelUp" or "WheelDown")
-                    
+
                     if IsDuplicateTrigger("minimap", triggerStr, nil) and triggerStr ~= action.trigger then
                         self:SetText("|cffffffffAlready Assigned|r")
                         C_Timer.After(1, function()
@@ -2212,14 +2211,14 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                         end)
                         return
                     end
-                    
+
                     action.trigger = triggerStr
                     self.isCapturing = false
                     PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
                     VS.RefreshMouseActionsUI()
                 end
             end)
-            
+
             row.effectDrop:SetupMenu(function(dropdown, rootDescription)
                 local effects = type(minSec.getEffectsFunc) == "function" and minSec.getEffectsFunc() or minSec.getEffectsFunc
                 for _, eff in ipairs(effects) do
@@ -2229,17 +2228,17 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
                     end)
                 end
             end)
-            
+
             local currentEffects = type(minSec.getEffectsFunc) == "function" and minSec.getEffectsFunc() or minSec.getEffectsFunc
             row.effectDrop:SetDefaultText(GetEffectName(action.effect, currentEffects))
-            
+
             row.delBtn:SetScript("OnClick", function()
                 table.remove(db.mouseActions["minimap"], i)
                 PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
                 VS.RefreshMouseActionsUI()
             end)
         end
-        
+
         minSec.addBtn:SetPoint("TOPLEFT", minSec, "TOPLEFT", 10, rowYOffset)
     end
 

@@ -1,4 +1,4 @@
--------------------------------------------------------------------------------
+﻿-------------------------------------------------------------------------------
 -- Appearance.lua
 --
 -- Slider appearance, layout management, and visual styling functions.
@@ -262,7 +262,7 @@ function VS:UpdateFooterLayout()
     }
 
     -- Hide everything first to establish a clean state, and clear anchors
-    for key, data in pairs(widgetMap) do
+    for _, data in pairs(widgetMap) do
         if data.frame then
             data.frame:Hide()
             data.frame:ClearAllPoints()
@@ -277,20 +277,20 @@ function VS:UpdateFooterLayout()
     local footerOrder = db.footerOrder or VS.DEFAULT_FOOTER_ORDER
 
     local activeWidgets = {}
-    
+
     for _, key in ipairs(footerOrder) do
         if db[key] then
             local data = widgetMap[key]
             if data and data.frame then
                 data.frame:Show()
                 if data.label then data.label:Show() end
-                
+
                 -- Calculate effective width
                 local w = data.frame:GetWidth()
                 if data.label then
                     w = w + 4 + data.label:GetStringWidth()
                 end
-                
+
                 table.insert(activeWidgets, { key = key, data = data, width = w })
             end
         end
@@ -349,18 +349,18 @@ function VS:UpdateFooterLayout()
             local remainingSpace = availableWidth - row.width
             local spacing = spacingX + (remainingSpace / (numItems - 1))
             local currentX = 0
-            for j, item in ipairs(row.items) do
+            for _, item in ipairs(row.items) do
                 table.insert(xPositions, currentX)
                 currentX = currentX + item.width + spacing
             end
         end
-        
+
         for idx, item in ipairs(row.items) do
             local key = item.key
             local data = item.data
             local offsetX = xPositions[idx]
             local absoluteOffsetX = VS.CONTENT_PADDING_X + offsetX
-            
+
             if data.label then
                 -- Checkbox with right-aligned label
                 data.frame:SetPoint("BOTTOMLEFT", p, "BOTTOMLEFT", absoluteOffsetX, currentY)
@@ -371,7 +371,7 @@ function VS:UpdateFooterLayout()
             end
         end
         -- Base widget height is ~24-26px plus margin
-        currentY = currentY + 30 
+        currentY = currentY + 30
     end
 
     if #rows > 0 then
@@ -479,7 +479,7 @@ function VS:UpdateAppearance()
 
         VS.container:SetResizeBounds(minW, minH)
 
-        -- Force layout expansion if new sliders were added 
+        -- Force layout expansion if new sliders were added
         local currW = VS.container:GetWidth()
         local currH = VS.container:GetHeight()
         local needsResize = false
