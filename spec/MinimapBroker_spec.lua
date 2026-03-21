@@ -16,7 +16,6 @@ describe("MinimapBroker Module", function()
             VS.container = _G.CreateFrame("Frame") 
             VS.container:Hide()
         end
-        VS.SetScroll = function() end
         VS.Reposition = function() end
         
         local f2 = assert(loadfile("VolumeSliders/MinimapBroker.lua"))
@@ -51,5 +50,49 @@ describe("MinimapBroker Module", function()
         -- Click 2: hide
         VS.VolumeSlidersObject.OnClick(nil, "LeftButton")
         assert.is_false(VS.container:IsShown())
+    end)
+
+    it("should hook OnMouseWheel on the display frame during OnTooltipShow", function()
+        -- Create a mock display frame (the LDB text panel in e.g. ElvUI)
+        local displayFrame = _G.CreateFrame("Frame")
+        
+        -- Verify no OnMouseWheel handler exists yet
+        assert.is_nil(displayFrame:GetScript("OnMouseWheel"))
+        
+        -- Create a tooltip mock that reports the display frame as its owner
+        local tooltip = _G.CreateFrame("GameTooltip")
+        tooltip.GetOwner = function() return displayFrame end
+        tooltip.AddLine = function() end
+        
+        -- Fire OnTooltipShow (simulating a hover over the LDB display)
+        VS.VolumeSlidersObject.OnTooltipShow(tooltip)
+        
+        -- Verify that OnMouseWheel was hooked on the display frame
+        assert.is_function(displayFrame:GetScript("OnMouseWheel"))
+    end)
+
+    it("should not double-hook OnMouseWheel when hovering multiple times", function()
+        local displayFrame = _G.CreateFrame("Frame")
+        local hookCount = 0
+        
+        -- Spy on HookScript to count calls
+        local originalHookScript = displayFrame.HookScript
+        displayFrame.HookScript = function(self, event, handler)
+            if event == "OnMouseWheel" then
+                hookCount = hookCount + 1
+            end
+            originalHookScript(self, event, handler)
+        end
+        
+        local tooltip = _G.CreateFrame("GameTooltip")
+        tooltip.GetOwner = function() return displayFrame end
+        tooltip.AddLine = function() end
+        
+        -- Hover twice
+        VS.VolumeSlidersObject.OnTooltipShow(tooltip)
+        VS.VolumeSlidersObject.OnTooltipShow(tooltip)
+        
+        -- Should only have been hooked once
+        assert.are.equal(1, hookCount)
     end)
 end)

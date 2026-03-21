@@ -20,6 +20,29 @@ local GetCVar    = GetCVar
 local SetCVar    = SetCVar
 
 -----------------------------------------
+-- Broker Scroll Hook
+--
+-- Third-party LDB display addons (ElvUI data texts, Titan Panel, etc.)
+-- create their own frames.  We hook OnMouseWheel on each display frame
+-- the moment the user hovers it (via OnTooltipShow) so that scroll-to-
+-- adjust-volume works immediately, without requiring a click first.
+--
+-- A weak-keyed table tracks which frames have been hooked so we never
+-- double-hook, and frames are cleanly garbage-collected if the display
+-- addon destroys them.
+-----------------------------------------
+local hookedFrames = setmetatable({}, {__mode = "k"})
+
+local function HookBrokerScroll(frame)
+    if not frame or hookedFrames[frame] then return end
+    frame:EnableMouseWheel(true)
+    frame:HookScript("OnMouseWheel", function(self, delta)
+        VS:AdjustVolume(delta)
+    end)
+    hookedFrames[frame] = true
+end
+
+-----------------------------------------
 -- LibDataBroker (LDB) Data Object
 --
 -- This is the core integration point for minimap icons and data-broker
@@ -38,7 +61,6 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
     OnClick = function(clickedFrame, button)
         local triggerStr = VS:GetActiveTriggerString(button)
         if triggerStr and VS:ProcessMinimapAction(triggerStr, clickedFrame) then
-            VS:SetScroll()
             return
         end
         
@@ -55,8 +77,6 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
                  VS:Reposition()
              end
 
-            VS:SetScroll()
-
         elseif button == "RightButton" then
             VS:VolumeSliders_ToggleMute()
         end
@@ -64,6 +84,11 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
 
     --- Tooltip: dynamic instructions based on configured Mouse Actions.
     OnTooltipShow = function(tooltip)
+        -- Siphon the display frame reference on hover so scroll-to-adjust
+        -- works immediately, even before the user has clicked anything.
+        local frame = tooltip:GetOwner()
+        if frame then HookBrokerScroll(frame) end
+
         if VolumeSlidersMMDB and VolumeSlidersMMDB.showMinimapTooltip == false then return end
         tooltip:AddLine("Volume Sliders", 1, 1, 1)
         VS:AppendActionTooltipLines(tooltip, "minimap", {
@@ -74,17 +99,7 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
     end,
 })
 
---- Attach a mouse-wheel handler to the broker frame so the user can scroll
---- to adjust master volume directly from the icon.  Only hooks once per frame.
-function VS:SetScroll()
-    if VS.brokerScrollSet then return end
-    if VS.brokerFrame then
-        VS.brokerFrame:SetScript("OnMouseWheel", function(self, delta)
-            VS:AdjustVolume(delta)
-        end)
-        VS.brokerScrollSet = true
-    end
-end
+
 
 -----------------------------------------
 -- Minimap Icon Texture Helpers

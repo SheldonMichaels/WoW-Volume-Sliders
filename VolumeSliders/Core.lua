@@ -73,10 +73,6 @@ VolumeSlidersMMDB = VolumeSlidersMMDB or {
 -- anchor the popup relative to the broker icon's position on screen).
 VS.brokerFrame = nil
 
--- Flag: has the mouse-wheel script already been attached to the broker frame?
--- Prevents re-hooking the same frame multiple times.
-VS.brokerScrollSet = false
-
 -- Lookup table mapping CVar name → slider widget.  Populated during
 -- CreateOptionsFrame() and used to sync slider positions when CVars change
 -- externally (e.g., via the Blizzard Sound settings panel).
