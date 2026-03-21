@@ -86,12 +86,27 @@
             "StaticPopup_Hide",
             "NUM_LE_LFG_CATEGORYS",
             "ScrollingEdit_OnCursorChanged",
-            "ScrollingEdit_OnUpdate"
+            "ScrollingEdit_OnUpdate",
+            "describe",
+            "it",
+            "before_each",
+            "after_each",
+            "setup",
+            "teardown",
+            "spy",
+            "stub",
+            "mock",
+            "assert",
+            "pending"
         ],
         "disable": [
             "undefined-doc-name",
             "undefined-field",
-            "redundant-parameter"
+            "redundant-parameter",
+            "duplicate-set-field",
+            "need-check-nil",
+            "duplicate-index",
+            "missing-fields"
         ]
     },
     "runtime": {
