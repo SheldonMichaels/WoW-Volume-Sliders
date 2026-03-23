@@ -21,5 +21,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Extract latest changelog section
+        run: |
+          python3 -c "
+          import re
+          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+              text = f.read()
+          match = re.search(r'(## v.*?)(?=\n## v|\Z)', text, re.DOTALL)
+          if match:
+              with open('CHANGELOG.md', 'w', encoding='utf-8') as f:
+                  f.write(match.group(1).strip() + '\n')
+          "
+
       - name: Package and release
         uses: BigWigsMods/packager@v2
