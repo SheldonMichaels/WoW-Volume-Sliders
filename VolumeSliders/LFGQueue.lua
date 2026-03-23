@@ -85,7 +85,7 @@ end
 local function OnEvent(self, event, ...)
     local db = VolumeSlidersMMDB
     if not db.enableLfgVolume then return end
-    
+
     if event == "LFG_UPDATE" then
         if IsPlayerQueued() then
             RegisterProposalEvents()
@@ -102,7 +102,7 @@ local function OnEvent(self, event, ...)
     end
 end
 
--- Hook PlaySound so we can guarantee the volume is boosted exactly when 
+-- Hook PlaySound so we can guarantee the volume is boosted exactly when
 -- the Dungeon Ready sound is requested by the UI, distinguishing it from party /readycheck.
 hooksecurefunc("PlaySound", function(soundID)
     -- Guard against secret values in Midnight (13.x)
@@ -110,22 +110,22 @@ hooksecurefunc("PlaySound", function(soundID)
     -- will cause taint errors, so we explicitly filter them out first.
     if VS:IsSecret(soundID) then return end
 
-    -- Wrapping the comparison in pcall provides a secondary safety layer against 
+    -- Wrapping the comparison in pcall provides a secondary safety layer against
     -- opaque data types causing unpredictable comparative behavior in different game sub-regions.
     local ok, isLfgPop = pcall(function() return soundID == SOUNDKIT.READY_CHECK end)
     if not ok or not isLfgPop then return end
 
     if VolumeSlidersMMDB.enableLfgVolume then
         -- Only boost if we have an active queue proposal specifically popping.
-        -- Do not use IsPlayerQueued() here, as that returns true while merely waiting 
+        -- Do not use IsPlayerQueued() here, as that returns true while merely waiting
         -- in the queue, which would accidentally boost party /readycheck sounds.
         if GetLFGProposal and GetLFGProposal() then
-            -- Make sure we apply volumes IMMEDIATELY before the sound system processes the request 
+            -- Make sure we apply volumes IMMEDIATELY before the sound system processes the request
             ApplyLFGVolumes()
-            
+
             -- Automatically restore the volume after the sound finishes playing (approx 4.5 seconds).
             -- This prevents the volume from staying boosted indefinitely while the proposal sits open.
-            -- If the user clicks accept/decline early, the existing event hooks will safely 
+            -- If the user clicks accept/decline early, the existing event hooks will safely
             -- pre-empt this and the RestoreVolumes flag check will just swallow the redundant timer execution.
             C_Timer.After(4.5, RestoreVolumes)
         end
@@ -141,13 +141,13 @@ lfgFrame:SetScript("OnEvent", OnEvent)
 --- Initializes or tears down the LFGQueue module based on user settings
 function VS.LFGQueue:Initialize()
     local db = VolumeSlidersMMDB
-    
+
     -- Ensure tracked state exists
     db.originalVolumes = db.originalVolumes or {}
-    
+
     if db.enableLfgVolume then
         lfgFrame:RegisterEvent("LFG_UPDATE")
-        
+
         -- Check initial state in case they enable it while already queued
         if IsPlayerQueued() then
             RegisterProposalEvents()

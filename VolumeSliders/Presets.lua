@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------------
 -- Presets.lua
 --
--- Logic for Automation Presets (formerly Zone Triggers). Registers for zone 
--- change events, evaluates presets by priority, and dynamically adjusts 
--- volume levels. Uses O(1) zone lookups and unregisters events when 
+-- Logic for Automation Presets (formerly Zone Triggers). Registers for zone
+-- change events, evaluates presets by priority, and dynamically adjusts
+-- volume levels. Uses O(1) zone lookups and unregisters events when
 -- automation is disabled.
 --
 -- Author: Sheldon Michaels
@@ -62,7 +62,7 @@ end
 -- and restores original volumes for any channel not governed by an active preset.
 local function ApplyAutomationPresets(activePresetList)
     local db = VolumeSlidersMMDB
-    
+
     -- We want to track which channels are currently overridden so we can restore the rest
     local overriddenChannels = {}
     local finalVolumes = {}
@@ -89,7 +89,7 @@ local function ApplyAutomationPresets(activePresetList)
             if not db.originalVolumes[channel] then
                 db.originalVolumes[channel] = currentCVarVol
             end
-            
+
             local wantVol = finalVolumes[channel]
             if currentCVarVol ~= wantVol then
                 SetCVar(channel, wantVol)
@@ -110,7 +110,7 @@ local function ApplyAutomationPresets(activePresetList)
 
     -- Refresh slider UI if open
     if VS.sliders then
-        for channel, slider in pairs(VS.sliders) do
+        for _, slider in pairs(VS.sliders) do
             if slider.RefreshValue then
                 slider:RefreshValue()
             end
@@ -126,7 +126,7 @@ end
 -- Does NOT modify originalVolumes (so it's permanent until changed again).
 function VS.Presets:ApplyPreset(preset)
     if not preset or type(preset.volumes) ~= "table" then return end
-    
+
     local changed = false
     for channel, vol in pairs(preset.volumes) do
         if not preset.ignored or not preset.ignored[channel] then
@@ -141,7 +141,7 @@ function VS.Presets:ApplyPreset(preset)
     -- Update UI if anything changed
     if changed then
         if VS.sliders then
-            for channel, slider in pairs(VS.sliders) do
+            for _, slider in pairs(VS.sliders) do
                 if slider.RefreshValue then
                     slider:RefreshValue()
                 end
@@ -224,11 +224,11 @@ end
 -- on load-on-demand principles to guarantee zero CPU drag when idle.
 function VS.Presets:RefreshEventState()
     local db = VolumeSlidersMMDB
-    
+
     -- Ensure required tables exist
     db.originalVolumes = db.originalVolumes or {}
     db.presets = db.presets or {}
-    
+
     -- Wipe lookup
     for k in pairs(activeZones) do activeZones[k] = nil end
 
@@ -252,17 +252,10 @@ function VS.Presets:RefreshEventState()
     if not anyActiveStates and (not db.enableTriggers or not hasZonePresets) then
         -- Complete shutdown of zone events
         presetFrame:UnregisterAllEvents()
-        
+
         -- Evaluate one last time to restore volumes if necessary
         OnPresetEvent()
-        
-        -- If no volumes are overridden anymore, we can clear the originalVolumes table safety
-        local stillOverridden = false
-        for _ in pairs(db.originalVolumes) do stillOverridden = true; break end
-        
-        if not stillOverridden then
-            -- Optional cleanup
-        end
+
         return
     end
 
@@ -279,7 +272,7 @@ function VS.Presets:RefreshEventState()
                 end
             end
         end
-        
+
         -- Register zone events
         presetFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
         presetFrame:RegisterEvent("ZONE_CHANGED")
@@ -292,7 +285,7 @@ function VS.Presets:RefreshEventState()
         presetFrame:UnregisterEvent("ZONE_CHANGED_NEW_AREA")
         presetFrame:UnregisterEvent("ZONE_CHANGED_INDOORS")
     end
-    
+
     -- Evaluate immediately
     OnPresetEvent()
 end

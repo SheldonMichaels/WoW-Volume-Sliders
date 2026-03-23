@@ -73,11 +73,7 @@ VolumeSlidersMMDB = VolumeSlidersMMDB or {
 -- anchor the popup relative to the broker icon's position on screen).
 VS.brokerFrame = nil
 
--- Flag: has the mouse-wheel script already been attached to the broker frame?
--- Prevents re-hooking the same frame multiple times.
-VS.brokerScrollSet = false
-
--- Lookup table mapping CVar name → slider widget.  Populated during
+-- Lookup table mapping CVar name â†’ slider widget.  Populated during
 -- CreateOptionsFrame() and used to sync slider positions when CVars change
 -- externally (e.g., via the Blizzard Sound settings panel).
 VS.sliders = {}
@@ -106,7 +102,7 @@ VS.SLIDER_PADDING_X       = 10  -- Tighter inset for slider columns only
 VS.CONTENT_PADDING_TOP    = 15
 VS.CONTENT_PADDING_BOTTOM = 15
 
--- Resize constraints — floors for dynamic layout during window resize.
+-- Resize constraints â€” floors for dynamic layout during window resize.
 VS.MIN_SLIDER_SPACING_TITLED   = -5   -- Floor when titles are shown (wider columns)
 VS.MIN_SLIDER_SPACING_UNTITLED = -20  -- Floor when titles are hidden (narrower columns)
 VS.MIN_SLIDER_TRACK_HEIGHT = 60  -- Minimum px for slider track height
@@ -192,16 +188,19 @@ end
 --- The default step is 5% (0.05).  When the volume is below 20%, the step
 --- shrinks to 1% for finer control at low levels.  Holding Ctrl also forces
 --- the 1% step regardless of current level.
-function VS:AdjustVolume(delta)
-    local increment = 0.05
+function VS:AdjustVolume(delta, customStep)
+    local increment = customStep
     local current = self:GetMasterVolume()
 
-    -- Use a finer step at low volumes or when Ctrl is held.
-    if current < 0.2 then
-        increment = 0.01
-    end
-    if IsControlKeyDown() then
-        increment = 0.01
+    if not increment then
+        increment = 0.05
+        -- Use a finer step at low volumes or when Ctrl is held.
+        if current < 0.2 then
+            increment = 0.01
+        end
+        if IsControlKeyDown() then
+            increment = 0.01
+        end
     end
 
     -- Apply the delta direction.
@@ -281,13 +280,13 @@ function VS:DisableCheckboxHoverBackground(check)
     check:SetScript("OnLeave", nil)
 end
 
---- Set a texture to display a Blizzard atlas rotated 90° clockwise.
+--- Set a texture to display a Blizzard atlas rotated 90Â° clockwise.
 ---
 --- Blizzard's slider atlas assets are designed for horizontal use.  This
 --- addon repurposes them for vertical sliders by rotating the texture
 --- coordinates.  The function:
 ---   1. Retrieves the atlas sub-region from the master texture.
----   2. Remaps the four UV corners so the image renders rotated 90° CW.
+---   2. Remaps the four UV corners so the image renders rotated 90Â° CW.
 ---   3. Swaps width/height so the rotated piece has the correct dimensions.
 ---
 --- @param tex        Texture   The texture object to modify.
@@ -301,13 +300,13 @@ function VS:SetAtlasRotated90CW(tex, atlasName)
     local L, R = info.leftTexCoord, info.rightTexCoord
     local T, B = info.topTexCoord, info.bottomTexCoord
 
-    -- Apply the atlas texture file, then remap UVs for a 90° CW rotation.
+    -- Apply the atlas texture file, then remap UVs for a 90Â° CW rotation.
     tex:SetTexture(info.file)
     tex:SetTexCoord(
-        L, B,   -- Upper-left  ← original Bottom-left
-        R, B,   -- Upper-right ← original Bottom-right
-        L, T,   -- Lower-left  ← original Top-left
-        R, T    -- Lower-right ← original Top-right
+        L, B,   -- Upper-left  â† original Bottom-left
+        R, B,   -- Upper-right â† original Bottom-right
+        L, T,   -- Lower-left  â† original Top-left
+        R, T    -- Lower-right â† original Top-right
     )
 
     -- Swap dimensions: original width becomes height and vice-versa.
@@ -323,7 +322,7 @@ function VS:GetActiveTriggerString(button, delta)
     local isShift = IsShiftKeyDown()
     local isCtrl = IsControlKeyDown()
     local isAlt = IsAltKeyDown()
-    
+
     local mods = ""
     if isShift and isCtrl and isAlt then mods = "Shift+Ctrl+Alt+"
     elseif isShift and isCtrl then mods = "Shift+Ctrl+"
@@ -333,7 +332,7 @@ function VS:GetActiveTriggerString(button, delta)
     elseif isCtrl then mods = "Ctrl+"
     elseif isAlt then mods = "Alt+"
     end
-    
+
     if delta then
         return mods .. (delta > 0 and "WheelUp" or "WheelDown")
     elseif button then
@@ -345,7 +344,7 @@ end
 function VS:ProcessMinimapAction(triggerStr, clickedFrame)
     local db = VolumeSlidersMMDB
     if not db.mouseActions or not db.mouseActions.minimap then return false end
-    
+
     for _, action in ipairs(db.mouseActions.minimap) do
         if action.trigger == triggerStr and action.effect then
             local eff = action.effect
@@ -395,7 +394,7 @@ end
 function VS:ProcessSliderAction(triggerStr)
     local db = VolumeSlidersMMDB
     if not db.mouseActions or not db.mouseActions.sliders then return nil end
-    
+
     for _, action in ipairs(db.mouseActions.sliders) do
         if action.trigger == triggerStr and action.effect then
             local eff = action.effect
@@ -413,7 +412,7 @@ end
 function VS:ProcessScrollAction(triggerStr)
     local db = VolumeSlidersMMDB
     if not db.mouseActions or not db.mouseActions.scrollWheel then return nil end
-    
+
     for _, action in ipairs(db.mouseActions.scrollWheel) do
         if action.trigger == triggerStr and action.effect then
             local eff = action.effect

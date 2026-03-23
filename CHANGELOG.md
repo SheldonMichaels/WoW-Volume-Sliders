@@ -1,3 +1,9 @@
+## v2.14.1 — 2026-03-22
+
+### Fixed
+- **LDB Scroll Wheel Issue:** Resolved an issue where scrolling to adjust volume on third-party broker frames (like ElvUI datatexts) only worked after the popup window was opened once.
+- **Scroll Scale Configuration:** Using the mouse wheel over the minimap icon or LDB datatext will now accurately respect the custom step lengths configured under the "Slider Scroll Wheel" settings page.
+
 ## v2.14.0 — 2026-03-20
 
 ### Added

@@ -199,23 +199,23 @@ function VS:CreateOptionsFrame()
                 highlight:SetAllPoints(f)
                 highlight:SetTexture("Interface\\ChatFrame\\ChatFrameBackground")
                 highlight:SetBlendMode("ADD")
-                
+
                 if grad.orientation then
                     highlight:SetGradient(grad.orientation, CreateColor(1, 0.82, 0, grad.minAlpha), CreateColor(1, 0.82, 0, grad.maxAlpha))
                 else
                     highlight:SetColorTexture(1, 0.82, 0, grad.minAlpha)
                 end
-                
+
                 highlight:Hide()
                 table.insert(f.highlightTextures, highlight)
             end
         end
 
-        f:SetScript("OnEnter", function() 
-            for _, tex in ipairs(f.highlightTextures) do tex:Show() end 
+        f:SetScript("OnEnter", function()
+            for _, tex in ipairs(f.highlightTextures) do tex:Show() end
         end)
-        f:SetScript("OnLeave", function() 
-            for _, tex in ipairs(f.highlightTextures) do tex:Hide() end 
+        f:SetScript("OnLeave", function()
+            for _, tex in ipairs(f.highlightTextures) do tex:Hide() end
         end)
         return f
     end
@@ -420,7 +420,7 @@ function VS:CreateOptionsFrame()
         if not self.GenerateMenu then return end
         self.Background:SetAtlas(self:IsMouseOver() and "common-dropdown-c-button-hover-1" or "common-dropdown-c-button")
     end)
-    
+
     local function SelectPreset(preset)
         if VS.Presets and VS.Presets.ApplyPreset then
             VS.Presets:ApplyPreset(preset)
@@ -455,10 +455,10 @@ function VS:CreateOptionsFrame()
             rootDescription:CreateTitle("No presets available")
         end
     end
-    
+
     VS.presetDropdown:SetupMenu(GeneratePresetMenu)
     VS.presetDropdown:SetText("Presets")
-    
+
     -- Expose refresh function to be called after settings are updated
     VS.RefreshPopupDropdown = function()
         if VS.presetDropdown then
@@ -582,7 +582,7 @@ function VS:CreateOptionsFrame()
     end)
     AddTooltip(VS.lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.")
 
-    -- "Sound at Character" checkbox — toggles whether the listener position
+    -- "Sound at Character" checkbox â€” toggles whether the listener position
     -- is at the player's character or at the camera.
     VS.characterCheckbox = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckChar", "Sound at Character", function(checked)
         if checked then
@@ -920,7 +920,7 @@ function VS:CreateOptionsFrame()
                             -- The engine just reset the volume. Slam our saved volume back.
                             ApplyTargetVolume()
 
-                            -- Don't fully clean up yet — keep the visual disable
+                            -- Don't fully clean up yet â€” keep the visual disable
                             -- active until the timer expires for a smooth experience.
                             self.isRestartingAudio = false
                             self:UnregisterEvent("CVAR_UPDATE")
@@ -1064,7 +1064,7 @@ function VS:CreateOptionsFrame()
     local cw = VS.container:GetWidth()
     local ch = VS.container:GetHeight()
 
-    -- Edge handles — anchored using two-point anchoring to stretch along edges
+    -- Edge handles â€” anchored using two-point anchoring to stretch along edges
     -- LEFT edge
     local leftHandle = CreateFrame("Frame", nil, VS.container)
     leftHandle:SetPoint("TOPLEFT", VS.container, "TOPLEFT", 0, -t)
@@ -1113,7 +1113,7 @@ function VS:CreateOptionsFrame()
         VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
     end)
 
-    -- Corner handles — small fixed-size squares at each corner
+    -- Corner handles â€” small fixed-size squares at each corner
     local corners = {
         { point = "TOPLEFT",     a1 = "TOPLEFT",     x = 0, y = 0 },
         { point = "TOPRIGHT",    a1 = "TOPRIGHT",    x = -t*2, y = 0 },

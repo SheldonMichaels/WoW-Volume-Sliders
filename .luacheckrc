@@ -88,13 +88,38 @@ read_globals = {
     "FrameUtil",
     "InputUtil",
     "C_VoiceChat",
-    "Enum"
+    "Enum",
+    "IsAltKeyDown",
+    "IsShiftKeyDown",
+    "Minimap",
+    "issecretvalue",
+    "UnitAffectingCombat",
+    "GetSpellInfo",
+    "C_Spell",
+    "C_AddOns",
+    "CreateColor",
+    "GetRealZoneText",
+    "GetSubZoneText",
+    "GetMinimapZoneText",
+    "GetAddOnMetadata",
+    "ScrollingEdit_OnCursorChanged",
+    "ScrollingEdit_OnUpdate",
+    "strsplit",
+    "StaticPopupDialogs",
+    "StaticPopup_Show",
+    "ColorPickerFrame",
+    "GetLFGQueueStats",
+    "GetLFGProposal",
+    "MinimapZoomIn",
+    "MinimapZoomOut"
 }
 
 -- Globals that the addon creates and assigns values to
 globals = {
     "VolumeSlidersMMDB", -- Our saved variables
     "VolumeSliders_OnAddonCompartmentClick",
-    "VolumeSlidersOutputDropdown"
+    "VolumeSlidersOutputDropdown",
+    "VolumeSliders_ToggleWindow",
+    "VolumeSliders_ToggleMuteMaster"
 }
 
