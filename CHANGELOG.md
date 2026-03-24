@@ -1,3 +1,11 @@
+## v2.15.0-beta1 — 2026-03-24
+
+### Added
+- **Minimap Customization Page**: The General settings page was getting too loud, so all Minimap-related options have been formally evicted and given their own dedicated Subcategory tab!
+- **Dynamic Tooltips & Reordering**: You now have complete authoritative control over what information displays when hovering the minimap icon (Output Device, Active Presets, Master Volume, etc). Use the new Drag-and-Drop list in the settings panel to enable, disable, and rearrange your tooltip lines!
+- **Strict Scroll Wheel Binds**: Scroll wheel controls applied over the Minimap no longer blindly piggyback off the primary slider bindings. You can now configure entirely unique `Shift/Ctrl/Alt` constraint matrices exclusively tailored for hovering the icon. 
+- **Push-to-Talk Bypass (UNTESTED)**: Added a fast shortcut to in-game Voice Chat controls. You can now press and hold the custom Minimalist Map Icon to temporarily force open your microphone if you have PTT toggled, bypassing complex keybind requirements during chaotic encounters.
+
 ## v2.14.1 — 2026-03-22
 
 ### Fixed

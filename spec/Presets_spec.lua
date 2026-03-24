@@ -131,4 +131,35 @@ describe("Presets tests", function()
         VS.Presets:RefreshEventState()
         assert.are.equal(1.0, _G.cvarStorage["Sound_MasterVolume"])
     end)
+
+    it("evaluates and returns the names of active presets dynamically", function()
+        _G.VolumeSlidersMMDB.presets = {
+            { name = "Elwynn Tier", zones = {"Elwynn Forest"}, volumes = {} },
+            { name = "Inn Tier", zones = {"Lion's Pride Inn"}, volumes = {} },
+            { name = "Fishing Setup", zones = {}, volumes = {} }
+        }
+        _G.VolumeSlidersMMDB.enableFishingVolume = true
+        _G.VolumeSlidersMMDB.fishingPresetIndex = 3
+
+        -- 1. No triggers
+        _G.zoneStates.real = "Unknown"
+        _G.zoneStates.sub = "Unknown"
+        _G.zoneStates.mini = "Unknown"
+        VS.Presets:SetStateActive("fishing", false)
+        VS.Presets:RefreshEventState()
+        assert.are.equal("None", VS.Presets:GetActiveTriggersString())
+
+        -- 2. Enter Elwynn AND Inn
+        _G.zoneStates.real = "Elwynn Forest"
+        _G.zoneStates.sub = "Goldshire"
+        _G.zoneStates.mini = "Lion's Pride Inn"
+        VS.Presets:RefreshEventState()
+        
+        -- Tests multi-zone concatenation
+        assert.are.equal("Elwynn Tier, Inn Tier", VS.Presets:GetActiveTriggersString())
+
+        -- 3. Trigger Fishing globally
+        VS.Presets:SetStateActive("fishing", true)
+        assert.are.equal("Elwynn Tier, Inn Tier, Fishing Setup", VS.Presets:GetActiveTriggersString())
+    end)
 end)

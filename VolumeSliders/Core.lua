@@ -182,15 +182,16 @@ function VS:GetVolumeText()
     return tostring(math_floor(vol + 0.5)) .. "%"
 end
 
---- Adjust the master volume by one increment in the given direction.
+--- Adjust a volume channel by one increment in the given direction.
 --- @param delta  number  Positive = volume up, negative = volume down.
----
---- The default step is 5% (0.05).  When the volume is below 20%, the step
---- shrinks to 1% for finer control at low levels.  Holding Ctrl also forces
---- the 1% step regardless of current level.
-function VS:AdjustVolume(delta, customStep)
+--- @param customStep number Optional. Force a specific increment.
+--- @param cvar string Optional. The audio channel CVar to adjust. Defaults to "Sound_MasterVolume".
+function VS:AdjustVolume(delta, customStep, cvar)
+    local targetCVar = cvar or "Sound_MasterVolume"
     local increment = customStep
-    local current = self:GetMasterVolume()
+    
+    local volStr = GetCVar(targetCVar) or "1"
+    local current = tonumber(volStr) or 1
 
     if not increment then
         increment = 0.05
@@ -212,20 +213,18 @@ function VS:AdjustVolume(delta, customStep)
 
     -- Clamp to the valid [0, 1] range and persist.
     current = math_max(0, math_min(1, current))
-    SetCVar("Sound_MasterVolume", current)
+    SetCVar(targetCVar, current)
 
-    -- Update the broker text (the percentage shown on the LDB display).
-    if VS.VolumeSlidersObject then
+    -- Update the broker text ONLY if we adjusted the Master Volume, since the icon text shows Master.
+    if targetCVar == "Sound_MasterVolume" and VS.VolumeSlidersObject then
         VS.VolumeSlidersObject.text = self:GetVolumeText()
     end
 
-    -- If the slider panel is open, sync the Master slider to the new value.
-    -- Note: sliders use *inverted* values (0 at top = max volume, 1 at
-    -- bottom = min volume) so we set `1 - current`.
-    if VS.sliders and VS.sliders["Sound_MasterVolume"] then
+    -- If the slider panel is open, sync the specific slider to the new value.
+    if VS.sliders and VS.sliders[targetCVar] then
          local sliderVal = 1 - current
-         VS.sliders["Sound_MasterVolume"]:SetValue(sliderVal)
-         VS.sliders["Sound_MasterVolume"].valueText:SetText(math_floor(current * 100 + 0.5) .. "%")
+         VS.sliders[targetCVar]:SetValue(sliderVal)
+         VS.sliders[targetCVar].valueText:SetText(math_floor(current * 100 + 0.5) .. "%")
     end
 end
 
