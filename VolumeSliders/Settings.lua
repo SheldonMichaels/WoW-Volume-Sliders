@@ -2459,7 +2459,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     local function RefreshTooltipDataProvider()
         dataProvider:Flush()
         if db.minimapTooltipOrder then
-            for i, item in ipairs(db.minimapTooltipOrder) do
+            for _, item in ipairs(db.minimapTooltipOrder) do
                 dataProvider:Insert(item)
             end
             local newHeight = math.max(50, (#db.minimapTooltipOrder * 36) + 10)

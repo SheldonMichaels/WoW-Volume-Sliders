@@ -36,7 +36,7 @@ local hookedFrames = setmetatable({}, {__mode = "k"})
 local PTT_ACTIVE = false
 
 function VS:HandlePTT_OnMouseDown(button)
-    if button == "LeftButton" and not IsModifierKeyDown() then
+    if button == "LeftButton" and not (IsShiftKeyDown() or IsControlKeyDown() or IsAltKeyDown()) then
         if C_VoiceChat and C_VoiceChat.GetCommunicationMode then
             local mode = C_VoiceChat.GetCommunicationMode()
             if mode == 0 then -- Enum.CommunicationMode.PushToTalk
