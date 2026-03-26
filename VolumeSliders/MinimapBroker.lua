@@ -33,6 +33,29 @@ local SetCVar    = SetCVar
 -----------------------------------------
 local hookedFrames = setmetatable({}, {__mode = "k"})
 
+local PTT_ACTIVE = false
+
+function VS:HandlePTT_OnMouseDown(button)
+    if button == "LeftButton" and not (IsShiftKeyDown() or IsControlKeyDown() or IsAltKeyDown()) then
+        if C_VoiceChat and C_VoiceChat.GetCommunicationMode then
+            local mode = C_VoiceChat.GetCommunicationMode()
+            if mode == 0 then -- Enum.CommunicationMode.PushToTalk
+                PTT_ACTIVE = true
+                C_VoiceChat.SetCommunicationMode(1) -- Enum.CommunicationMode.OpenMic
+            end
+        end
+    end
+end
+
+function VS:HandlePTT_OnMouseUp(button)
+    if PTT_ACTIVE then
+        if C_VoiceChat and C_VoiceChat.SetCommunicationMode then
+            C_VoiceChat.SetCommunicationMode(0) -- Enum.CommunicationMode.PushToTalk
+        end
+        PTT_ACTIVE = false
+    end
+end
+
 local function HandleBrokerScroll(delta)
     local mods = ""
     if IsShiftKeyDown() then mods = mods .. "Shift+" end
@@ -40,28 +63,14 @@ local function HandleBrokerScroll(delta)
     if IsAltKeyDown() then mods = mods .. "Alt+" end
     
     local modTrigger = mods ~= "" and string.sub(mods, 1, -2) or "None"
-    local step = VS:ProcessScrollAction(modTrigger)
     
-    if not step and modTrigger == "None" then
-        local adjust1Bound = false
-        local db = VolumeSlidersMMDB
-        if db and db.mouseActions and db.mouseActions.scrollWheel then
-            for _, action in ipairs(db.mouseActions.scrollWheel) do
-                if action.effect == "ADJUST_1" then
-                    adjust1Bound = true
-                    break
-                end
-            end
-        end
-        if not adjust1Bound then
-            VS:AdjustVolume(delta)
-            return
-        end
-    end
+    local db = VolumeSlidersMMDB
+    if not db or not db.minimapScrollBindings then return end
     
-    if step then
-        VS:AdjustVolume(delta, step)
-    end
+    local cvar = db.minimapScrollBindings[modTrigger]
+    if not cvar or cvar == "Disabled" then return end
+    
+    VS:AdjustVolume(delta, nil, cvar)
 end
 
 local function HookBrokerScroll(frame)
@@ -120,13 +129,55 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
         local frame = tooltip:GetOwner()
         if frame then HookBrokerScroll(frame) end
 
-        if VolumeSlidersMMDB and VolumeSlidersMMDB.showMinimapTooltip == false then return end
+        local db = VolumeSlidersMMDB
+        if db and db.showMinimapTooltip == false then return end
+        
         tooltip:AddLine("Volume Sliders", 1, 1, 1)
-        VS:AppendActionTooltipLines(tooltip, "minimap", {
-            { trigger = "LeftButton", effectName = "Toggle Slider Window" },
-            { trigger = "RightButton", effectName = "Toggle Master Mute" }
-        })
-        tooltip:AddLine("|cff00ff00Scroll|r to adjust Master Volume")
+
+        if not db.minimapTooltipOrder then return end
+        
+        for _, item in ipairs(db.minimapTooltipOrder) do
+            if item.type == "MouseActions" then
+                VS:AppendActionTooltipLines(tooltip, "minimap", {
+                    { trigger = "LeftButton", effectName = "Toggle Slider Window" },
+                    { trigger = "RightButton", effectName = "Toggle Master Mute" }
+                })
+            elseif item.type == "OutputDevice" then
+                if Sound_GameSystem_GetNumOutputDrivers and Sound_GameSystem_GetOutputDriverNameByIndex then
+                    local index = tonumber(GetCVar("Sound_OutputDriverIndex")) or 0
+                    local name = Sound_GameSystem_GetOutputDriverNameByIndex(index)
+                    if name then
+                        tooltip:AddLine("Output Device: |cffffffff" .. name .. "|r", 1, 0.82, 0)
+                    end
+                end
+            elseif item.type == "ActivePresets" then
+                if VS.Presets and VS.Presets.GetActiveTriggersString then
+                    local activeStrs = VS.Presets:GetActiveTriggersString()
+                    if activeStrs and activeStrs ~= "" then
+                        tooltip:AddLine("Active Presets: |cffffffff" .. activeStrs .. "|r", 1, 0.82, 0)
+                    end
+                end
+            elseif item.type == "ChannelVolume" and item.channel then
+                local valStr = GetCVar(item.channel) or "0"
+                local val = math_floor((tonumber(valStr) or 0) * 100 + 0.5)
+                local niceNames = {
+                    ["Sound_MasterVolume"] = "Master",
+                    ["Sound_SFXVolume"] = "SFX",
+                    ["Sound_MusicVolume"] = "Music",
+                    ["Sound_AmbienceVolume"] = "Ambience",
+                    ["Sound_DialogVolume"] = "Dialog",
+                    ["Sound_GameplaySFX"] = "Gameplay",
+                    ["Sound_PingVolume"] = "Pings",
+                    ["Sound_EncounterWarningsVolume"] = "Warnings",
+                    ["Voice_ChatVolume"] = "Voice Chat",
+                    ["Voice_ChatDucking"] = "Voice Ducking",
+                    ["Voice_MicVolume"] = "Mic Volume",
+                    ["Voice_MicSensitivity"] = "Mic Sensitivity",
+                }
+                local pretty = niceNames[item.channel] or item.channel
+                tooltip:AddLine(string.format("%s: |cffffffff%d%%|r", pretty, val), 1, 0.82, 0)
+            end
+        end
     end,
 })
 
@@ -288,10 +339,12 @@ function VS:CreateMinimalistButton()
     btn:SetScript("OnMouseDown", function(self, button)
         self.minimalistIcon:SetPoint("CENTER", self, "CENTER", 1, -1)
         self.shadow:SetPoint("CENTER", self, "CENTER", 2, -2)
+        VS:HandlePTT_OnMouseDown(button)
     end)
     btn:SetScript("OnMouseUp", function(self, button)
         self.minimalistIcon:SetPoint("CENTER", self, "CENTER", 0, 0)
         self.shadow:SetPoint("CENTER", self, "CENTER", 1, -1)
+        VS:HandlePTT_OnMouseUp(button)
 
         -- We handle clicks here now since Frames don't have OnClick
         if not self.isMoving and self:IsMouseOver() then
@@ -369,18 +422,22 @@ function VS:CreateMinimalistButton()
         VS:StartHoverPolling()
         if VolumeSlidersMMDB and VolumeSlidersMMDB.showMinimapTooltip == false then return end
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:AddLine("Volume Sliders", 1, 1, 1)
-        VS:AppendActionTooltipLines(GameTooltip, "minimap", {
-            { trigger = "LeftButton", effectName = "Toggle Slider Window" },
-            { trigger = "RightButton", effectName = "Toggle Master Mute" }
-        })
-        GameTooltip:AddLine("|cff00ff00Scroll|r to adjust Master Volume")
+        VS.VolumeSlidersObject.OnTooltipShow(GameTooltip)
         GameTooltip:AddLine("|cff00ff00Shift+Drag|r to move icon")
         GameTooltip:Show()
     end)
 
     btn:SetScript("OnLeave", function(self)
         GameTooltip:Hide()
+        VS:HandlePTT_OnMouseUp("LeftButton")
+    end)
+
+    btn:SetScript("OnMouseDown", function(self, button)
+        VS:HandlePTT_OnMouseDown(button)
+    end)
+
+    btn:SetScript("OnMouseUp", function(self, button)
+        VS:HandlePTT_OnMouseUp(button)
     end)
 
     VS.minimalistButton = btn
@@ -447,6 +504,12 @@ function VS:UpdateMiniMapButtonVisibility()
         if VS.LDBIcon:IsRegistered("Volume Sliders") then
             -- We respect standard hide behavior if they have disabled the button via options.
             -- This addon historically uses `hide` for "hide completely".
+            local ldbBtn = VS.LDBIcon:GetMinimapButton("Volume Sliders")
+            if ldbBtn and not ldbBtn.vsPTTHooked then
+                ldbBtn:HookScript("OnMouseDown", function(_, btn) VS:HandlePTT_OnMouseDown(btn) end)
+                ldbBtn:HookScript("OnMouseUp", function(_, btn) VS:HandlePTT_OnMouseUp(btn) end)
+                ldbBtn.vsPTTHooked = true
+            end
             if not VolumeSlidersMMDB.hide then
                 VS.LDBIcon:Show("Volume Sliders")
             end

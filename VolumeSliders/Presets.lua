@@ -213,6 +213,55 @@ presetFrame:SetScript("OnEvent", OnPresetEvent)
 -- Public API
 -------------------------------------------------------------------------------
 
+--- Returns a comma-separated string of currently active presets.
+function VS.Presets:GetActiveTriggersString()
+    local db = VolumeSlidersMMDB
+    if not db.presets or #db.presets == 0 then return "None" end
+
+    local matchedNames = {}
+    local matchedPresetIndices = {}
+
+    local function AddMatchedPresetByIndex(id)
+        if id and db.presets[id] and not matchedPresetIndices[id] then
+            matchedPresetIndices[id] = true
+            table.insert(matchedNames, db.presets[id].name or "Unnamed Preset")
+        end
+    end
+
+    if db.enableTriggers then
+        local realZone = GetRealZoneText() and string_lower(GetRealZoneText()) or ""
+        local subZone = GetSubZoneText() and string_lower(GetSubZoneText()) or ""
+        local miniZone = GetMinimapZoneText() and string_lower(GetMinimapZoneText()) or ""
+
+        if not (VS:IsSecret(realZone) or VS:IsSecret(subZone) or VS:IsSecret(miniZone)) then
+            local function AddZoneMatches(zoneStr)
+                local ids = activeZones[zoneStr]
+                if ids then
+                    for _, id in ipairs(ids) do
+                        AddMatchedPresetByIndex(id)
+                    end
+                end
+            end
+            AddZoneMatches(realZone)
+            AddZoneMatches(subZone)
+            AddZoneMatches(miniZone)
+        end
+    end
+
+    if db.enableFishingVolume and activeStates["fishing"] then
+        AddMatchedPresetByIndex(db.fishingPresetIndex)
+    end
+
+    if db.enableLfgVolume and activeStates["lfg"] then
+        AddMatchedPresetByIndex(db.lfgPresetIndex)
+    end
+
+    if #matchedNames > 0 then
+        return table.concat(matchedNames, ", ")
+    end
+    return "None"
+end
+
 --- Toggles an automation state (like "fishing" or "lfg") on or off.
 -- Triggers a re-evaluation of all presets.
 function VS.Presets:SetStateActive(stateName, isActive)

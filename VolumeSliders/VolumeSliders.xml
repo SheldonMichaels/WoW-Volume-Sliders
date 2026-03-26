@@ -5,6 +5,9 @@
     <Frame name="VolumeSlidersFooterRowTemplate" virtual="true" inherits="BackdropTemplate">
         <Size x="145" y="28"/>
     </Frame>
+    <Button name="VolumeSlidersTooltipRowTemplate" virtual="true" inherits="BackdropTemplate">
+        <Size x="280" y="28"/>
+    </Button>
     <Frame name="VolumeSlidersDropIndicatorTemplate" virtual="true">
         <Size x="150" y="3"/>
         <Layers>

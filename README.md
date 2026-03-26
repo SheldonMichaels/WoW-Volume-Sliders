@@ -6,32 +6,50 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ## Current Features
 
-- **LFG Queue Pop Boost** — dynamically adjusts your volume when a Dungeon, Raid, or PvP queue prompt appears, automatically restoring your original levels after the sound finishes.
-- **Fishing Splash Boost** — dynamically adjusts your volume while fishing, so you never miss a catch. Reverts after the "fishing" spell ends.
-- **Volume Presets & Automation** — Save volume profiles and automate them to trigger in specific zones.
-- **Twelve vertical volume sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Gameplay, Pings, Voice Chat Volume, Voice Ducking, Mic Volume, and Mic Sensitivity. Last used volume values persist between mute/unmute
-- **Per-channel mute** — mute each channel individually
-- **Two Minimap styles** — choose between the classic ringed minimap button or a "minimalist" bare gold speaker icon that gracefully fades out when your mouse leaves the minimap.
-- **Scroll wheel** — scroll over the minimap icon to adjust master volume (hold Ctrl for fine 1% steps)
-- **Stepper arrows** (▲/▼) — snap volume to the nearest 5% increment
-- **Sound output device selector** — change your active audio device, with a saved master volume value per device
-- **Voice Chat mode toggle** — change between Push to Talk and Open Mic modes on the fly
-- **"Sound at Character" toggle** — positional audio at your character (checked) or at the camera location (unchecked)
-- **Addon Compartment & Data Broker** — works with the built-in compartment menu (tested) and LDB displays like Titan Panel (untested) or ChocolateBar (untested)
-- **Native look & feel** — uses native Blizzard UI assets
-- **Movable window** — detach the window from the minimap and place it anywhere
-- **Dynamic Footer Elements** — quick-access toggles in the main window for Output, Voice Mode, Fishing, Triggers, and more. Highly customizable with drag-and-drop reordering and column limits.
-- **Extensive Customization Options** — access via the WoW Interface options to customize slider height, toggle visibility of any channel or UI element (including the help text), change visual themes (gold/silver, diamond/minimal knobs, text colors), and freely drag-to-reorder the sliders to your preference.
-- **Mouse Actions** — Configure what mouse buttons, modifiers, and scroll wheel behaviors perform on the minimap button, slider buttons, and slider scroll wheel from a dedicated settings page.
-- **Dynamic Window Resizing** — The main slider window is now fully dynamic and resizable in two dimensions simultaneously. Grab corners or edges to set your preferred size; sliders and footers will reflow automatically to fit the space. Visual highlights glow softly on hover to indicate draggable areas.
-- **Custom Background Colors** — Change the window's background color and opacity via the new color picker in Settings > Window.
-- **Persistent Window Toggle** — Added a "Keep Open" option to prevent the window from closing when clicking outside of it.
+### Core Sound Control
+- **12 Vertical Volume Sliders** — Master, Effects, Music, Ambience, Dialog, Warnings, Gameplay, Pings, Voice Chat, Voice Ducking, Mic Volume, and Mic Sensitivity.
+- **Precision Snapping** — Use the (▲/▼) stepper arrows to snap volume to the nearest 5% increment.
+- **Per-Channel Mutes** — Mute individual channels; last-used volume values persist between toggle states.
+- **Output Device Selector** — Quickly swap audio output devices; the addon remembers your preferred Master volume for every unique device.
+- **Positional Audio Toggle** — Toggle "Sound at Character" to alternate between camera-based and character-based acoustics.
+
+### Minimap & Navigation
+- **Two Visual Styles** — Choose the classic ringed button or a "minimalist" speaker icon that automatically fades out when not in use.
+- **Customizable Tooltips** — Use a drag-and-drop list to decide exactly what displays on hover and in what order (Master Volume, Active Presets, Output Device, etc.).
+- **Smart Scroll Wheel** — Scroll over the icon to adjust volume for a selected channel. Configure unique `Shift/Ctrl/Alt` modifiers for additional channels.
+- **PTT Shortcut** — Press and hold the minimalist icon to temporarily force "Open Mic" mode if you have Push-to-Talk enabled for the in game voice chat.
+
+### Automation & Presets
+- **Volume Presets** — Save custom volume profiles and apply them instantly via the in window dropdown or automated triggers.
+- **Zone Automation** — Configure presets to automatically activate when entering specific zones (e.g., muting Ambience in the Isle of Quel'Danas) and revert when leaving the zone.
+- **LFG & Fishing Boosts** — Apply a preset during Queue Pops or Fishing casts, with automatic restoration afterwards.
+
+### UI & Aesthetics
+- **2D Dynamic Resizing** — Grab edges or corners to freely resize the main slider window; sliders and footers automatically reflow to fit your layout.
+- **Custom Backgrounds** — Adjust window colors and opacity levels using the native Blizzard color picker.
+- **Movable & Persistent** — Slider window can locked in place or movable. Window persistence can be toggled on/off.
+
+### Integration
+- **Addon Compartment** — Fully integrated with the native WoW 10.x+ AddOn compartment menu.
+- **Data Broker (LDB)** — Compatible with display addons like Titan Panel, ChocolateBar, and ElvUI. (Mostly untested)
 
 ## Planned Future Features
 
-- Convert lock/unlock button to a proper icon
-- More customization options for minimap button
-- More texture choices
+### Visuals & Personalization
+- **Interactive Element Overhaul** — Replacing text buttons with modern, thematic icons (e.g., swapping the lock/unlock text for functional padlock or chain-link assets).
+- **Expanded Texture Library** — More choices for slider tracks, knobs, and background textures to further match your personal UI aesthetic.
+- **Minimap Icon Refinement** — Full customization of the minimap button size, colors, fade speeds, and rotation, plus a fuzzy drop shadow upgrade for better visibility.
+
+### Audio & Preset Depth
+- **Expanded Channel Control** — Adding support for "Emote Sounds" and other hidden game audio channels.
+- **Dynamic Volume Units** — Choose your preferred display unit between percentages (Default), decimals (0.0-1.0), or raw decibels (dB).
+- **Contextual Automation** — New triggers for automatic volume "ducking" when mounting specific creatures or during cinematic cutscenes.
+- **Advanced Preset Logic** — Implementation of directional rules (e.g., "Only lower volume") and "hard mutes" that cannot be overridden by automation.
+
+### UI & UX Improvements
+- **Profile Export/Import** — Share your complex automation setups and UI layouts with the community or sync them across multiple accounts.
+- **Responsive Settings Overhaul** — A complete refactor of the options menu to ensure every slider, checkbox, and dropdown fluidly adapts to any window size.
+- **Standalone PTT Frame** — An optional, freely-movable button frame designed specifically for Push-to-Talk use, with its own independent show/hide automations.
 
 ## Installation
 
@@ -52,8 +70,9 @@ Available at: [curseforge.com/wow/addons/volume-sliders](https://www.curseforge.
 |--------|--------|
 | **Left-click** minimap icon | Open/close the slider panel |
 | **Right-click** minimap icon | Toggle master mute |
-| **Scroll wheel** on minimap icon | Adjust master volume |
-| **Ctrl + scroll** | Fine adjustment (1% steps) |
+| **Scroll wheel** on minimap icon | Adjust mapped volume (Customizable) |
+| **Hold Left-click** (Minimalist) | Push-to-Talk Bypass (Forces Open Mic) |
+| **Ctrl + scroll** | Fine adjustment (1% steps - Default) |
 | **▲ / ▼ arrows** on sliders | Snap to nearest 5% |
 | **Click outside** panel | Close the panel |
 | **Escape** | Close the panel |

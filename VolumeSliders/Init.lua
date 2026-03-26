@@ -216,6 +216,24 @@ initFrame:SetScript("OnEvent", function(self, event)
         db.mouseActions.preset = nil
     end
 
+    -- Minimap Scroll Bindings (Strict Override)
+    if not db.minimapScrollBindings then
+        db.minimapScrollBindings = {
+            ["None"] = "Sound_MasterVolume",
+            ["Shift"] = "Disabled",
+            ["Ctrl"] = "Disabled",
+            ["Alt"] = "Disabled",
+        }
+    end
+
+    -- Minimap Tooltip Order
+    if not db.minimapTooltipOrder then
+        db.minimapTooltipOrder = {
+            { type = "MouseActions" },
+            { type = "ChannelVolume", channel = "Sound_MasterVolume" },
+        }
+    end
+
     -- Preset Profile Defaults
     if not db.presets then
         db.presets = {
@@ -260,7 +278,12 @@ initFrame:SetScript("OnEvent", function(self, event)
         -- After any click on the minimap button, refresh the icon texture
         -- in case the mute state changed.
         minimapButton:HookScript("OnMouseUp", function(self, button)
+            VS:HandlePTT_OnMouseUp(button)
             VS:UpdateMiniMapVolumeIcon()
+        end)
+
+        minimapButton:HookScript("OnMouseDown", function(self, button)
+            VS:HandlePTT_OnMouseDown(button)
         end)
 
         -- We handle the visual closing in GLOBAL_MOUSE_DOWN instead now.
