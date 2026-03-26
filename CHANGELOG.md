@@ -1,3 +1,8 @@
+## v2.15.1 — 2026-03-26
+
+### Fixed
+- **Minimalist Icon Click Handler**: Fixed a regression where clicking the custom speaker icon did nothing.
+
 ## v2.15.0 — 2026-03-26
 
 ### Added

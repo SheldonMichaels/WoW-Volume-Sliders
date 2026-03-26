@@ -432,14 +432,6 @@ function VS:CreateMinimalistButton()
         VS:HandlePTT_OnMouseUp("LeftButton")
     end)
 
-    btn:SetScript("OnMouseDown", function(self, button)
-        VS:HandlePTT_OnMouseDown(button)
-    end)
-
-    btn:SetScript("OnMouseUp", function(self, button)
-        VS:HandlePTT_OnMouseUp(button)
-    end)
-
     VS.minimalistButton = btn
 end
 
