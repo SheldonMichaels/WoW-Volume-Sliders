@@ -45,6 +45,12 @@ local activeStates = {}
 -- Maintain a list of original CVars before they were overridden by presets.
 -- originalVolumes[channel] = originalValue
 VolumeSlidersMMDB.originalVolumes = VolumeSlidersMMDB.originalVolumes or {}
+-- originalMutes[channel] = originalEnableValue ("0" or "1")
+VolumeSlidersMMDB.originalMutes = VolumeSlidersMMDB.originalMutes or {}
+
+-- Tracks manually toggled presets for the current session.
+-- manualToggleState[presetIndex] = { volumes = {channel=val}, mutes = {channel=enableVal} }
+local manualToggleState = {}
 
 -------------------------------------------------------------------------------
 -- Logic Implementation
@@ -57,15 +63,31 @@ local function SortPresetsByPriority(a, b)
     return pA < pB
 end
 
+--- Refresh all slider UI elements and broker text.
+local function RefreshUI()
+    if VS.sliders then
+        for _, slider in pairs(VS.sliders) do
+            if slider.RefreshValue then slider:RefreshValue() end
+            if slider.RefreshMute then slider:RefreshMute() end
+        end
+    end
+    if VS.VolumeSlidersObject then
+        VS.VolumeSlidersObject.text = VS:GetVolumeText()
+    end
+end
+
 --- Apply a list of active automation presets to the game state.
 -- This is the central orchestrator that applies overrides based on priority
 -- and restores original volumes for any channel not governed by an active preset.
 local function ApplyAutomationPresets(activePresetList)
     local db = VolumeSlidersMMDB
+    db.originalVolumes = db.originalVolumes or {}
+    db.originalMutes = db.originalMutes or {}
 
     -- We want to track which channels are currently overridden so we can restore the rest
     local overriddenChannels = {}
     local finalVolumes = {}
+    local finalMutes = {} -- channel => true (should mute)
 
     -- Apply presets in priority ascending order
     table_sort(activePresetList, SortPresetsByPriority)
@@ -76,6 +98,10 @@ local function ApplyAutomationPresets(activePresetList)
             if not preset.ignored or not preset.ignored[channel] then
                 finalVolumes[channel] = vol
                 overriddenChannels[channel] = true
+                -- Only override mute state if explicitly configured
+                if preset.mutes and preset.mutes[channel] then
+                    finalMutes[channel] = true
+                end
             end
         end
     end
@@ -94,6 +120,15 @@ local function ApplyAutomationPresets(activePresetList)
             if currentCVarVol ~= wantVol then
                 SetCVar(channel, wantVol)
             end
+
+            -- Handle mute override (only if explicitly configured)
+            local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+            if muteCvar and finalMutes[channel] then
+                if not db.originalMutes[channel] then
+                    db.originalMutes[channel] = GetCVar(muteCvar)
+                end
+                SetCVar(muteCvar, 0)
+            end
         else
             -- No active preset is overriding this channel. Restore if it was overridden previously.
             if db.originalVolumes[channel] then
@@ -105,25 +140,21 @@ local function ApplyAutomationPresets(activePresetList)
                 -- Clear original since we restored it
                 db.originalVolumes[channel] = nil
             end
-        end
-    end
-
-    -- Refresh slider UI if open
-    if VS.sliders then
-        for _, slider in pairs(VS.sliders) do
-            if slider.RefreshValue then
-                slider:RefreshValue()
+            -- Restore mute state if it was overridden
+            local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+            if muteCvar and db.originalMutes[channel] then
+                SetCVar(muteCvar, db.originalMutes[channel])
+                db.originalMutes[channel] = nil
             end
         end
     end
-    -- Refresh LDB object if master volume changed
-    if VS.VolumeSlidersObject then
-        VS.VolumeSlidersObject.text = VS:GetVolumeText()
-    end
+
+    RefreshUI()
 end
 
---- Applies a single preset immediately (called from quick dropdown)
+--- Applies a single preset immediately (called from automation or direct apply).
 -- Does NOT modify originalVolumes (so it's permanent until changed again).
+-- Supports per-channel mute overrides when preset.mutes[channel] = true.
 function VS.Presets:ApplyPreset(preset)
     if not preset or type(preset.volumes) ~= "table" then return end
 
@@ -135,22 +166,114 @@ function VS.Presets:ApplyPreset(preset)
                 SetCVar(channel, vol)
                 changed = true
             end
+            -- Apply mute override only if explicitly configured
+            local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+            if muteCvar and preset.mutes and preset.mutes[channel] then
+                SetCVar(muteCvar, 0)
+                changed = true
+            end
         end
     end
 
     -- Update UI if anything changed
     if changed then
-        if VS.sliders then
-            for _, slider in pairs(VS.sliders) do
-                if slider.RefreshValue then
-                    slider:RefreshValue()
+        RefreshUI()
+    end
+end
+
+--- Toggles a preset on or off (manual application from dropdown or hotkey).
+-- First call: snapshots current values and applies the preset.
+-- Second call (if channels unchanged): restores the snapshot.
+-- Second call (if channels changed): re-snapshots and re-applies.
+-- @param preset table The preset object.
+-- @param presetIndex number The 1-based index in db.presets.
+-- @return boolean True if the preset is now active, false if un-toggled.
+function VS.Presets:TogglePreset(preset, presetIndex)
+    if not preset or type(preset.volumes) ~= "table" then return false end
+
+    local snapshot = manualToggleState[presetIndex]
+
+    if snapshot then
+        -- Preset is currently "active" — check if channels still match
+        local allMatch = true
+        for channel, _ in pairs(snapshot.volumes) do
+            if not preset.ignored or not preset.ignored[channel] then
+                local currentVol = tonumber(GetCVar(channel)) or 1
+                local presetVol = preset.volumes[channel]
+                if presetVol and currentVol ~= presetVol then
+                    allMatch = false
+                    break
                 end
             end
         end
-        if VS.VolumeSlidersObject then
-            VS.VolumeSlidersObject.text = VS:GetVolumeText()
+
+        -- Also check mute states for channels with explicit mute config
+        if allMatch and snapshot.mutes then
+            for channel, _ in pairs(snapshot.mutes) do
+                local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+                if muteCvar then
+                    local currentMute = GetCVar(muteCvar)
+                    -- Preset mutes = channel should be muted ("0")
+                    if currentMute ~= "0" then
+                        allMatch = false
+                        break
+                    end
+                end
+            end
+        end
+
+        if allMatch then
+            -- UN-TOGGLE: restore snapshot values
+            for channel, origVol in pairs(snapshot.volumes) do
+                SetCVar(channel, origVol)
+            end
+            -- Restore mute states for channels that had explicit mute config
+            if snapshot.mutes then
+                for channel, origMuteVal in pairs(snapshot.mutes) do
+                    local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+                    if muteCvar then
+                        SetCVar(muteCvar, origMuteVal)
+                    end
+                end
+            end
+            manualToggleState[presetIndex] = nil
+            RefreshUI()
+            return false
+        else
+            -- RE-APPLY: channels were modified, take fresh snapshot
+            manualToggleState[presetIndex] = nil
+            -- Fall through to the "apply" path below
         end
     end
+
+    -- APPLY: take snapshot and apply
+    local volSnapshot = {}
+    local muteSnapshot = {}
+    local hasMuteSnapshot = false
+
+    for channel, vol in pairs(preset.volumes) do
+        if not preset.ignored or not preset.ignored[channel] then
+            -- Snapshot current volume
+            volSnapshot[channel] = tonumber(GetCVar(channel)) or 1
+            -- Apply preset volume
+            SetCVar(channel, vol)
+            -- Handle mute (only if explicitly configured)
+            local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+            if muteCvar and preset.mutes and preset.mutes[channel] then
+                muteSnapshot[channel] = GetCVar(muteCvar)
+                SetCVar(muteCvar, 0)
+                hasMuteSnapshot = true
+            end
+        end
+    end
+
+    manualToggleState[presetIndex] = {
+        volumes = volSnapshot,
+        mutes = hasMuteSnapshot and muteSnapshot or nil
+    }
+
+    RefreshUI()
+    return true
 end
 
 --- Event handler for all registered zone/login events.

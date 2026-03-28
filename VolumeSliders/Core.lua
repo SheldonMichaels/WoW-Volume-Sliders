@@ -134,6 +134,20 @@ VS.CVAR_TO_VAR = {
     ["Voice_MicSensitivity"]        = "showMicSensitivity",
 }
 
+-- Maps each volume CVar to its corresponding enable/disable CVar.
+-- Used by Presets.lua to apply per-channel mute overrides.
+-- Voice Chat channels are excluded (they use a DB-backed soft-mute system).
+VS.CHANNEL_MUTE_CVAR = {
+    ["Sound_MasterVolume"]            = "Sound_EnableAllSound",
+    ["Sound_SFXVolume"]               = "Sound_EnableSFX",
+    ["Sound_MusicVolume"]             = "Sound_EnableMusic",
+    ["Sound_AmbienceVolume"]          = "Sound_EnableAmbience",
+    ["Sound_DialogVolume"]            = "Sound_EnableDialog",
+    ["Sound_EncounterWarningsVolume"] = "Sound_EnableEncounterWarningsSounds",
+    ["Sound_GameplaySFX"]             = "Sound_EnableGameplaySFX",
+    ["Sound_PingVolume"]              = "Sound_EnablePingSounds",
+}
+
 -- Default ordering of sliders in the popup panel.  Saved to the user's
 -- database on first load and persisted across sessions.
 VS.DEFAULT_CVAR_ORDER = {
@@ -373,13 +387,8 @@ function VS:ProcessMinimapAction(triggerStr, clickedFrame)
             elseif string.match(eff, "^PRESET_") then
                 local idx = tonumber(string.match(eff, "%d+"))
                 if idx and db.presets[idx] then
-                    if VS.Presets and VS.Presets.ApplyPreset then
-                        VS.Presets:ApplyPreset(db.presets[idx])
-                        if VS.sliders then
-                            for _, slider in pairs(VS.sliders) do
-                                if slider.RefreshValue then slider:RefreshValue() end
-                            end
-                        end
+                    if VS.Presets and VS.Presets.TogglePreset then
+                        VS.Presets:TogglePreset(db.presets[idx], idx)
                         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
                     end
                 end
@@ -454,7 +463,7 @@ function VS:AppendActionTooltipLines(tooltip, elementKey, defaultActions)
         if string.match(eff, "^PRESET_") then
             local idx = tonumber(string.match(eff, "%d+"))
             if idx and db.presets and db.presets[idx] then
-                return "Apply Preset: " .. db.presets[idx].name
+                return "Toggle Preset: " .. db.presets[idx].name
             end
         end
         return "Unknown Action"

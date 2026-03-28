@@ -1,3 +1,15 @@
+## v2.16.0 — 2026-03-28
+
+### Added
+- **Preset Toggle System**: Manual preset application (via the main window dropdown or minimap hotkeys) now works as a toggle. The first activation applies the preset, and the second restores your original channel values — unless you've manually changed them, in which case it re-applies with a fresh snapshot.
+- **Per-Channel Mute Control**: Presets can now optionally mute specific channels. Enable the "Mute" checkbox on individual channels in the Automation preset editor. Presets will never silently unmute a channel you muted manually — only channels the preset itself muted are restored.
+- **Expanded Preset Channels**: The preset editor now supports all 8 CVar-based channels: Master, SFX, Music, Ambience, Dialog, Warnings, Gameplay, and Pings.
+- **Help Text**: Added informational explainers on the Automation settings page ("How Presets Work") and under the Minimap Icon section on the Mouse Actions page describing toggle hotkey behavior.
+- **Lock Icon Position**: Replaced the old "Shift+Drag to move" minimap icon behavior with a dedicated "Lock Icon Position" toggle on the Minimap Icon settings page. Uncheck it to drag the icon freely.
+
+### Fixed
+- **Dropdown Text After Deletion**: Fixed a bug on the Mouse Actions page where deleting a minimap icon action caused the remaining rows' dropdown labels to display incorrect effect names.
+
 ## v2.15.1 — 2026-03-26
 
 ### Fixed

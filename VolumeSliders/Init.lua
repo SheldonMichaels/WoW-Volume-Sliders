@@ -43,6 +43,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     db.lowColor = db.lowColor or 2
 
     if db.bindToMinimap == nil then db.bindToMinimap = true end
+    if db.minimapIconLocked == nil then db.minimapIconLocked = true end
     if db.minimalistOffsetX == nil then db.minimalistOffsetX = -35 end
     if db.minimalistOffsetY == nil then db.minimalistOffsetY = -5 end
     if db.showTitle == nil then db.showTitle = true end

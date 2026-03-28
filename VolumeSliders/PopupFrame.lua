@@ -422,20 +422,21 @@ function VS:CreateOptionsFrame()
     end)
 
     local function SelectPreset(preset)
-        if VS.Presets and VS.Presets.ApplyPreset then
-            VS.Presets:ApplyPreset(preset)
-            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-            -- Optionally update slider visuals to reflect new volumes
-            if VS.sliders then
-                for _, slider in pairs(VS.sliders) do
-                    if slider.RefreshValue then slider:RefreshValue() end
-                end
+        if VS.Presets and VS.Presets.TogglePreset then
+            local db = VolumeSlidersMMDB
+            local presetIndex = nil
+            for i, p in ipairs(db.presets) do
+                if p == preset then presetIndex = i; break end
             end
+            if presetIndex then
+                VS.Presets:TogglePreset(preset, presetIndex)
+            end
+            PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         end
     end
 
     local function GeneratePresetMenu(dropdown, rootDescription)
-        rootDescription:CreateTitle("Quick Apply Preset")
+        rootDescription:CreateTitle("Toggle Preset")
         local db = VolumeSlidersMMDB
         if db.presets and #db.presets > 0 then
             local hasPresets = false

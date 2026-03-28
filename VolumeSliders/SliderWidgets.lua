@@ -620,6 +620,28 @@ function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, m
         self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
     end)
 
+    ---------------------------------------------------------------------------
+    -- Mute Checkbox (opt-in per-channel mute override)
+    ---------------------------------------------------------------------------
+    local muteCheck = CreateFrame("CheckButton", name .. "Mute", slider, "SettingsCheckboxTemplate")
+    muteCheck:SetSize(26, 26)
+    muteCheck:SetPoint("TOP", slider, "BOTTOM", 0, -42)
+    VS:DisableCheckboxHoverBackground(muteCheck)
+
+    local muteLabel = slider:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    muteLabel:SetPoint("TOP", muteCheck, "BOTTOM", 0, -2)
+    muteLabel:SetText("Mute")
+    muteCheck.muteLabel = muteLabel
+
+    if not workingTable.mutes then workingTable.mutes = {} end
+    muteCheck:SetChecked(workingTable.mutes[channelKey] == true)
+
+    muteCheck:SetScript("OnClick", function(self)
+        if not workingTable.mutes then workingTable.mutes = {} end
+        workingTable.mutes[channelKey] = self:GetChecked() or nil
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+
     slider.RefreshValue = function(self)
         local currentVol = workingTable.volumes[channelKey] or 1
         self.isRefreshing = true
@@ -630,6 +652,9 @@ function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, m
         local ignored = workingTable.ignored and workingTable.ignored[channelKey]
         ignoreCheck:SetChecked(ignored)
         UpdateIgnoreState(ignored)
+
+        -- Refresh mute checkbox state
+        muteCheck:SetChecked(workingTable.mutes and workingTable.mutes[channelKey] == true)
     end
 
     return slider

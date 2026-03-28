@@ -308,6 +308,21 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     separatorTop:SetColorTexture(1, 1, 1, 0.2)
 
     ---------------------------------------------------------------------------
+    -- Preset Configuration Info Text
+    ---------------------------------------------------------------------------
+    local presetInfoHeader = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    presetInfoHeader:SetPoint("TOPLEFT", separatorTop, "BOTTOMLEFT", 10, -15)
+    presetInfoHeader:SetText("How Presets Work")
+    presetInfoHeader:SetTextColor(1, 0.82, 0)
+
+    local presetInfoBody = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    presetInfoBody:SetPoint("TOPLEFT", presetInfoHeader, "BOTTOMLEFT", 0, -5)
+    presetInfoBody:SetWidth(540)
+    presetInfoBody:SetJustifyH("LEFT")
+    presetInfoBody:SetWordWrap(true)
+    presetInfoBody:SetText("Presets set volume levels and can optionally mute specific channels. Zone automations apply and restore presets automatically as you move. Manual presets (from the main window dropdown or minimap hotkeys) work as toggles: the first activation applies the preset, and a second activation restores your previous values if nothing has changed in between.")
+
+    ---------------------------------------------------------------------------
     -- State & Management
     ---------------------------------------------------------------------------
     -- We need a working state for the currently selected/edited preset
@@ -317,6 +332,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         zones = {},
         volumes = {},
         ignored = {},
+        mutes = {},
         showInDropdown = true,
         index = nil -- The index in db.presets if it already exists
     }
@@ -325,7 +341,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     local presetSliders = {}
 
     local presetDropdown = CreateFrame("DropdownButton", nil, contentFrame, "WowStyle1DropdownTemplate")
-    presetDropdown:SetPoint("TOPLEFT", separatorTop, "BOTTOMLEFT", 10, -35)
+    presetDropdown:SetPoint("TOPLEFT", presetInfoBody, "BOTTOMLEFT", 0, -25)
 
     local priorityLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     priorityLabel:SetPoint("BOTTOMLEFT", presetDropdown, "TOPLEFT", 0, 5)
@@ -333,7 +349,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
 
     local btnDelete = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
     btnDelete:SetSize(80, 22)
-    btnDelete:SetPoint("TOPRIGHT", separatorTop, "BOTTOMRIGHT", -15, -35)
+    btnDelete:SetPoint("TOPRIGHT", presetInfoBody, "BOTTOMRIGHT", -15, -25)
     btnDelete:SetText("Delete")
 
     local btnCopy = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
@@ -508,31 +524,50 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     -- Faux Sliders Display Area
     ---------------------------------------------------------------------------
     local slidersContainer = CreateFrame("Frame", nil, contentFrame)
-    slidersContainer:SetPoint("TOPLEFT", separatorMid, "BOTTOMLEFT", 0, -10)
-    slidersContainer:SetSize(540, 380)
+    slidersContainer:SetHeight(420)
+    -- Vertical: below the separator. Horizontal: stretch to contentFrame edges.
+    slidersContainer:SetPoint("TOP", separatorMid, "BOTTOM", 0, -10)
+    slidersContainer:SetPoint("LEFT", contentFrame, "LEFT", 0, 0)
+    slidersContainer:SetPoint("RIGHT", contentFrame, "RIGHT", 0, 0)
 
-    -- Define the channels we want faux sliders for
+    -- Define the channels we want faux sliders for (all CVar-based channels)
     local channels = {
         { key="Sound_MasterVolume", label="Master"},
         { key="Sound_SFXVolume", label="SFX"},
         { key="Sound_MusicVolume", label="Music"},
         { key="Sound_AmbienceVolume", label="Ambience"},
-        { key="Sound_DialogVolume", label="Dialog"}
+        { key="Sound_DialogVolume", label="Dialog"},
+        { key="Sound_EncounterWarningsVolume", label="Warnings"},
+        { key="Sound_GameplaySFX", label="Gameplay"},
+        { key="Sound_PingVolume", label="Pings"}
     }
 
     local sliderWidth = VS.SLIDER_COLUMN_WIDTH or 60
-    local sliderSpacing = 20
+    local sliderSpacing = 8  -- tight spacing to fit all 8 channels within 540px
     local totalWidth = (#channels * sliderWidth) + ((#channels - 1) * sliderSpacing)
-    local startX = (540 - totalWidth) / 2
+
+    -- Position sliders centered within the container using an OnSizeChanged hook
+    -- so they re-center if the settings panel is resized.
+    local function RepositionSliders()
+        local containerWidth = slidersContainer:GetWidth()
+        if containerWidth <= 0 then containerWidth = 540 end
+        local startX = (containerWidth - totalWidth) / 2
+        for idx, slider in ipairs(presetSliders) do
+            slider:ClearAllPoints()
+            slider:SetPoint("TOPLEFT", slidersContainer, "TOPLEFT", startX + (idx-1) * (sliderWidth + sliderSpacing), -130)
+        end
+    end
 
     for i, chan in ipairs(channels) do
         local slider = VS:CreateTriggerSlider(slidersContainer, "VSPresetSlider"..chan.label, chan.label, chan.key, VS.PresetWorkingState, 0, 1, 0.01)
 
         -- Start hidden
         slider:Hide()
-        slider:SetPoint("TOPLEFT", slidersContainer, "TOPLEFT", startX + (i-1) * (sliderWidth + sliderSpacing), -130)
         table.insert(presetSliders, slider)
     end
+
+    slidersContainer:SetScript("OnSizeChanged", function() RepositionSliders() end)
+    C_Timer.After(0, RepositionSliders)  -- initial positioning after layout settles
 
     ---------------------------------------------------------------------------
     -- Interaction Logic
@@ -582,11 +617,13 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         VS.PresetWorkingState.zones = {}
         VS.PresetWorkingState.volumes = {}
         VS.PresetWorkingState.ignored = {}
+        VS.PresetWorkingState.mutes = {}
 
         if preset then
             for _, z in ipairs(preset.zones or {}) do table.insert(VS.PresetWorkingState.zones, z) end
             for k,v in pairs(preset.volumes or {}) do VS.PresetWorkingState.volumes[k] = v end
             for k,v in pairs(preset.ignored or {}) do VS.PresetWorkingState.ignored[k] = v end
+            for k,v in pairs(preset.mutes or {}) do VS.PresetWorkingState.mutes[k] = v end
         end
 
         -- Fill in any missing channels with the current CVar values so the sliders don't default to 100% incorrectly
@@ -681,10 +718,12 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             zones = VS.PresetWorkingState.zones,
             volumes = {},
             ignored = {},
+            mutes = {},
             showInDropdown = VS.PresetWorkingState.showInDropdown
         }
         for k,v in pairs(VS.PresetWorkingState.volumes) do newObj.volumes[k] = v end
         for k,v in pairs(VS.PresetWorkingState.ignored) do newObj.ignored[k] = v end
+        for k,v in pairs(VS.PresetWorkingState.mutes or {}) do newObj.mutes[k] = v end
 
         if currentSelectedIndex then
             table.remove(db.presets, currentSelectedIndex)
@@ -1670,6 +1709,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
     desc:SetJustifyH("LEFT")
     desc:SetWordWrap(true)
 
+
     local function GetMinimapEffects()
         local list = {
             { id = "TOGGLE_WINDOW", name = "Toggle Slider Window" },
@@ -1680,7 +1720,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         }
         if db.presets then
             for i, p in ipairs(db.presets) do
-                table.insert(list, { id = "PRESET_" .. i, name = "Apply Preset: " .. p.name })
+                table.insert(list, { id = "PRESET_" .. i, name = "Toggle Preset: " .. p.name })
             end
         end
         return list
@@ -1910,6 +1950,15 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         divider:SetSize(TOTAL_WIDTH - 20, 1)
         divider:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -5)
 
+        local infoText = section:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        infoText:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", 0, -6)
+        infoText:SetWidth(TOTAL_WIDTH - 40)
+        infoText:SetJustifyH("LEFT")
+        infoText:SetWordWrap(true)
+        infoText:SetTextColor(0.7, 0.7, 0.7)
+        infoText:SetText("Preset hotkeys work as toggles. The first press applies, the second restores your previous values if channels haven't changed. If they have, it re-applies with a fresh snapshot.")
+        section.infoText = infoText
+
         local addBtn = CreateFrame("Button", nil, section, "UIPanelButtonTemplate")
         addBtn:SetSize(150, 22)
         addBtn:SetText("Add Action")
@@ -2064,7 +2113,7 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
         -- Refresh List Section (Minimap)
         local minSec = sections["minimap"]
         local actions = db.mouseActions["minimap"] or {}
-        local rowYOffset = -35
+        local rowYOffset = -65  -- Offset accounts for info text below the header
 
         for _, row in ipairs(minSec.rows) do row:Hide() end
 
@@ -2163,7 +2212,12 @@ function VS:CreateMouseActionsSettingsContents(parentFrame)
             end)
 
             local currentEffects = type(minSec.getEffectsFunc) == "function" and minSec.getEffectsFunc() or minSec.getEffectsFunc
-            row.effectDrop:SetDefaultText(GetEffectName(action.effect, currentEffects))
+            local effectName = GetEffectName(action.effect, currentEffects)
+            row.effectDrop:SetDefaultText(effectName)
+            -- Force-clear the cached selection so the dropdown shows the correct name
+            -- after rows shift due to deletion.
+            if row.effectDrop.selectionText ~= nil then row.effectDrop.selectionText = nil end
+            row.effectDrop:SetText(effectName)
 
             row.delBtn:SetScript("OnClick", function()
                 table.remove(db.mouseActions["minimap"], i)
@@ -2228,8 +2282,17 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     resetBtn:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -15)
     resetBtn:SetText("Reset Position")
 
+    local lockIconCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    lockIconCheck:SetPoint("TOPLEFT", resetBtn, "BOTTOMLEFT", -10, -5)
+    lockIconCheck.text:SetText("Lock Icon Position")
+    lockIconCheck:SetChecked(db.minimapIconLocked ~= false)
+    lockIconCheck:SetScript("OnClick", function(self)
+        db.minimapIconLocked = self:GetChecked()
+    end)
+    AddTooltipLoc(lockIconCheck, "When checked, the minimap icon cannot be dragged. Uncheck to reposition the icon freely.")
+
     local customIconCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
-    customIconCheck:SetPoint("TOPLEFT", resetBtn, "BOTTOMLEFT", -10, -5)
+    customIconCheck:SetPoint("TOPLEFT", lockIconCheck, "BOTTOMLEFT", 0, 5)
     customIconCheck.text:SetText("Use Minimalist Speaker Icon")
     customIconCheck:SetChecked(db.minimalistMinimap)
 

@@ -380,7 +380,8 @@ function VS:CreateMinimalistButton()
     btn:RegisterForDrag("LeftButton")
 
     btn:SetScript("OnDragStart", function(self)
-        if IsShiftKeyDown() then
+        local db = VolumeSlidersMMDB
+        if not db.minimapIconLocked then
             self.isMoving = true
             self:StartMoving()
         end
@@ -423,7 +424,6 @@ function VS:CreateMinimalistButton()
         if VolumeSlidersMMDB and VolumeSlidersMMDB.showMinimapTooltip == false then return end
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         VS.VolumeSlidersObject.OnTooltipShow(GameTooltip)
-        GameTooltip:AddLine("|cff00ff00Shift+Drag|r to move icon")
         GameTooltip:Show()
     end)
 
