@@ -4,6 +4,9 @@
 -- LibDataBroker data object, minimap icon texture helpers, scroll-to-adjust
 -- volume, and external CVar change listener.
 --
+-- Handles the main integration with the minimap, including the standard
+-- LibDBIcon button and the custom "Minimalist" speaker icon.
+--
 -- Author:  Sheldon Michaels
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
@@ -23,18 +26,17 @@ local SetCVar    = SetCVar
 -- Broker Scroll Hook
 --
 -- Third-party LDB display addons (ElvUI data texts, Titan Panel, etc.)
--- create their own frames.  We hook OnMouseWheel on each display frame
--- the moment the user hovers it (via OnTooltipShow) so that scroll-to-
+-- create their own frames.  We selectively hook OnMouseWheel on each display 
+-- frame the moment the user hovers it (via OnTooltipShow) so that scroll-to-
 -- adjust-volume works immediately, without requiring a click first.
---
--- A weak-keyed table tracks which frames have been hooked so we never
--- double-hook, and frames are cleanly garbage-collected if the display
--- addon destroys them.
 -----------------------------------------
-local hookedFrames = setmetatable({}, {__mode = "k"})
 
 local PTT_ACTIVE = false
 
+--- Temporarily switches Voice Chat to Open Mic during button presses.
+-- This prevents the "Push-to-Talk" sound from firing when clicking the
+-- minimap icon, which can be jarring.
+-- @param button string The mouse button clicked.
 function VS:HandlePTT_OnMouseDown(button)
     if button == "LeftButton" and not (IsShiftKeyDown() or IsControlKeyDown() or IsAltKeyDown()) then
         if C_VoiceChat and C_VoiceChat.GetCommunicationMode then
@@ -47,6 +49,8 @@ function VS:HandlePTT_OnMouseDown(button)
     end
 end
 
+--- Restores Voice Chat to Push-to-Talk after the button is released.
+-- @param button string The mouse button released.
 function VS:HandlePTT_OnMouseUp(button)
     if PTT_ACTIVE then
         if C_VoiceChat and C_VoiceChat.SetCommunicationMode then
@@ -56,30 +60,24 @@ function VS:HandlePTT_OnMouseUp(button)
     end
 end
 
-local function HandleBrokerScroll(delta)
-    local mods = ""
-    if IsShiftKeyDown() then mods = mods .. "Shift+" end
-    if IsControlKeyDown() then mods = mods .. "Ctrl+" end
-    if IsAltKeyDown() then mods = mods .. "Alt+" end
-    
-    local modTrigger = mods ~= "" and string.sub(mods, 1, -2) or "None"
-    
-    local db = VolumeSlidersMMDB
-    if not db or not db.minimapScrollBindings then return end
-    
-    local cvar = db.minimapScrollBindings[modTrigger]
-    if not cvar or cvar == "Disabled" then return end
-    
-    VS:AdjustVolume(delta, nil, cvar)
-end
-
-local function HookBrokerScroll(frame)
-    if not frame or hookedFrames[frame] then return end
+-----------------------------------------
+-- HookBrokerScroll
+--
+-- Third-party LDB display addons (ElvUI data texts, Titan Panel, etc.)
+-- create their own frames. We selectively hook OnMouseWheel on each display
+-- frame the moment the user hovers it (via OnTooltipShow) so that scroll-to-
+-- adjust-volume works immediately, without requiring a click first.
+--
+-- @param frame Frame The display frame to hook.
+-----------------------------------------
+function VS:HookBrokerScroll(frame)
+    if not frame or frame.vsMouseWheelHooked then return end
     frame:EnableMouseWheel(true)
     frame:HookScript("OnMouseWheel", function(self, delta)
-        HandleBrokerScroll(delta)
+        local triggerStr = VS:GetActiveTriggerString(nil, delta)
+        VS:ProcessMinimapAction(triggerStr, self, delta)
     end)
-    hookedFrames[frame] = true
+    frame.vsMouseWheelHooked = true
 end
 
 -----------------------------------------
@@ -88,6 +86,9 @@ end
 -- This is the core integration point for minimap icons and data-broker
 -- display addons (e.g., Titan Panel, ChocolateBar).  It defines what
 -- icon to show, what text to display, and how to respond to clicks.
+-- 
+-- V2 SCHEMA REF: `Init.lua` strictly passes `db.minimap` into LibDBIcon 
+-- so the library cannot pollute the global database root with its own settings.
 -----------------------------------------
 VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
     type = "launcher",
@@ -100,7 +101,7 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
     --- Right-click: toggle master mute.
     OnClick = function(clickedFrame, button)
         local triggerStr = VS:GetActiveTriggerString(button)
-        if triggerStr and VS:ProcessMinimapAction(triggerStr, clickedFrame) then
+        if triggerStr and VS:ProcessMinimapAction(triggerStr, clickedFrame, nil) then
             return
         end
 
@@ -127,16 +128,16 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
         -- Siphon the display frame reference on hover so scroll-to-adjust
         -- works immediately, even before the user has clicked anything.
         local frame = tooltip:GetOwner()
-        if frame then HookBrokerScroll(frame) end
+        if frame then VS:HookBrokerScroll(frame) end
 
         local db = VolumeSlidersMMDB
-        if db and db.showMinimapTooltip == false then return end
+        if db and db.toggles.showMinimapTooltip == false then return end
         
         tooltip:AddLine("Volume Sliders", 1, 1, 1)
 
-        if not db.minimapTooltipOrder then return end
+        if not db.minimap.minimapTooltipOrder then return end
         
-        for _, item in ipairs(db.minimapTooltipOrder) do
+        for _, item in ipairs(db.minimap.minimapTooltipOrder) do
             if item.type == "MouseActions" then
                 VS:AppendActionTooltipLines(tooltip, "minimap", {
                     { trigger = "LeftButton", effectName = "Toggle Slider Window" },
@@ -188,8 +189,9 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
 -----------------------------------------
 
 --- Update a texture to reflect the current mute state.
---- Muted:   speaker_off icon, desaturated, tinted red.
---- Unmuted: speaker_on icon, normal colors.
+-- Muted:   speaker_off icon, desaturated, tinted red.
+-- Unmuted: speaker_on icon, normal colors.
+-- @param texture Texture The texture object to update.
 function VS:UpdateVolumeTexture(texture)
     if GetCVar("Sound_EnableAllSound") == "0" then
         VS.VolumeSlidersObject.icon = "Interface\\AddOns\\VolumeSliders\\Media\\speaker_off.png"
@@ -207,7 +209,7 @@ function VS:UpdateVolumeTexture(texture)
 end
 
 --- Locate the minimap button created by LibDBIcon and the custom minimalist button
---- and update their icon textures to reflect the current mute state.
+-- and update their icon textures to reflect the current mute state.
 function VS:UpdateMiniMapVolumeIcon()
     local minimapButton = VS.minimapButton
     if minimapButton and minimapButton.icon then
@@ -223,9 +225,12 @@ function VS:UpdateMiniMapVolumeIcon()
     end
 end
 
------------------------------------------
+-------------------------------------------------------------------------------
 -- Hover Evaluation Helper
------------------------------------------
+--
+-- Handles the "Bind to Minimap" feature where the icon only appears when
+-- hovering near the minimap.
+-------------------------------------------------------------------------------
 local hoverTimer = 0
 local checkInterval = 0.15
 
@@ -244,8 +249,9 @@ local function HoverPolling_OnUpdate(self, elapsed)
     end
 end
 
+--- Starts the polling sequence to check if the mouse is near the minimap.
 function VS:StartHoverPolling()
-    if not VolumeSlidersMMDB.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.bindToMinimap then return end
+    if not VolumeSlidersMMDB.minimap.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.minimap.bindToMinimap then return end
 
     VS.minimalistButton:SetAlpha(1)
     if VS.minimalistButton:GetScript("OnUpdate") ~= HoverPolling_OnUpdate then
@@ -255,8 +261,10 @@ function VS:StartHoverPolling()
     end
 end
 
+--- Checks if the mouse is currently over the Minimap or any of its zoom controls.
+-- @return boolean isOver True if the mouse is within the interactive zone.
 function VS:CheckMinimapHover()
-    if not VolumeSlidersMMDB.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.bindToMinimap then
+    if not VolumeSlidersMMDB.minimap.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.minimap.bindToMinimap then
         if VS.minimalistButton then VS.minimalistButton:SetScript("OnUpdate", nil) end
         return false
     end
@@ -284,9 +292,16 @@ function VS:CheckMinimapHover()
     return isOver
 end
 
------------------------------------------
--- Minimalist Minimap Icon implementation
------------------------------------------
+-------------------------------------------------------------------------------
+-- CreateMinimalistButton
+--
+-- Implementation of the custom "Ghost Frame" speaker icon.
+--
+-- TECHNICAL DESIGN:
+-- We use a plain Frame instead of a Button to hide from third-party minimap
+-- managers (SexyMap, ElvUI) which often strip textures from "Button" children
+-- of the Minimap. We simulate button behavior via OnMouseDown/Up.
+-------------------------------------------------------------------------------
 function VS:CreateMinimalistButton()
     if VS.minimalistButton then return end
 
@@ -296,7 +311,7 @@ function VS:CreateMinimalistButton()
     btn:SetSize(17, 17)
 
     -- Hidden by default until mouseover (if bound)
-    if VolumeSlidersMMDB.bindToMinimap then
+    if VolumeSlidersMMDB.minimap.bindToMinimap then
         btn:SetParent(Minimap)
         btn:SetAlpha(0)
     else
@@ -304,8 +319,8 @@ function VS:CreateMinimalistButton()
         btn:SetAlpha(1)
     end
 
-    local xOffset = VolumeSlidersMMDB.minimalistOffsetX or -35
-    local yOffset = VolumeSlidersMMDB.minimalistOffsetY or -5
+    local xOffset = VolumeSlidersMMDB.minimap.minimalistOffsetX or -35
+    local yOffset = VolumeSlidersMMDB.minimap.minimalistOffsetY or -5
     btn:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", xOffset, yOffset)
 
     btn:SetFrameStrata("MEDIUM")
@@ -349,7 +364,7 @@ function VS:CreateMinimalistButton()
         -- We handle clicks here now since Frames don't have OnClick
         if not self.isMoving and self:IsMouseOver() then
             local triggerStr = VS:GetActiveTriggerString(button)
-            if triggerStr and VS:ProcessMinimapAction(triggerStr, self) then
+            if triggerStr and VS:ProcessMinimapAction(triggerStr, self, nil) then
                 return
             end
 
@@ -381,7 +396,7 @@ function VS:CreateMinimalistButton()
 
     btn:SetScript("OnDragStart", function(self)
         local db = VolumeSlidersMMDB
-        if not db.minimapIconLocked then
+        if not db.minimap.minimapIconLocked then
             self.isMoving = true
             self:StartMoving()
         end
@@ -406,8 +421,8 @@ function VS:CreateMinimalistButton()
             local rawX = (btnRight - mmRight) / btnScale
             local rawY = (btnBottom - mmBottom) / btnScale
 
-            VolumeSlidersMMDB.minimalistOffsetX = rawX
-            VolumeSlidersMMDB.minimalistOffsetY = rawY
+            VolumeSlidersMMDB.minimap.minimalistOffsetX = rawX
+            VolumeSlidersMMDB.minimap.minimalistOffsetY = rawY
 
             -- Re-lock the anchor formally so resizing the screen doesn't skew it
             self:ClearAllPoints()
@@ -415,13 +430,11 @@ function VS:CreateMinimalistButton()
         end
     end)
 
-    btn:SetScript("OnMouseWheel", function(self, delta)
-        HandleBrokerScroll(delta)
-    end)
+    VS:HookBrokerScroll(btn)
 
     btn:SetScript("OnEnter", function(self)
         VS:StartHoverPolling()
-        if VolumeSlidersMMDB and VolumeSlidersMMDB.showMinimapTooltip == false then return end
+        if VolumeSlidersMMDB and VolumeSlidersMMDB.toggles.showMinimapTooltip == false then return end
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         VS.VolumeSlidersObject.OnTooltipShow(GameTooltip)
         GameTooltip:Show()
@@ -436,7 +449,7 @@ function VS:CreateMinimalistButton()
 end
 
 --- Apply hooks to the native Minimap and zoom buttons to trigger the custom
---- hover polling logic. Only applied once per session.
+-- hover polling logic. Only applied once per session.
 function VS:ApplyMinimapHoverHooks()
     if VS.minimapHooksApplied then return end
 
@@ -455,13 +468,13 @@ function VS:ApplyMinimapHoverHooks()
 end
 
 --- Toggle visibility between the Standard LibDBIcon minimap button
---- and the custom Minimalist minimap button.
+-- and the custom Minimalist minimap button.
 function VS:UpdateMiniMapButtonVisibility()
     if not VS.minimalistButton then
         VS:CreateMinimalistButton()
     end
 
-    local isMinimalist = VolumeSlidersMMDB.minimalistMinimap
+    local isMinimalist = VolumeSlidersMMDB.minimap.minimalistMinimap
 
     if isMinimalist then
         if VS.LDBIcon:IsRegistered("Volume Sliders") then
@@ -469,10 +482,10 @@ function VS:UpdateMiniMapButtonVisibility()
         end
 
         -- Store coordinates before parenting reparent scrub
-        local xOffset = VolumeSlidersMMDB.minimalistOffsetX or -35
-        local yOffset = VolumeSlidersMMDB.minimalistOffsetY or -5
+        local xOffset = VolumeSlidersMMDB.minimap.minimalistOffsetX or -35
+        local yOffset = VolumeSlidersMMDB.minimap.minimalistOffsetY or -5
 
-        if VolumeSlidersMMDB.bindToMinimap then
+        if VolumeSlidersMMDB.minimap.bindToMinimap then
             VS.minimalistButton:SetParent(Minimap)
             VS:ApplyMinimapHoverHooks()
             if VS:CheckMinimapHover() then
@@ -502,7 +515,7 @@ function VS:UpdateMiniMapButtonVisibility()
                 ldbBtn:HookScript("OnMouseUp", function(_, btn) VS:HandlePTT_OnMouseUp(btn) end)
                 ldbBtn.vsPTTHooked = true
             end
-            if not VolumeSlidersMMDB.hide then
+            if not VolumeSlidersMMDB.minimap.hide then
                 VS.LDBIcon:Show("Volume Sliders")
             end
         end

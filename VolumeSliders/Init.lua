@@ -27,237 +27,319 @@ local GetCVar   = GetCVar
 -----------------------------------------
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
+
+-------------------------------------------------------------------------------
+-- Structural Merge
+--
+-- Deep-merges missing keys from the VS.DEFAULT_DB blueprint into the active db.
+-- Because V2 introduces layered namespaces, this is recursive to ensure
+-- tables like `db.layout` or `db.appearance` exist even if new keys are added.
+--
+-- @param target table The active user database (VolumeSlidersMMDB).
+-- @param source table The template defaults (VS.DEFAULT_DB).
+-------------------------------------------------------------------------------
+local function MergeTable(target, source)
+    for k, v in pairs(source) do
+        if type(v) == "table" then
+            -- If the source value is an array, we treat it as an atomic list.
+            -- We do not deep-merge arrays to prevent re-inserting deleted items 
+            -- or re-shuffling user-defined orders.
+            if v[1] ~= nil then
+                if target[k] == nil then
+                    target[k] = v -- Copy the entire default array
+                end
+            else
+                -- Source is a dictionary (namespaces like 'layout' or 'appearance')
+                if type(target[k]) ~= "table" then
+                    target[k] = {}
+                end
+                MergeTable(target[k], v)
+            end
+        elseif target[k] == nil then
+            target[k] = v
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
+-- V1 -> V2 Schema Migration Engine
+--
+-- Safely routes legacy flat-hierarchy DB keys (from v1.x-v2.16) into their
+-- precise V2 namespaced tables (`db.appearance`, `db.channels`, etc.).
+-- Operates strictly backwards-compatibly, deleting legacy keys only after routing.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V1_to_V2(db)
+    if db.schemaVersion and db.schemaVersion >= 2 then return end
+
+    db.appearance = db.appearance or {}
+    db.layout = db.layout or {}
+    db.toggles = db.toggles or {}
+    db.channels = db.channels or {}
+    db.minimap = db.minimap or {}
+    db.hardware = db.hardware or {}
+    db.automation = db.automation or {}
+    db.voice = db.voice or {}
+
+    -- 1. Channels
+    local cvarMap = {
+        showMaster = "Sound_MasterVolume",
+        showSFX = "Sound_SFXVolume",
+        showMusic = "Sound_MusicVolume",
+        showAmbience = "Sound_AmbienceVolume",
+        showDialog = "Sound_DialogVolume",
+        showGameplay = "Sound_GameplaySFX",
+        showPings = "Sound_PingVolume",
+        showWarnings = "Sound_EncounterWarningsVolume",
+        showVoiceChat = "Voice_ChatVolume",
+        showVoiceDucking = "Voice_ChatDucking",
+        showMicVolume = "Voice_MicVolume",
+        showMicSensitivity = "Voice_MicSensitivity"
+    }
+    for oldKey, newKey in pairs(cvarMap) do
+        if db[oldKey] ~= nil then
+            db.channels[newKey] = db[oldKey]
+            db[oldKey] = nil
+        end
+    end
+
+    -- 2. Toggles
+    local tNames = { "showTitle", "showValue", "showHigh", "showUpArrow", "showSlider", "showDownArrow", "showLow", "showMute", "showBackground", "showCharacter", "showOutput", "showPresetsDropdown", "showLfgPop", "showZoneTriggers", "showFishingSplash", "showHelpText", "showMinimapTooltip", "showVoiceMode", "persistentWindow", "isLocked" }
+    for _, key in ipairs(tNames) do
+        if db[key] ~= nil then
+            db.toggles[key] = db[key]
+            db[key] = nil
+        end
+    end
+
+    -- 3. Appearance
+    if db.bgColorR ~= nil then
+        db.appearance.bgColor = { r = db.bgColorR or 0.05, g = db.bgColorG or 0.05, b = db.bgColorB or 0.05, a = db.bgColorA or 0.95 }
+        db.bgColorR, db.bgColorG, db.bgColorB, db.bgColorA = nil, nil, nil, nil
+    end
+    local aNames = { "knobStyle", "arrowStyle", "titleColor", "valueColor", "highColor", "lowColor", "windowWidth", "windowHeight" }
+    for _, key in ipairs(aNames) do
+        if db[key] ~= nil then
+            db.appearance[key] = db[key]
+            db[key] = nil
+        end
+    end
+
+    -- 4. Layout
+    if db.sliderOrder then db.layout.sliderOrder = db.sliderOrder; db.sliderOrder = nil end
+    if db.maxFooterCols ~= nil then db.layout.maxFooterCols = db.maxFooterCols; db.maxFooterCols = nil end
+    if db.limitFooterCols ~= nil then db.layout.limitFooterCols = db.limitFooterCols; db.limitFooterCols = nil end
+    if db.customX ~= nil then db.layout.customX = db.customX; db.customX = nil end
+    if db.customY ~= nil then db.layout.customY = db.customY; db.customY = nil end
+
+    -- 5. Minimap
+    local mNames = { "minimapPos", "hide", "minimalistMinimap", "bindToMinimap", "minimalistOffsetX", "minimalistOffsetY", "minimapIconLocked", "minimapTooltipOrder" }
+    for _, key in ipairs(mNames) do
+        if db[key] ~= nil then
+            db.minimap[key] = db[key]
+            db[key] = nil
+        end
+    end
+
+    -- 6. Hardware
+    if db.deviceVolumes then
+        db.hardware.deviceVolumes = db.deviceVolumes
+        db.deviceVolumes = nil
+    end
+
+    -- 7. Automation
+    local autoMap = {
+        enableTriggers = "enableTriggers",
+        enableFishingVolume = "enableFishingVolume",
+        enableLfgVolume = "enableLfgVolume",
+        fishingPresetIndex = "fishingPresetIndex",
+        lfgPresetIndex = "lfgPresetIndex"
+    }
+    for old, new in pairs(autoMap) do
+        if db[old] ~= nil then db.automation[new] = db[old]; db[old] = nil end
+    end
+
+    -- Migrate legacy presets logic cleanly
+    if db.enableFishingMaster ~= nil or db.enableFishingSFX ~= nil or db.fishingTargetMaster ~= nil or db.fishingTargetSFX ~= nil then
+        db.enableFishingMaster, db.enableFishingSFX = nil, nil
+        db.fishingTargetMaster, db.fishingTargetSFX = nil, nil
+    end
+    if db.enableLfgMaster ~= nil or db.enableLfgSFX ~= nil or db.lfgTargetMaster ~= nil or db.lfgTargetSFX ~= nil then
+        db.enableLfgMaster, db.enableLfgSFX = nil, nil
+        db.lfgTargetMaster, db.lfgTargetSFX = nil, nil
+    end
+    if db.triggers then db.triggers = nil end
+    if db.mouseActions and db.mouseActions.preset then db.mouseActions.preset = nil end
+
+    -- 8. Voice Mute States
+    for k, v in pairs(db) do
+        if type(k) == "string" and string.sub(k, 1, 16) == "MuteState_Voice_" then
+            db.voice[k] = v
+        elseif type(k) == "string" and string.sub(k, 1, 15) == "SavedVol_Voice_" then
+            db.voice[k] = v
+        end
+    end
+    
+    local keysToDelete = {}
+    for k, _ in pairs(db) do
+        if type(k) == "string" and (string.sub(k, 1, 10) == "MuteState_" or string.sub(k, 1, 9) == "SavedVol_") then
+            table.insert(keysToDelete, k)
+        end
+    end
+    for _, k in ipairs(keysToDelete) do
+        db[k] = nil
+    end
+
+    -- 9. Purge transient session caches
+    -- V2 SCHEMA REF: These are strictly managed by VS.session now and must vanish
+    -- from the persistent database on login to prevent lingering state corruption.
+    db.originalVolumes = nil
+    db.originalMutes = nil
+    db.layoutDirty = nil
+
+    -- 10. Split mouseActions across valid namespaces
+    if db.mouseActions then
+        if db.mouseActions.sliders or db.mouseActions.scrollWheel then
+            db.layout.mouseActions = {
+                sliders = db.mouseActions.sliders or {},
+                scrollWheel = db.mouseActions.scrollWheel or {}
+            }
+        end
+        if db.mouseActions.minimap then
+            db.minimap.mouseActions = db.mouseActions.minimap or {}
+        end
+        db.mouseActions = nil
+    end
+
+    -- 11. Migrate minimap scroll bindings into unified mouse actions
+    if db.minimapScrollBindings or db.minimap.minimapScrollBindings then
+        local oldBinds = db.minimap.minimapScrollBindings or db.minimapScrollBindings
+        db.minimap.mouseActions = db.minimap.mouseActions or {}
+        for mod, chan in pairs(oldBinds) do
+            if chan and chan ~= "Disabled" then
+                local trig = mod == "None" and "Scroll" or mod .. "+Scroll"
+                local exists = false
+                for _, a in ipairs(db.minimap.mouseActions) do
+                    if a.trigger == trig then exists = true; break end
+                end
+                if not exists then
+                    table.insert(db.minimap.mouseActions, {
+                        trigger = trig,
+                        effect = "SCROLL_VOLUME",
+                        stringTarget = chan,
+                        numStep = 0.05
+                    })
+                end
+            end
+        end
+        db.minimapScrollBindings = nil
+        db.minimap.minimapScrollBindings = nil
+    end
+
+    if db.minimap.mouseActions then
+        for _, action in ipairs(db.minimap.mouseActions) do
+            if type(action.effect) == "string" and string.match(action.effect, "^PRESET_") then
+                local pIdx = string.match(action.effect, "%d+")
+                action.effect = "TOGGLE_PRESET"
+                action.stringTarget = tostring(pIdx)
+            end
+        end
+    end
+
+    -- 12. Purge legacy hardcoded deadweight
+    db.sliderSpacing = nil
+    db.sliderHeight = nil
+
+    -- 13. Update legacy preset ignored channels
+    local presetsToUpdate = db.automation.presets or db.presets
+    if presetsToUpdate then
+        for _, preset in ipairs(presetsToUpdate) do
+            preset.ignored = preset.ignored or {}
+            if type(preset.ignored) == "table" then
+                preset.ignored["Sound_GameplaySFX"] = true
+                preset.ignored["Sound_PingVolume"] = true
+                preset.ignored["Sound_EncounterWarningsVolume"] = true
+            end
+        end
+    end
+
+    -- 14. Nest presets into automation namespace
+    if db.presets then
+        db.automation.presets = db.presets
+        db.presets = nil
+    end
+
+    -- 15. Stamp Schema
+    db.schemaVersion = 2
+end
+
+-------------------------------------------------------------------------------
+-- Main Event Handler (PLAYER_LOGIN)
+--
+-- Orchestrates the addon bootstrap sequence:
+-- 1. Schema Migration: Routes legacy keys to V2 structures.
+-- 2. Default Restoration: Fills in missing keys from the DEFAULT_DB template.
+-- 3. Preset Initialization: Injects a default preset if none exist.
+-- 4. Icon Registration: Registers the LibDBIcon minimap button.
+-- 5. Sub-Module Init: Triggers initialization for Fishing, LFG, and Presets.
+-------------------------------------------------------------------------------
 initFrame:SetScript("OnEvent", function(self, event)
     local db = VolumeSlidersMMDB
 
-    -- Enforce saved variable defaults here, as top-level declarations
-    -- are overwritten by the disk database during ADDON_LOADED.
-    db.minimapPos = db.minimapPos or 180
-    if db.hide == nil then db.hide = false end
-    if db.isLocked == nil then db.isLocked = true end
-    db.knobStyle = db.knobStyle or 1
-    db.arrowStyle = db.arrowStyle or 1
-    db.titleColor = db.titleColor or 1
-    db.valueColor = db.valueColor or 1
-    db.highColor = db.highColor or 2
-    db.lowColor = db.lowColor or 2
-
-    if db.bindToMinimap == nil then db.bindToMinimap = true end
-    if db.minimapIconLocked == nil then db.minimapIconLocked = true end
-    if db.minimalistOffsetX == nil then db.minimalistOffsetX = -35 end
-    if db.minimalistOffsetY == nil then db.minimalistOffsetY = -5 end
-    if db.showTitle == nil then db.showTitle = true end
-    if db.showValue == nil then db.showValue = true end
-    if db.showHigh == nil then db.showHigh = false end
-    if db.showUpArrow == nil then db.showUpArrow = true end
-    if db.showSlider == nil then db.showSlider = true end
-    if db.showDownArrow == nil then db.showDownArrow = true end
-    if db.showLow == nil then db.showLow = false end
-    if db.showMute == nil then db.showMute = true end
-    if db.showWarnings == nil then db.showWarnings = true end
-    if db.showBackground == nil then db.showBackground = true end
-    if db.showCharacter == nil then db.showCharacter = true end
-    if db.showOutput == nil then db.showOutput = true end
-    if db.showPresetsDropdown == nil then db.showPresetsDropdown = true end
-
-    -- Feature Defaults
-    if db.enableFishingVolume == nil then db.enableFishingVolume = false end
-    if db.enableFishingMaster == nil then db.enableFishingMaster = true end
-    if db.enableFishingSFX == nil then db.enableFishingSFX = true end
-    if db.fishingTargetMaster == nil then db.fishingTargetMaster = 1.0 end
-    if db.fishingTargetSFX == nil then db.fishingTargetSFX = 1.0 end
-
-    if db.enableLfgVolume == nil then db.enableLfgVolume = false end
-    if db.enableLfgMaster == nil then db.enableLfgMaster = true end
-    if db.enableLfgSFX == nil then db.enableLfgSFX = true end
-    if db.lfgTargetMaster == nil then db.lfgTargetMaster = 1.0 end
-    if db.lfgTargetSFX == nil then db.lfgTargetSFX = 1.0 end
-
-    -- Channel Visibility Defaults
-    if db.showMaster == nil then db.showMaster = true end
-    if db.showSFX == nil then db.showSFX = true end
-    if db.showMusic == nil then db.showMusic = true end
-    if db.showAmbience == nil then db.showAmbience = false end
-    if db.showDialog == nil then db.showDialog = true end
-    if db.showGameplay == nil then db.showGameplay = false end
-    if db.showPings == nil then db.showPings = false end
-    if db.showVoiceChat == nil then db.showVoiceChat = true end
-    if db.showVoiceDucking == nil then db.showVoiceDucking = false end
-    if db.showMicVolume == nil then db.showMicVolume = false end
-    if db.showMicSensitivity == nil then db.showMicSensitivity = false end
-    if db.showVoiceMode == nil then db.showVoiceMode = true end
-
-    -- Layout Defaults
-    -- Window dimensions are dynamic via resize; nil = use VS.DEFAULT_WINDOW_WIDTH/HEIGHT.
-    -- db.windowWidth and db.windowHeight are set when the user resizes.
-
-    -- Background Color Defaults
-    if db.bgColorR == nil then db.bgColorR = 0.05 end
-    if db.bgColorG == nil then db.bgColorG = 0.05 end
-    if db.bgColorB == nil then db.bgColorB = 0.05 end
-    if db.bgColorA == nil then db.bgColorA = 0.95 end
-
-    -- Persistent Window (click-outside doesn't close)
-    if db.persistentWindow == nil then db.persistentWindow = false end
-
-    -- The layout must unconditionally update at least once upon session startup
-    -- to map all newly instantiated UI frames before they are cached as clean.
-    db.layoutDirty = true
-
-    -- Slider Order Defaults
-    if not db.sliderOrder then
-        db.sliderOrder = {}
-        for _, v in ipairs(VS.DEFAULT_CVAR_ORDER) do
-            table.insert(db.sliderOrder, v)
-        end
-    else
-        -- Ensure dynamically added CVARs to DEFAULT_CVAR_ORDER don't get orphaned from existing databases
-        for _, defaultCvar in ipairs(VS.DEFAULT_CVAR_ORDER) do
-            local found = false
-            for _, existingCvar in ipairs(db.sliderOrder) do
-                if existingCvar == defaultCvar then
-                    found = true
-                    break
-                end
-            end
-            if not found then
-                table.insert(db.sliderOrder, defaultCvar)
+    -- Apply namespaced structural migration if upgrading from V1
+    Migrate_V1_to_V2(db)
+    
+    -- Smart Auto-Detection for Minimalist Minimap Icon
+    -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"
+    -- before the template fills in the gaps.
+    if db.minimap.minimalistMinimap == nil then
+        local useStandardIcon = false
+        local mapAddOns = {"SexyMap", "ElvUI", "Leatrix_Plus", "BasicMinimap", "HidingBar", "MBB"}
+        for _, addonName in ipairs(mapAddOns) do
+            if C_AddOns.IsAddOnLoaded(addonName) then
+                useStandardIcon = true
+                break
             end
         end
+        db.minimap.minimalistMinimap = not useStandardIcon
     end
 
-    -- Trigger to Preset Migration
-    if db.triggers and not db.presets then
-        db.presets = {}
-        for _, trigger in ipairs(db.triggers) do
-            local newPreset = {
-                name = trigger.name,
-                priority = trigger.priority,
-                zones = trigger.zones or {},
-                volumes = trigger.volumes,
-                ignored = trigger.ignored,
-                showInDropdown = true -- Legacy triggers all show in dropdown
-            }
-            table.insert(db.presets, newPreset)
-        end
-        db.triggers = nil -- Unset old table
-    end
+    -- Merge structural defaults safely
+    MergeTable(db, VS.DEFAULT_DB)
 
-    -- Automation Migration: Convert legacy sliders to the new Preset system.
-    -- This handles users who had the old "Fishing Splash Boost" or "LFG Queue Pop Boost"
-    -- enabled, creating appropriate LEGACY presets so their automation still works.
-
-    -- Migration for Fishing
-    if db.enableFishingVolume and not db.fishingPresetIndex and (db.fishingTargetMaster or db.fishingTargetSFX) then
-        db.presets = db.presets or {}
-        local newPreset = {
-            name = "Fishing LEGACY",
-            priority = 2,
-            zones = {},
-            volumes = {
-                ["Sound_MasterVolume"] = db.fishingTargetMaster or 1.0,
-                ["Sound_SFXVolume"] = db.fishingTargetSFX or 1.0,
-                ["Sound_MusicVolume"] = 1.0,
-                ["Sound_AmbienceVolume"] = 1.0,
-                ["Sound_DialogVolume"] = 1.0,
-            },
-            ignored = {
-                ["Sound_MasterVolume"] = not db.enableFishingMaster,
-                ["Sound_SFXVolume"] = not db.enableFishingSFX,
-                ["Sound_MusicVolume"] = true,
-                ["Sound_AmbienceVolume"] = true,
-                ["Sound_DialogVolume"] = true,
-            },
-            showInDropdown = true
-        }
-        table.insert(db.presets, newPreset)
-        db.fishingPresetIndex = #db.presets
-    end
-
-    -- Migration for LFG
-    if db.enableLfgVolume and not db.lfgPresetIndex and (db.lfgTargetMaster or db.lfgTargetSFX) then
-        db.presets = db.presets or {}
-        local newPreset = {
-            name = "LFG LEGACY",
-            priority = 2,
-            zones = {},
-            volumes = {
-                ["Sound_MasterVolume"] = db.lfgTargetMaster or 1.0,
-                ["Sound_SFXVolume"] = db.lfgTargetSFX or 1.0,
-                ["Sound_MusicVolume"] = 1.0,
-                ["Sound_AmbienceVolume"] = 1.0,
-                ["Sound_DialogVolume"] = 1.0,
-            },
-            ignored = {
-                ["Sound_MasterVolume"] = not db.enableLfgMaster,
-                ["Sound_SFXVolume"] = not db.enableLfgSFX,
-                ["Sound_MusicVolume"] = true,
-                ["Sound_AmbienceVolume"] = true,
-                ["Sound_DialogVolume"] = true,
-            },
-            showInDropdown = true
-        }
-        table.insert(db.presets, newPreset)
-        db.lfgPresetIndex = #db.presets
-    end
-
-    -- Mouse Actions Table
-    if not db.mouseActions then
-        db.mouseActions = {
-            minimap = {},
-            sliders = {},
-            scrollWheel = {}
-        }
-    end
-    -- Migrate old "preset" key to "scrollWheel" if present
-    if db.mouseActions.preset then
-        if not db.mouseActions.scrollWheel then
-            db.mouseActions.scrollWheel = {}
-        end
-        db.mouseActions.preset = nil
-    end
-
-    -- Minimap Scroll Bindings (Strict Override)
-    if not db.minimapScrollBindings then
-        db.minimapScrollBindings = {
-            ["None"] = "Sound_MasterVolume",
-            ["Shift"] = "Disabled",
-            ["Ctrl"] = "Disabled",
-            ["Alt"] = "Disabled",
-        }
-    end
-
-    -- Minimap Tooltip Order
-    if not db.minimapTooltipOrder then
-        db.minimapTooltipOrder = {
-            { type = "MouseActions" },
-            { type = "ChannelVolume", channel = "Sound_MasterVolume" },
-        }
-    end
-
-    -- Preset Profile Defaults
-    if not db.presets then
-        db.presets = {
+    -- Preset Default (must be done post-merge if presets array is empty)
+    db.automation.presets = db.automation.presets or {}
+    if #db.automation.presets == 0 then
+        db.automation.presets = {
             {
                 name = "Sunwell Silencer",
                 priority = 5,
                 zones = {"Isle of Quel'Danas"},
-                volumes = {
-                    ["Sound_AmbienceVolume"] = 0
-                },
+                volumes = { ["Sound_AmbienceVolume"] = 0 },
                 ignored = {
                     ["Sound_MasterVolume"] = true,
                     ["Sound_SFXVolume"] = true,
                     ["Sound_MusicVolume"] = true,
-                    ["Sound_DialogVolume"] = true
+                    ["Sound_DialogVolume"] = true,
+                    ["Sound_GameplaySFX"] = true,
+                    ["Sound_PingVolume"] = true,
+                    ["Sound_EncounterWarningsVolume"] = true,
+                    ["Voice_ChatVolume"] = true,
+                    ["Voice_ChatDucking"] = true,
+                    ["Voice_MicVolume"] = true,
+                    ["Voice_MicSensitivity"] = true
                 },
+                mutes = {},
                 showInDropdown = true
             }
         }
     end
 
     -- Register the minimap icon via LibDBIcon.
-    VS.LDBIcon:Register("Volume Sliders", VS.VolumeSlidersObject, db)
+    -- V2 SCHEMA REF: We strictly pass db.minimap rather than the global db table.
+    -- This securely restricts LibDBIcon from independently polluting our database root.
+    VS.LDBIcon:Register("Volume Sliders", VS.VolumeSlidersObject, db.minimap)
 
     -- LibDBIcon names the minimap button "LibDBIcon10_<name>".
     local minimapButton = _G["LibDBIcon10_Volume Sliders"]
@@ -266,14 +348,8 @@ initFrame:SetScript("OnEvent", function(self, event)
         minimapButton:EnableMouse(true)
         minimapButton:RegisterForClicks("AnyUp")
 
-        -- Scroll on the minimap icon to adjust master volume.
-        minimapButton:SetScript("OnMouseWheel", function(self, delta)
-            local triggerStr = VS:GetActiveTriggerString(nil, delta)
-            if triggerStr and VS:ProcessMinimapAction(triggerStr, self) then
-                return
-            end
-            VS:AdjustVolume(delta)
-        end)
+        -- Scroll on the minimap icon to adjust volume.
+        VS:HookBrokerScroll(minimapButton)
 
         -- LibDBIcon intercepts OnClick. To enforce our toggle logic we pre-hook it or handle it in OnMouseUp
         -- After any click on the minimap button, refresh the icon texture
@@ -294,22 +370,6 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- Update the minimap icon to the correct mute state and pre-create the
     -- options frame so it's ready for instant display.
     VS:InitializeSettings()
-
-    -- Smart Auto-Detection for Minimalist Minimap Icon
-    if db.minimalistMinimap == nil then
-        local useStandardIcon = false
-        local mapAddOns = {"SexyMap", "ElvUI", "Leatrix_Plus", "BasicMinimap", "HidingBar", "MBB"}
-        for _, addonName in ipairs(mapAddOns) do
-            if C_AddOns.IsAddOnLoaded(addonName) then
-                useStandardIcon = true
-                break
-            end
-        end
-
-        -- If a minimap manager is found, default to standard ringed icon.
-        -- Otherwise default to the new Minimalist aesthetic.
-        db.minimalistMinimap = not useStandardIcon
-    end
 
     if VS.Presets and VS.Presets.RefreshEventState then
         VS.Presets:RefreshEventState()
@@ -339,11 +399,15 @@ end)
 
 --- Global click handler for the Addon Compartment entry.
 --- Toggles the slider panel visibility.
+--- @param _addonName string Ignored.
+--- @param menuButtonFrame Frame The frame that was clicked in the compartment.
 function VolumeSliders_OnAddonCompartmentClick(_addonName, menuButtonFrame)
     VolumeSliders_ToggleWindow()
 end
 
 --- Global handlers for Bindings.xml
+--- Global toggler for the main slider window.
+-- Pre-creates the frame if it does not exist yet.
 function VolumeSliders_ToggleWindow()
     if not VS.container then
         VS:CreateOptionsFrame()

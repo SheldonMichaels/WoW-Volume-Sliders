@@ -2,9 +2,12 @@
 -- Fishing.lua
 --
 -- Logic for the fishing volume override feature. Detects when the player
--- channels a fishing cast and temporarily boosts the SFX volume channel,
--- safely restoring it when the cast ends or is interrupted. Includes
--- aggressive combat checks to ensure zero interference during combat.
+-- channels a fishing cast and toggles the "fishing" automation state.
+--
+-- DESIGN:
+-- Instead of manual CVar manipulation, this module acts as a state trigger
+-- for the central Presets engine. This allows users to associate any
+-- multi-channel preset with fishing, rather than just a simple SFX boost.
 --
 -- Author: Sheldon Michaels
 -- License: All Rights Reserved (Non-commercial use permitted)
@@ -44,6 +47,9 @@ local FISHING_SPELL_IDS = {
     -- The API often provides spell info on cast, so checking names/IDs is dynamic
 }
 
+--- Retrieves the localized name of a spell from ID, with cross-version safety.
+-- @param spellID number The numeric spell ID.
+-- @return string? The localized name of the spell, or nil if not found.
 local function GetSafeSpellName(spellID)
     if C_Spell and C_Spell.GetSpellInfo then
         local info = C_Spell.GetSpellInfo(spellID)
@@ -58,24 +64,23 @@ end
 -- Logic Implementation
 -------------------------------------------------------------------------------
 
+--- Signals the Preset engine to deactivate the fishing automation state.
 local function RestoreVolume()
     if not isVolumeOverridden then return end
     isVolumeOverridden = false
-    -- Instead of manual CVar manipulation, we now just signal the Preset logic
-    -- to deactivate the fishing state and re-evaluate active presets.
     VS.Presets:SetStateActive("fishing", false)
 end
 
+--- Signals the Preset engine to activate the fishing automation state.
 local function ApplyFishingVolume()
     if isVolumeOverridden then return end
     isVolumeOverridden = true
-    -- Signal the Preset logic to apply the user's selected fishing preset.
     VS.Presets:SetStateActive("fishing", true)
 end
 
 local function OnEvent(self, event, ...)
     local db = VolumeSlidersMMDB
-    if not db.enableFishingVolume then return end
+    if not db.automation.enableFishingVolume then return end
     
     if event == "PLAYER_REGEN_DISABLED" then
         -- Combat started, aggressively cancel feature
@@ -121,14 +126,16 @@ fishingFrame:SetScript("OnEvent", OnEvent)
 -- Public API
 -------------------------------------------------------------------------------
 
---- Initializes or tears down the Fishing module based on user settings
+--- Initializes or tears down the Fishing module based on user settings.
+-- Registers for spellcasting and combat events when enabled.
 function VS.Fishing:Initialize()
     local db = VolumeSlidersMMDB
     
     -- Ensure tracked state exists
-    db.originalVolumes = db.originalVolumes or {}
+    VS.session = VS.session or {}
+    VS.session.originalVolumes = VS.session.originalVolumes or {}
     
-    if db.enableFishingVolume then
+    if db.automation.enableFishingVolume then
         fishingFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")
         fishingFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_STOP")
         fishingFrame:RegisterEvent("PLAYER_REGEN_DISABLED")

@@ -1,3 +1,21 @@
+## v3.0.0 — 2026-03-30
+
+### SPECIAL NOTE
+Running this version will migrate your existing settings to the new database schema. Please back up your settings before running this version. Once migrated your settings will not be backwards compatible with older versions of the addon.
+
+Location of the addon's saved settings files:
+- `World of Warcraft\_retail_\WTF\Account\<ACCOUNT_NAME>\SavedVariables\VolumeSliders.lua`
+- `World of Warcraft\_retail_\WTF\Account\<ACCOUNT_NAME>\SavedVariables\VolumeSliders.lua.bak`
+
+### Added
+- **V2 Database Schema Overhaul**: Migrated the monolithic flat-key registry into isolated, modular tables (`appearance`, `channels`, `toggles`, `minimap`, `layout`, `hardware`, `automation`, `voice`). This provides optimized data parsing and structured state management for future expansion.
+- **Preset Automation Refinement**: Integrated a mandatory bypass for legacy user presets that ensures newly added sound channels (Gameplay, Pings, Warnings) are automatically marked as "ignored" on first login, preventing unintended adjustment of newly added channels in the preset configuration.
+- **Persistent Manual Toggles**: Toggling a preset via the main window dropdown or minimap hotkeys now persists across sessions and UI reloads, ensuring your manual override remains active as intended.
+- **Minimap Mouse Consolidation**: Unified all minimap mouse behavior (Scroll Wheel, Middle-Click, etc.) into a single section in the settings UI under "Mouse Actions".
+
+### Fixed
+- **Redundant UI Overhead**: Eliminated duplicate refresh calls in the appearance layout logic that could cause layout flickering on slow systems.
+
 ## v2.16.0 — 2026-03-28
 
 ### Added

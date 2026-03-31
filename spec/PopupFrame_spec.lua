@@ -8,11 +8,14 @@ describe("PopupFrame behavioral tests", function()
 
     before_each(function()
         _G.VolumeSlidersMMDB = {
-            persistentWindow = false,
-            bgColorR = 0.05,
-            bgColorG = 0.05,
-            bgColorB = 0.05,
-            bgColorA = 0.95,
+            schemaVersion = 2,
+            toggles = {
+                persistentWindow = false,
+            },
+            appearance = {
+                bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 }
+            },
+            channels = {}, layout = {}, voice = {}, minimap = {}, automation = {}, hardware = {}
         }
         
         local addonName = "VolumeSliders"
@@ -43,7 +46,7 @@ describe("PopupFrame behavioral tests", function()
     end)
 
     it("should close on outside click when persistentWindow is false", function()
-        _G.VolumeSlidersMMDB.persistentWindow = false
+        _G.VolumeSlidersMMDB.toggles.persistentWindow = false
         VS.container:Show()
         assert.is_true(VS.container:IsShown())
 
@@ -60,7 +63,7 @@ describe("PopupFrame behavioral tests", function()
     end)
 
     it("should stay open on outside click when persistentWindow is true", function()
-        _G.VolumeSlidersMMDB.persistentWindow = true
+        _G.VolumeSlidersMMDB.toggles.persistentWindow = true
         VS.container:Show()
         
         local handler = VS.container:GetScript("OnEvent")
@@ -77,7 +80,7 @@ describe("PopupFrame behavioral tests", function()
         -- Mocking the logic from Appearance.lua because we are testing PopupFrame's integration
         VS.ApplyWindowBackground = function(self)
             local db = _G.VolumeSlidersMMDB
-            self.windowBg:SetColorTexture(db.bgColorR, db.bgColorG, db.bgColorB, db.bgColorA)
+            self.windowBg:SetColorTexture(db.appearance.bgColor.r, db.appearance.bgColor.g, db.appearance.bgColor.b, db.appearance.bgColor.a)
         end
         
         VS:ApplyWindowBackground()

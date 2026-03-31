@@ -2,7 +2,7 @@
 ## Title: Volume Sliders
 ## Notes: Volume sliders for all sound channels
 ## Author: Sheldon Michaels
-## Version: v2.16.0
+## Version: v3.0.0
 ## SavedVariables: VolumeSlidersMMDB
 ## SavedVariablesPerCharacter:
 ## OptionalDeps:
@@ -12,16 +12,35 @@
 ## X-Website: https://www.curseforge.com/wow/addons/volume-sliders
 ## X-Curse-Project-ID: 1467553
 
+# -- Library Embedding --
 embeds.xml
+
+# -- UI Templates & Frames --
 VolumeSliders.xml
 
+# -- Core Logic & Constants --
 Core.lua
+
+# -- UI Components & Mixins --
 SliderWidgets.lua
+
+# -- Automation & Presets --
 Presets.lua
 Fishing.lua
 LFGQueue.lua
+
+# -- Layout & Styling --
 Appearance.lua
+
+# -- Settings & Configuration --
 Settings.lua
+
+# -- Main UI Construction --
 PopupFrame.lua
+
+# -- Minimap & LDB Integration --
 MinimapBroker.lua
+
+# -- Entry Point & Bootstrap --
+# Init.lua MUST be last to ensure all modules are registered in the VS table.
 Init.lua

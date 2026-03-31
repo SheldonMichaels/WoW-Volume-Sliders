@@ -8,7 +8,7 @@ describe("Performance & Event Overhead", function()
 
     before_each(function()
         VS = {}
-        _G.VolumeSlidersMMDB = { bindToMinimap = true, minimalistMinimap = true }
+        _G.VolumeSlidersMMDB = { schemaVersion=2, minimap = { bindToMinimap = true, minimalistMinimap = true }, toggles={}, channels={}, layout={}, voice={}, appearance={}, hardware={}, automation={} }
         
         local f1 = assert(loadfile("VolumeSliders/Core.lua"))
         f1("VolumeSliders", VS)

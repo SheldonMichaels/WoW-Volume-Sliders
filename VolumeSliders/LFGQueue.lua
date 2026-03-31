@@ -2,9 +2,13 @@
 -- LFGQueue.lua
 --
 -- Logic for the LFG Queue volume override feature. Detects when the player
--- gets a queue pop (LFG_PROPOSAL_SHOW) and applies user-defined Master/SFX
--- volume targets. Safely restores the volumes when the proposal concludes.
--- Listens to LFG_UPDATE to intelligently unregister proposal events when not queued.
+-- gets a queue pop (LFG_PROPOSAL_SHOW) and toggles the "lfg" automation state.
+--
+-- DESIGN:
+-- This module uses a hybrid approach:
+-- 1. Event Listeners: Tracks the LFG proposal lifecycle (Show, Done, Failed).
+-- 2. Secure Hooks: Hooks PlaySound to apply the volume boost at the exact
+--    nanosecond the "Dungeon Ready" sound is requested by the game.
 --
 -- Author: Sheldon Michaels
 -- License: All Rights Reserved (Non-commercial use permitted)
@@ -37,6 +41,8 @@ local isVolumeOverridden = false
 -- Logic Implementation
 -------------------------------------------------------------------------------
 
+--- Determines if the player is currently queued for any LFG activity.
+-- @return boolean True if queued or if a proposal is actively popping.
 local function IsPlayerQueued()
     -- Check if a proposal is active (popping)
     if GetLFGProposal and GetLFGProposal() then
@@ -54,17 +60,17 @@ local function IsPlayerQueued()
     return false
 end
 
+--- Signals the Preset engine to deactivate the LFG automation state.
 local function RestoreVolumes()
     if not isVolumeOverridden then return end
     isVolumeOverridden = false
-    -- Signal the Preset logic to deactivate the LFG state.
     VS.Presets:SetStateActive("lfg", false)
 end
 
+--- Signals the Preset engine to activate the LFG automation state.
 local function ApplyLFGVolumes()
     if isVolumeOverridden then return end
     isVolumeOverridden = true
-    -- Signal the Preset logic to apply the user's selected LFG preset.
     VS.Presets:SetStateActive("lfg", true)
 end
 
@@ -84,7 +90,7 @@ end
 
 local function OnEvent(self, event, ...)
     local db = VolumeSlidersMMDB
-    if not db.enableLfgVolume then return end
+    if not db.automation.enableLfgVolume then return end
 
     if event == "LFG_UPDATE" then
         if IsPlayerQueued() then
@@ -115,7 +121,7 @@ hooksecurefunc("PlaySound", function(soundID)
     local ok, isLfgPop = pcall(function() return soundID == SOUNDKIT.READY_CHECK end)
     if not ok or not isLfgPop then return end
 
-    if VolumeSlidersMMDB.enableLfgVolume then
+    if VolumeSlidersMMDB.automation.enableLfgVolume then
         -- Only boost if we have an active queue proposal specifically popping.
         -- Do not use IsPlayerQueued() here, as that returns true while merely waiting
         -- in the queue, which would accidentally boost party /readycheck sounds.
@@ -138,14 +144,16 @@ lfgFrame:SetScript("OnEvent", OnEvent)
 -- Public API
 -------------------------------------------------------------------------------
 
---- Initializes or tears down the LFGQueue module based on user settings
+--- Initializes or tears down the LFGQueue module based on user settings.
+-- Registers for LFG updates and proposals when enabled.
 function VS.LFGQueue:Initialize()
     local db = VolumeSlidersMMDB
 
     -- Ensure tracked state exists
-    db.originalVolumes = db.originalVolumes or {}
+    VS.session = VS.session or {}
+    VS.session.originalVolumes = VS.session.originalVolumes or {}
 
-    if db.enableLfgVolume then
+    if db.automation.enableLfgVolume then
         lfgFrame:RegisterEvent("LFG_UPDATE")
 
         -- Check initial state in case they enable it while already queued

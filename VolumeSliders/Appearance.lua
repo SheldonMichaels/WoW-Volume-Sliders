@@ -24,16 +24,22 @@ local ipairs     = ipairs
 -- UpdateSliderLayout
 --
 -- Dynamically re-anchors a slider's sub-elements (labels, arrows, mute
--- checkbox) based on the current visibility settings.  Each element is
--- stacked upward (above the track) or downward (below the track) with
--- conditional padding.
+-- checkbox) based on the current visibility settings (`db.toggles`).
+--
+-- ALGORITHM: Building Upwards/Downwards
+-- To support arbitrary combinations of hidden elements without leaving gaps,
+-- this function treats the slider track as the core anchor. It then "stacks"
+-- enabled elements starting from the track and moving outwards. Each element
+-- anchors its "closest" side to the "furthest" side of the previous element.
+--
+-- @param slider Slider The slider widget to re-layout.
 -------------------------------------------------------------------------------
 function VS:UpdateSliderLayout(slider)
-    local db = VolumeSlidersMMDB
+    local tgs = VolumeSlidersMMDB.toggles
 
     -- Show/hide track textures
     local trackH = VS.currentTrackHeight or 160
-    if db.showSlider then
+    if tgs.showSlider then
         slider:SetHeight(trackH)
         slider:EnableMouse(true)
         slider.trackTop:SetAlpha(1)
@@ -50,15 +56,15 @@ function VS:UpdateSliderLayout(slider)
     end
 
     -- Toggle visibility flags
-    if slider.label then slider.label:SetShown(db.showTitle) end
-    if slider.valueText then slider.valueText:SetShown(db.showValue) end
-    if slider.highLabel then slider.highLabel:SetShown(db.showHigh) end
-    if slider.upBtn then slider.upBtn:SetShown(db.showUpArrow) end
+    if slider.label then slider.label:SetShown(tgs.showTitle) end
+    if slider.valueText then slider.valueText:SetShown(tgs.showValue) end
+    if slider.highLabel then slider.highLabel:SetShown(tgs.showHigh) end
+    if slider.upBtn then slider.upBtn:SetShown(tgs.showUpArrow) end
 
-    if slider.downBtn then slider.downBtn:SetShown(db.showDownArrow) end
-    if slider.lowLabel then slider.lowLabel:SetShown(db.showLow) end
-    if slider.muteCheck then slider.muteCheck:SetShown(db.showMute) end
-    if slider.muteCheck and slider.muteCheck.muteLabel then slider.muteCheck.muteLabel:SetShown(db.showMute) end
+    if slider.downBtn then slider.downBtn:SetShown(tgs.showDownArrow) end
+    if slider.lowLabel then slider.lowLabel:SetShown(tgs.showLow) end
+    if slider.muteCheck then slider.muteCheck:SetShown(tgs.showMute) end
+    if slider.muteCheck and slider.muteCheck.muteLabel then slider.muteCheck.muteLabel:SetShown(tgs.showMute) end
 
     -- Top Half Anchoring (Building Upwards)
     local prevTop = slider
@@ -71,18 +77,18 @@ function VS:UpdateSliderLayout(slider)
         prevTopPoint = overrideTop or "TOP"
     end
 
-    if db.showUpArrow and slider.upBtn then
+    if tgs.showUpArrow and slider.upBtn then
         AnchorTop(slider.upBtn, 4)
     end
-    if db.showHigh and slider.highLabel then
+    if tgs.showHigh and slider.highLabel then
         local pad = 4
-        if not db.showUpArrow and db.showSlider then pad = 8 end
+        if not tgs.showUpArrow and tgs.showSlider then pad = 8 end
         AnchorTop(slider.highLabel, pad)
     end
-    if db.showValue and slider.valueText then
+    if tgs.showValue and slider.valueText then
         AnchorTop(slider.valueText, 10)
     end
-    if db.showTitle and slider.label then
+    if tgs.showTitle and slider.label then
         AnchorTop(slider.label, 4)
     end
 
@@ -97,15 +103,15 @@ function VS:UpdateSliderLayout(slider)
         prevBottomPoint = overrideBottom or "BOTTOM"
     end
 
-    if db.showDownArrow and slider.downBtn then
+    if tgs.showDownArrow and slider.downBtn then
         AnchorBottom(slider.downBtn, 4)
     end
-    if db.showLow and slider.lowLabel then
+    if tgs.showLow and slider.lowLabel then
         local pad = 4
-        if not db.showDownArrow and db.showSlider then pad = 8 end
+        if not tgs.showDownArrow and tgs.showSlider then pad = 8 end
         AnchorBottom(slider.lowLabel, pad)
     end
-    if db.showMute and slider.muteCheck then
+    if tgs.showMute and slider.muteCheck then
         AnchorBottom(slider.muteCheck, 8)
 
         -- Re-link Mute text below the checkbox
@@ -120,29 +126,35 @@ end
 -- GetSliderHeightExtent
 --
 -- Calculates the vertical pixels required above and below a slider track
--- based on the currently visible components.
+-- based on the currently visible components. Used during UpdateAppearance
+-- to compute dynamic track height and minimum window resize bounds.
+--
+-- @param trackH number The track height to include in the calculation.
+-- @return number hTop Vertical height above the track.
+-- @return number hBottom Vertical height below the track.
+-- @return number hTrack The track height itself (conditional on toggle).
 -------------------------------------------------------------------------------
 function VS:GetSliderHeightExtent(trackH)
-    local db = VolumeSlidersMMDB
+    local tgs = VolumeSlidersMMDB.toggles
     local hTop = 0
     local hBottom = 0
 
-    if db.showUpArrow then hTop = hTop + 20 + 4 end
-    if db.showHigh then
-        local pad = db.showUpArrow and 4 or (db.showSlider and 8 or 0)
+    if tgs.showUpArrow then hTop = hTop + 20 + 4 end
+    if tgs.showHigh then
+        local pad = tgs.showUpArrow and 4 or (tgs.showSlider and 8 or 0)
         hTop = hTop + 15 + pad
     end
-    if db.showValue then hTop = hTop + 15 + 10 end
-    if db.showTitle then hTop = hTop + 15 + 4 end
+    if tgs.showValue then hTop = hTop + 15 + 10 end
+    if tgs.showTitle then hTop = hTop + 15 + 4 end
 
-    if db.showDownArrow then hBottom = hBottom + 20 + 4 end
-    if db.showLow then
-        local pad = db.showDownArrow and 4 or (db.showSlider and 8 or 0)
+    if tgs.showDownArrow then hBottom = hBottom + 20 + 4 end
+    if tgs.showLow then
+        local pad = tgs.showDownArrow and 4 or (tgs.showSlider and 8 or 0)
         hBottom = hBottom + 15 + pad
     end
-    if db.showMute then hBottom = hBottom + 26 + 8 + 15 + 2 end -- Check (26) + Pad (8) + Label (15) + Gap (2)
+    if tgs.showMute then hBottom = hBottom + 26 + 8 + 15 + 2 end -- Check (26) + Pad (8) + Label (15) + Gap (2)
 
-    local hTrack = db.showSlider and (trackH or 160) or 0
+    local hTrack = tgs.showSlider and (trackH or 160) or 0
     return hTop, hBottom, hTrack
 end
 
@@ -151,6 +163,14 @@ end
 --
 -- Applies the selected knob, arrow, and text color styles to an individual
 -- slider widget, then updates its dynamic anchoring layout.
+--
+-- @param slider Slider The widget to style.
+-- @param knobSelected number 1 (Diamond) or 2 (Standard).
+-- @param arrowSelected number 1-4 (Styles).
+-- @param titleSelected number Color index.
+-- @param valueSelected number Color index.
+-- @param highSelected number Color index.
+-- @param lowSelected number Color index.
 -------------------------------------------------------------------------------
 function VS:ApplySliderAppearance(slider, knobSelected, arrowSelected, titleSelected, valueSelected, highSelected, lowSelected)
     -- Update Knob
@@ -242,7 +262,15 @@ end
 -- UpdateFooterLayout
 --
 -- Positions the footer controls side-by-side. Elements wrap dynamically
--- and flow based on the custom user ordering defined in db.footerOrder.
+-- and flow based on the custom user ordering defined in `db.layout.footerOrder`.
+--
+-- DESIGN PATTERN: Flex Grid
+-- 1. Establishing State: Hides all widgets and establishes available width.
+-- 2. Linearity: Maps enabled widgets to a flat list with computed widths.
+-- 3. Row Processing: Iterates through the list, filling rows until the next
+--    item would exceed the container width or the per-row column limit.
+-- 4. Centering: Re-iterates the final row list to apply alignment logic
+--    (centering or justified spacing) based on item count per row.
 -------------------------------------------------------------------------------
 function VS:UpdateFooterLayout()
     if not VS.container then return end
@@ -274,12 +302,12 @@ function VS:UpdateFooterLayout()
     end
 
     local availableWidth = VS.container:GetWidth() - (VS.TEMPLATE_CONTENT_OFFSET_LEFT + VS.TEMPLATE_CONTENT_OFFSET_RIGHT) - (VS.CONTENT_PADDING_X * 2)
-    local footerOrder = db.footerOrder or VS.DEFAULT_FOOTER_ORDER
+    local footerOrder = db.layout.footerOrder or VS.DEFAULT_FOOTER_ORDER
 
     local activeWidgets = {}
 
     for _, key in ipairs(footerOrder) do
-        if db[key] then
+        if db.toggles[key] then
             local data = widgetMap[key]
             if data and data.frame then
                 data.frame:Show()
@@ -302,8 +330,8 @@ function VS:UpdateFooterLayout()
     local currentWidth = 0
     local spacingX = 5
 
-    local limitCols = db.limitFooterCols
-    local maxCols = db.maxFooterCols or 3
+    local limitCols = db.layout.limitFooterCols
+    local maxCols = db.layout.maxFooterCols or 3
 
     for _, item in ipairs(activeWidgets) do
         if #currentRow == 0 then
@@ -385,21 +413,27 @@ end
 -------------------------------------------------------------------------------
 -- UpdateAppearance
 --
--- Retrieves stored options state and updates the appearances of all
--- active slider UI elements in bulk.  Also dynamically resizes the main
--- popup frame based on visible slider count and layout configuration.
+-- Retrieves stored options state (`db.appearance`) and updates the
+-- appearances of all active slider UI elements in bulk.
+--
+-- DESIGN PATTERN: Lazy Dirty-Flag Layout (Performance Optimization)
+-- Re-calculating full window geometry (anchors, offsets, track heights) is
+-- expensive. To ensure smooth interaction (e.g. during slider dragging), this
+-- function only performs expensive geometry recalculations if `layoutDirty` is
+-- flagged (triggered by settings changes or window resizes). Sub-element
+-- appearance (colors/atlases) is always applied.
 -------------------------------------------------------------------------------
 function VS:UpdateAppearance()
     local db = VolumeSlidersMMDB
-    local knobSelected  = db.knobStyle or 1
-    local arrowSelected = db.arrowStyle or 1
-    local titleSelected = db.titleColor or 1
-    local valueSelected = db.valueColor or 1
-    local highSelected  = db.highColor or 2
-    local lowSelected   = db.lowColor or 2
+    local knobSelected  = db.appearance.knobStyle or 1
+    local arrowSelected = db.appearance.arrowStyle or 1
+    local titleSelected = db.appearance.titleColor or 1
+    local valueSelected = db.appearance.valueColor or 1
+    local highSelected  = db.appearance.highColor or 2
+    local lowSelected   = db.appearance.lowColor or 2
 
     -- Dynamically resize the main popup frame if it exists
-    if VS.container and db.layoutDirty then
+    if VS.container and VS.session.layoutDirty then
 
         local containerW = VS.container:GetWidth()
         local containerH = VS.container:GetHeight()
@@ -410,10 +444,9 @@ function VS:UpdateAppearance()
 
         -- Count visible sliders
         local numSliders = 0
-        local cvarOrder = db.sliderOrder or VS.DEFAULT_CVAR_ORDER
+        local cvarOrder = db.layout.sliderOrder or VS.DEFAULT_CVAR_ORDER
         for _, cvar in ipairs(cvarOrder) do
-            local var = VS.CVAR_TO_VAR[cvar]
-            if var and db[var] then
+            if db.channels[cvar] then
                 numSliders = numSliders + 1
             end
         end
@@ -423,7 +456,7 @@ function VS:UpdateAppearance()
         local usableW = contentW - (VS.SLIDER_PADDING_X * 2)
         local dynamicSpacing
         -- Pick the appropriate spacing floor based on title visibility
-        local minSpacing = db.showTitle and VS.MIN_SLIDER_SPACING_TITLED or VS.MIN_SLIDER_SPACING_UNTITLED
+        local minSpacing = db.toggles.showTitle and VS.MIN_SLIDER_SPACING_TITLED or VS.MIN_SLIDER_SPACING_UNTITLED
 
         if numSliders > 1 then
             dynamicSpacing = (usableW - numSliders * VS.SLIDER_COLUMN_WIDTH) / (numSliders - 1)
@@ -434,24 +467,24 @@ function VS:UpdateAppearance()
 
         -- Header height: instruction text + presets dropdown
         if VS.instructionText then
-            VS.instructionText:SetShown(db.showHelpText ~= false)
+            VS.instructionText:SetShown(db.toggles.showHelpText ~= false)
         end
         local headerHeight = VS.CONTENT_PADDING_TOP
-        if db.showHelpText ~= false and VS.instructionText then
+        if db.toggles.showHelpText ~= false and VS.instructionText then
             headerHeight = headerHeight + VS.instructionText:GetStringHeight() + 10
         else
             headerHeight = headerHeight + 5
         end
 
         if VS.presetDropdown then
-            VS.presetDropdown:SetShown(db.showPresetsDropdown ~= false)
+            VS.presetDropdown:SetShown(db.toggles.showPresetsDropdown ~= false)
             VS.presetDropdown:ClearAllPoints()
-            if db.showHelpText ~= false and VS.instructionText then
+            if db.toggles.showHelpText ~= false and VS.instructionText then
                 VS.presetDropdown:SetPoint("TOP", VS.instructionText, "BOTTOM", 0, -10)
             else
                 VS.presetDropdown:SetPoint("TOP", VS.contentFrame, "TOP", 0, -VS.CONTENT_PADDING_TOP)
             end
-            if db.showPresetsDropdown ~= false then
+            if db.toggles.showPresetsDropdown ~= false then
                 headerHeight = headerHeight + 35
             end
         end
@@ -505,9 +538,8 @@ function VS:UpdateAppearance()
             local k = 0
             for _, cvar in ipairs(cvarOrder) do
                 local slider = VS.sliders[cvar]
-                local var = VS.CVAR_TO_VAR[cvar]
-                if slider and var then
-                    if not db[var] then
+                if slider then
+                    if not db.channels[cvar] then
                         slider:Hide()
                     else
                         slider:Show()
@@ -543,26 +575,24 @@ function VS:UpdateAppearance()
 
     -- Only flag the layout as clean if we actually populated sliders this pass
     if VS.sliders and next(VS.sliders) ~= nil then
-        VolumeSlidersMMDB.layoutDirty = false
+        VS.session.layoutDirty = false
     end
 end
 
 -------------------------------------------------------------------------------
+--- Flag the layout as needing a full recalculation.
+-- If the container is currently visible, it triggers an immediate update.
 function VS:FlagLayoutDirty()
-    VolumeSlidersMMDB.layoutDirty = true
+    VS.session.layoutDirty = true
     if VS.container and VS.container:IsShown() then
         VS:UpdateAppearance()
     end
 end
 
--------------------------------------------------------------------------------
--- ApplyWindowBackground
---
--- Updates the main popup window background color from saved variables.
--------------------------------------------------------------------------------
+--- Updates the main popup window background color from saved variables.
 function VS:ApplyWindowBackground()
     if VS.windowBg then
-        local db = VolumeSlidersMMDB
-        VS.windowBg:SetColorTexture(db.bgColorR or 0.05, db.bgColorG or 0.05, db.bgColorB or 0.05, db.bgColorA or 0.95)
+        local bg = VolumeSlidersMMDB.appearance.bgColor
+        VS.windowBg:SetColorTexture(bg.r, bg.g, bg.b, bg.a)
     end
 end

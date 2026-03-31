@@ -9,9 +9,13 @@ describe("Presets tests", function()
     before_each(function()
         -- Reset state
         _G.VolumeSlidersMMDB = {
-            enableTriggers = true,
-            originalVolumes = {},
-            presets = {}
+            schemaVersion = 2,
+            automation = {
+                enableTriggers = true,
+                presets = {},
+                manualToggleState = {}
+            },
+            toggles = {}, channels = {}, layout = {}, voice = {}, minimap = {}, appearance = {}, hardware = {}
         }
         
         -- Mock GetRealZoneText using mutable references
@@ -49,14 +53,14 @@ describe("Presets tests", function()
     end)
 
     it("does nothing returning instantly if triggers are disabled", function()
-        _G.VolumeSlidersMMDB.enableTriggers = false
+        _G.VolumeSlidersMMDB.automation.enableTriggers = false
         VS.Presets:RefreshEventState()
         
         assert.spy(_G.setCvarSpy).was_not_called()
     end)
     
     it("sorts and overrides volumes correctly and restores them", function()
-        _G.VolumeSlidersMMDB.presets = {
+        _G.VolumeSlidersMMDB.automation.presets = {
             {
                 name = "Test 1", priority = 10,
                 zones = {"Elwynn Forest"},
@@ -78,7 +82,7 @@ describe("Presets tests", function()
         -- The volume should now be 0.2
         assert.are.equal(0.2, _G.cvarStorage["Sound_MasterVolume"])
         -- It should have saved the original volume of 1.0
-        assert.are.equal(1.0, _G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
+        assert.are.equal(1.0, VS.session.originalVolumes["Sound_MasterVolume"])
         
         -- Now let's simulate leaving Goldshire, meaning only Elwynn is active
         _G.zoneStates.sub = "Unknown"
@@ -93,11 +97,11 @@ describe("Presets tests", function()
         
         -- Should have restored the original volume (1.0)
         assert.spy(_G.setCvarSpy).was_called_with("Sound_MasterVolume", 1.0)
-        assert.is_nil(_G.VolumeSlidersMMDB.originalVolumes["Sound_MasterVolume"])
+        assert.is_nil(VS.session.originalVolumes["Sound_MasterVolume"])
     end)
 
     it("handles automation states and priority interactions", function()
-        _G.VolumeSlidersMMDB.presets = {
+        _G.VolumeSlidersMMDB.automation.presets = {
             {
                 name = "Zone Preset", priority = 10,
                 zones = {"Elwynn Forest"},
@@ -111,8 +115,8 @@ describe("Presets tests", function()
                 ignored = {}
             }
         }
-        _G.VolumeSlidersMMDB.fishingPresetIndex = 2
-        _G.VolumeSlidersMMDB.enableFishingVolume = true
+        _G.VolumeSlidersMMDB.automation.fishingPresetIndex = 2
+        _G.VolumeSlidersMMDB.automation.enableFishingVolume = true
         
         -- 1. Only zone active
         VS.Presets:RefreshEventState()
@@ -133,13 +137,13 @@ describe("Presets tests", function()
     end)
 
     it("evaluates and returns the names of active presets dynamically", function()
-        _G.VolumeSlidersMMDB.presets = {
+        _G.VolumeSlidersMMDB.automation.presets = {
             { name = "Elwynn Tier", zones = {"Elwynn Forest"}, volumes = {} },
             { name = "Inn Tier", zones = {"Lion's Pride Inn"}, volumes = {} },
             { name = "Fishing Setup", zones = {}, volumes = {} }
         }
-        _G.VolumeSlidersMMDB.enableFishingVolume = true
-        _G.VolumeSlidersMMDB.fishingPresetIndex = 3
+        _G.VolumeSlidersMMDB.automation.enableFishingVolume = true
+        _G.VolumeSlidersMMDB.automation.fishingPresetIndex = 3
 
         -- 1. No triggers
         _G.zoneStates.real = "Unknown"
@@ -161,6 +165,16 @@ describe("Presets tests", function()
         -- 3. Trigger Fishing globally
         VS.Presets:SetStateActive("fishing", true)
         assert.are.equal("Elwynn Tier, Inn Tier, Fishing Setup", VS.Presets:GetActiveTriggersString())
+
+        -- 4. Manual Preset Toggle
+        -- Even if fishing is active, manual toggle should be added (and deduplicated if necessary)
+        _G.VolumeSlidersMMDB.automation.manualToggleState[1] = { volumes = {} } -- "Elwynn Tier"
+        assert.are.equal("Elwynn Tier, Inn Tier, Fishing Setup", VS.Presets:GetActiveTriggersString())
+
+        -- Add a NEW manual preset
+        _G.VolumeSlidersMMDB.automation.manualToggleState[4] = { volumes = {} } -- Non-existent name check
+        _G.VolumeSlidersMMDB.automation.presets[4] = { name = "Manual High Ground" }
+        assert.are.equal("Elwynn Tier, Inn Tier, Fishing Setup, Manual High Ground", VS.Presets:GetActiveTriggersString())
     end)
 
     ---------------------------------------------------------------------------
@@ -171,7 +185,7 @@ describe("Presets tests", function()
         _G.cvarStorage["Sound_MasterVolume"] = 1.0
         _G.cvarStorage["Sound_MusicVolume"] = 0.8
 
-        _G.VolumeSlidersMMDB.presets = {
+        _G.VolumeSlidersMMDB.automation.presets = {
             {
                 name = "Test Toggle",
                 volumes = { ["Sound_MasterVolume"] = 0.3, ["Sound_MusicVolume"] = 0.2 },
@@ -180,13 +194,13 @@ describe("Presets tests", function()
         }
 
         -- 1. Apply (toggle ON)
-        local isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.presets[1], 1)
+        local isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.automation.presets[1], 1)
         assert.is_true(isActive)
         assert.are.equal(0.3, _G.cvarStorage["Sound_MasterVolume"])
         assert.are.equal(0.2, _G.cvarStorage["Sound_MusicVolume"])
 
         -- 2. Toggle OFF (volumes unchanged, so restore)
-        isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.presets[1], 1)
+        isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.automation.presets[1], 1)
         assert.is_false(isActive)
         assert.are.equal(1.0, _G.cvarStorage["Sound_MasterVolume"])
         assert.are.equal(0.8, _G.cvarStorage["Sound_MusicVolume"])
@@ -195,7 +209,7 @@ describe("Presets tests", function()
     it("re-applies a toggled preset when channels have been modified", function()
         _G.cvarStorage["Sound_MasterVolume"] = 1.0
 
-        _G.VolumeSlidersMMDB.presets = {
+        _G.VolumeSlidersMMDB.automation.presets = {
             {
                 name = "Re-Apply Test",
                 volumes = { ["Sound_MasterVolume"] = 0.5 },
@@ -204,7 +218,7 @@ describe("Presets tests", function()
         }
 
         -- 1. Apply (toggle ON)
-        local isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.presets[1], 1)
+        local isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.automation.presets[1], 1)
         assert.is_true(isActive)
         assert.are.equal(0.5, _G.cvarStorage["Sound_MasterVolume"])
 
@@ -212,12 +226,12 @@ describe("Presets tests", function()
         _G.cvarStorage["Sound_MasterVolume"] = 0.7
 
         -- 3. Toggle again → should re-apply (not restore), since value changed
-        isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.presets[1], 1)
+        isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.automation.presets[1], 1)
         assert.is_true(isActive)
         assert.are.equal(0.5, _G.cvarStorage["Sound_MasterVolume"])
 
         -- 4. Now toggle OFF (nothing changed this time)
-        isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.presets[1], 1)
+        isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.automation.presets[1], 1)
         assert.is_false(isActive)
         -- Should restore to 0.7 (the fresh snapshot from step 3)
         assert.are.equal(0.7, _G.cvarStorage["Sound_MasterVolume"])
@@ -227,7 +241,7 @@ describe("Presets tests", function()
         _G.cvarStorage["Sound_MusicVolume"] = 0.8
         _G.cvarStorage["Sound_EnableMusic"] = "1"
 
-        _G.VolumeSlidersMMDB.presets = {
+        _G.VolumeSlidersMMDB.automation.presets = {
             {
                 name = "Mute Test",
                 volumes = { ["Sound_MusicVolume"] = 0.5 },
@@ -236,7 +250,7 @@ describe("Presets tests", function()
             }
         }
 
-        VS.Presets:ApplyPreset(_G.VolumeSlidersMMDB.presets[1])
+        VS.Presets:ApplyPreset(_G.VolumeSlidersMMDB.automation.presets[1])
 
         assert.are.equal(0.5, _G.cvarStorage["Sound_MusicVolume"])
         assert.spy(_G.setCvarSpy).was_called_with("Sound_EnableMusic", 0)
@@ -246,7 +260,7 @@ describe("Presets tests", function()
         _G.cvarStorage["Sound_MusicVolume"] = 0.8
         _G.cvarStorage["Sound_EnableMusic"] = "1"
 
-        _G.VolumeSlidersMMDB.presets = {
+        _G.VolumeSlidersMMDB.automation.presets = {
             {
                 name = "Mute Toggle Test",
                 volumes = { ["Sound_MusicVolume"] = 0.3 },
@@ -256,13 +270,13 @@ describe("Presets tests", function()
         }
 
         -- 1. Toggle ON → should mute
-        local isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.presets[1], 1)
+        local isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.automation.presets[1], 1)
         assert.is_true(isActive)
         assert.are.equal(0.3, _G.cvarStorage["Sound_MusicVolume"])
         assert.spy(_G.setCvarSpy).was_called_with("Sound_EnableMusic", 0)
 
         -- 2. Toggle OFF → should restore volume AND mute state
-        isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.presets[1], 1)
+        isActive = VS.Presets:TogglePreset(_G.VolumeSlidersMMDB.automation.presets[1], 1)
         assert.is_false(isActive)
         assert.are.equal(0.8, _G.cvarStorage["Sound_MusicVolume"])
         -- Should restore the original enable state
@@ -279,7 +293,7 @@ describe("Presets tests", function()
         _G.cvarStorage["Sound_GameplaySFX"] = 1.0
         _G.cvarStorage["Sound_PingVolume"] = 1.0
 
-        _G.VolumeSlidersMMDB.presets = {
+        _G.VolumeSlidersMMDB.automation.presets = {
             {
                 name = "All Channels",
                 volumes = {
@@ -296,7 +310,7 @@ describe("Presets tests", function()
             }
         }
 
-        VS.Presets:ApplyPreset(_G.VolumeSlidersMMDB.presets[1])
+        VS.Presets:ApplyPreset(_G.VolumeSlidersMMDB.automation.presets[1])
 
         assert.are.equal(0.5, _G.cvarStorage["Sound_MasterVolume"])
         assert.are.equal(0.4, _G.cvarStorage["Sound_SFXVolume"])

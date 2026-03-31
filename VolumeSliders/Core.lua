@@ -4,12 +4,12 @@
 -- Addon bootstrapping, library retrieval, layout constants, lookup tables,
 -- and shared helper functions.
 --
--- This is the first addon file loaded (after libraries).  It creates the
+-- This is the first addon file loaded (after libraries). It creates the
 -- shared addon table that all other modules receive via the (...) varargs,
 -- and exposes constants and utilities they depend on.
 --
 -- Author:  Sheldon Michaels
--- Version: 2.0.0
+-- Version: 3.0.0
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 
@@ -53,16 +53,20 @@ _G.BINDING_NAME_VOLUMESLIDERS_MUTE_MASTER = "Toggle Master Mute"
 -------------------------------------------------------------------------------
 
 -- VolumeSlidersMMDB is declared as a SavedVariable in the TOC file.
--- LibDBIcon stores the minimap button's angular position and visibility flag
--- inside this table.  We initialize it here so it exists on first load.
-VolumeSlidersMMDB = VolumeSlidersMMDB or {
-    minimapPos   = 180,   -- Degrees around the minimap (0 = top, 180 = bottom)
-    hide         = false, -- Whether the minimap button is hidden
-    minimalistMinimap = nil, -- Smart auto-detect if nil
-    bindToMinimap     = true,
-    minimalistOffsetX = -35, -- Default X offset for minimalist drag
-    minimalistOffsetY = -5,  -- Default Y offset for minimalist drag
-    enableTriggers    = true,-- Global master toggle for zone triggers
+-- We initialize it as an empty table here so it exists on first load.
+-- The true population of V2 schema defaults occurs during PLAYER_LOGIN in Init.lua.
+VolumeSlidersMMDB = VolumeSlidersMMDB or {}
+
+-------------------------------------------------------------------------------
+-- Module-Level State
+-------------------------------------------------------------------------------
+
+-- The VS.session table houses all transient runtime state that should NEVER
+-- be saved to the database (e.g., dynamic layout flags, automation caches).
+VS.session = {
+    layoutDirty = true,
+    originalVolumes = {},
+    originalMutes = {},
 }
 
 -------------------------------------------------------------------------------
@@ -79,14 +83,14 @@ VS.brokerFrame = nil
 VS.sliders = {}
 
 -----------------------------------------
--- Layout Constants
+-- UI Layout Constants
 --
 -- These values define the dimensions and spacing of the popup frame and its
--- child elements.  They are used to compute the overall frame size so that
+-- child elements. They are used to compute the overall frame size so that
 -- changes to slider count or spacing automatically propagate.
 -----------------------------------------
 
--- Insets of the SettingsFrameTemplate's NineSlice border.  Content is placed
+-- Insets of the SettingsFrameTemplate's NineSlice border. Content is placed
 -- inside these margins to avoid overlapping the frame's decorative edges.
 VS.TEMPLATE_CONTENT_OFFSET_LEFT   = 7
 VS.TEMPLATE_CONTENT_OFFSET_RIGHT  = 3
@@ -102,7 +106,7 @@ VS.SLIDER_PADDING_X       = 10  -- Tighter inset for slider columns only
 VS.CONTENT_PADDING_TOP    = 15
 VS.CONTENT_PADDING_BOTTOM = 15
 
--- Resize constraints â€” floors for dynamic layout during window resize.
+-- Resize constraints — floors for dynamic layout during window resize.
 VS.MIN_SLIDER_SPACING_TITLED   = -5   -- Floor when titles are shown (wider columns)
 VS.MIN_SLIDER_SPACING_UNTITLED = -20  -- Floor when titles are hidden (narrower columns)
 VS.MIN_SLIDER_TRACK_HEIGHT = 60  -- Minimum px for slider track height
@@ -116,23 +120,7 @@ VS.DEFAULT_WINDOW_HEIGHT = 440
 -- Lookup Tables
 -----------------------------------------
 
--- Maps sound CVar names to their corresponding visibility flag key in
--- VolumeSlidersMMDB.  Used by UpdateAppearance() to determine which sliders
--- to show based on user settings.
-VS.CVAR_TO_VAR = {
-    ["Sound_MasterVolume"]          = "showMaster",
-    ["Sound_SFXVolume"]             = "showSFX",
-    ["Sound_MusicVolume"]           = "showMusic",
-    ["Sound_AmbienceVolume"]        = "showAmbience",
-    ["Sound_DialogVolume"]          = "showDialog",
-    ["Sound_GameplaySFX"]           = "showGameplay",
-    ["Sound_PingVolume"]            = "showPings",
-    ["Sound_EncounterWarningsVolume"] = "showWarnings",
-    ["Voice_ChatVolume"]            = "showVoiceChat",
-    ["Voice_ChatDucking"]           = "showVoiceDucking",
-    ["Voice_MicVolume"]             = "showMicVolume",
-    ["Voice_MicSensitivity"]        = "showMicSensitivity",
-}
+-- (VS.CVAR_TO_VAR removed: V2 schema natively maps channels securely into db.channels)
 
 -- Maps each volume CVar to its corresponding enable/disable CVar.
 -- Used by Presets.lua to apply per-channel mute overrides.
@@ -176,20 +164,128 @@ VS.DEFAULT_FOOTER_ORDER = {
     "showVoiceMode",
 }
 
+-------------------------------------------------------------------------------
+-- V2 Database Schema Defaults
+-------------------------------------------------------------------------------
+VS.DEFAULT_DB = {
+    schemaVersion = 2,
+    
+    appearance = {
+        bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
+        knobStyle = "Diamond",
+        arrowStyle = "GoldPlusMinus",
+        titleColor = "White",
+        valueColor = "Gold",
+        highColor = "White",
+        lowColor = "White",
+        windowWidth = VS.DEFAULT_WINDOW_WIDTH,
+        windowHeight = VS.DEFAULT_WINDOW_HEIGHT,
+    },
+    
+    layout = {
+        maxFooterCols = 3,
+        limitFooterCols = true,
+        sliderOrder = {}, -- Populated deeply below
+        footerOrder = {}, -- Populated deeply below
+        customX = nil,
+        customY = nil,
+        mouseActions = { sliders = {}, scrollWheel = {} },
+    },
+    
+    toggles = {
+        showTitle = true,
+        showValue = true,
+        showHigh = false,
+        showUpArrow = true,
+        showSlider = true,
+        showDownArrow = true,
+        showLow = false,
+        showMute = true,
+        showWarnings = true,
+        showBackground = true,
+        showCharacter = true,
+        showOutput = true,
+        showPresetsDropdown = true,
+        showLfgPop = true,
+        showZoneTriggers = true,
+        showFishingSplash = true,
+        showHelpText = true,
+        showMinimapTooltip = true,
+        showVoiceMode = true,
+        persistentWindow = false,
+        isLocked = false,
+    },
+    
+    channels = {
+        ["Sound_MasterVolume"] = true,
+        ["Sound_SFXVolume"] = true,
+        ["Sound_MusicVolume"] = true,
+        ["Sound_AmbienceVolume"] = true,
+        ["Sound_DialogVolume"] = true,
+        ["Sound_GameplaySFX"] = false,
+        ["Sound_PingVolume"] = false,
+        ["Sound_EncounterWarningsVolume"] = false,
+        ["Voice_ChatVolume"] = false,
+        ["Voice_ChatDucking"] = false,
+        ["Voice_MicVolume"] = false,
+        ["Voice_MicSensitivity"] = false,
+    },
+    
+    minimap = {
+        minimapPos = 180,
+        hide = false,
+        minimalistMinimap = nil, -- Smart auto-detect on first boot
+        bindToMinimap = true,
+        minimalistOffsetX = -35,
+        minimalistOffsetY = -5,
+        minimapIconLocked = true,
+        mouseActions = {
+            { trigger = "None+Scroll", effect = "SCROLL_VOLUME", stringTarget = "Sound_MasterVolume", numStep = 0.05 }
+        },
+        minimapTooltipOrder = {
+            { type = "OutputDevice" },
+            { type = "MouseActions" },
+            { type = "ChannelVolume", channel = "Sound_MasterVolume" },
+            { type = "ActivePresets" }
+        },
+    },
+    
+    hardware = {
+        deviceVolumes = {},
+    },
+    
+    automation = {
+        presets = {},
+        manualToggleState = {},
+        enableTriggers = true,
+        enableFishingVolume = true,
+        enableLfgVolume = true,
+    },
+    
+    voice = {},
+}
+
+local function copyArray(arr)
+    local newArr = {}
+    for i, v in ipairs(arr) do newArr[i] = v end
+    return newArr
+end
+VS.DEFAULT_DB.layout.sliderOrder = copyArray(VS.DEFAULT_CVAR_ORDER)
+VS.DEFAULT_DB.layout.footerOrder = copyArray(VS.DEFAULT_FOOTER_ORDER)
+
 -----------------------------------------
 -- Helper Functions
 -----------------------------------------
 
---- Read the current master volume from the CVar and return it as a number
---- in the range [0, 1].  Falls back to 1 (full volume) if the CVar is
---- missing or unparseable.
+--- Read the current master volume from the CVar.
+-- @return number In the range [0, 1]. Falls back to 1 (full volume) if the CVar is missing or unparseable.
 function VS:GetMasterVolume()
     local volStr = GetCVar("Sound_MasterVolume") or "1"
     return tonumber(volStr) or 1
 end
 
 --- Return a human-readable percentage string for the current master volume.
---- Example: "75%"
+-- @return string Example: "75%"
 function VS:GetVolumeText()
     local vol = self:GetMasterVolume()
     vol = vol * 100
@@ -197,9 +293,9 @@ function VS:GetVolumeText()
 end
 
 --- Adjust a volume channel by one increment in the given direction.
---- @param delta  number  Positive = volume up, negative = volume down.
---- @param customStep number Optional. Force a specific increment.
---- @param cvar string Optional. The audio channel CVar to adjust. Defaults to "Sound_MasterVolume".
+-- @param delta number Positive = volume up, negative = volume down.
+-- @param customStep? number Optional. Force a specific increment.
+-- @param cvar? string Optional. The audio channel CVar to adjust. Defaults to "Sound_MasterVolume".
 function VS:AdjustVolume(delta, customStep, cvar)
     local targetCVar = cvar or "Sound_MasterVolume"
     local increment = customStep
@@ -207,12 +303,14 @@ function VS:AdjustVolume(delta, customStep, cvar)
     local volStr = GetCVar(targetCVar) or "1"
     local current = tonumber(volStr) or 1
 
+    -- Logic: If no custom step is provided, use dynamic increments based on volume level and modifiers.
     if not increment then
         increment = 0.05
-        -- Use a finer step at low volumes or when Ctrl is held.
+        -- User Experience: Use a finer step (1%) at low volumes to allow precise adjustment.
         if current < 0.2 then
             increment = 0.01
         end
+        -- Modifier: Force fine adjustment if Control is held.
         if IsControlKeyDown() then
             increment = 0.01
         end
@@ -225,16 +323,16 @@ function VS:AdjustVolume(delta, customStep, cvar)
         current = current - increment
     end
 
-    -- Clamp to the valid [0, 1] range and persist.
+    -- Safety: Clamp to the valid [0, 1] range and persist to global WoW CVars.
     current = math_max(0, math_min(1, current))
     SetCVar(targetCVar, current)
 
-    -- Update the broker text ONLY if we adjusted the Master Volume, since the icon text shows Master.
+    -- Broker Sync: Update the DataBroker text ONLY if we adjusted the Master Volume.
     if targetCVar == "Sound_MasterVolume" and VS.VolumeSlidersObject then
         VS.VolumeSlidersObject.text = self:GetVolumeText()
     end
 
-    -- If the slider panel is open, sync the specific slider to the new value.
+    -- UI Sync: If the popup panel is open, push the new value into the specific slider widget.
     if VS.sliders and VS.sliders[targetCVar] then
          local sliderVal = 1 - current
          VS.sliders[targetCVar]:SetValue(sliderVal)
@@ -243,8 +341,7 @@ function VS:AdjustVolume(delta, customStep, cvar)
 end
 
 --- Toggle the master mute state by flipping the Sound_EnableAllSound CVar.
---- Also updates the minimap icon texture and the Master slider's mute
---- checkbox if the panel is open.
+-- Also updates the minimap icon texture and the Master slider's mute checkbox.
 function VS:VolumeSliders_ToggleMute()
     local soundEnabled = GetCVar("Sound_EnableAllSound")
     if soundEnabled == "1" then
@@ -254,7 +351,7 @@ function VS:VolumeSliders_ToggleMute()
     end
     VS:UpdateMiniMapVolumeIcon()
 
-    -- Sync the Master slider's mute checkbox if the panel is visible.
+    -- UI Sync: Update the checkbox state in the popup frame if visible.
     if VS.sliders and VS.sliders["Sound_MasterVolume"] and VS.sliders["Sound_MasterVolume"].muteCheck then
         local isEnabled = GetCVar("Sound_EnableAllSound") == "1"
         VS.sliders["Sound_MasterVolume"].muteCheck:SetChecked(not isEnabled)
@@ -331,6 +428,11 @@ end
 -- Mouse Action Processors
 -----------------------------------------
 
+--- Construct a trigger string based on held modifiers and interaction type.
+-- Used to match user inputs against the mouseActions database.
+-- @param button? string The mouse button clicked (e.g., "LeftButton").
+-- @param delta? number Optional scroll wheel delta.
+-- @return string? The trigger string (e.g., "Shift+Scroll") or nil if no input found.
 function VS:GetActiveTriggerString(button, delta)
     local isShift = IsShiftKeyDown()
     local isCtrl = IsControlKeyDown()
@@ -347,18 +449,23 @@ function VS:GetActiveTriggerString(button, delta)
     end
 
     if delta then
-        return mods .. (delta > 0 and "WheelUp" or "WheelDown")
+        return mods .. "Scroll"
     elseif button then
         return mods .. button
     end
     return nil
 end
 
-function VS:ProcessMinimapAction(triggerStr, clickedFrame)
+--- Process a mouse interaction on the minimap button.
+-- @param triggerStr string The modifier+input string to look up.
+-- @param clickedFrame Frame The frame that received the click (to anchor the popup).
+-- @param delta? number Optional scroll wheel delta.
+-- @return boolean True if an action was found and processed, false otherwise.
+function VS:ProcessMinimapAction(triggerStr, clickedFrame, delta)
     local db = VolumeSlidersMMDB
-    if not db.mouseActions or not db.mouseActions.minimap then return false end
+    if not db.minimap.mouseActions then return false end
 
-    for _, action in ipairs(db.mouseActions.minimap) do
+    for _, action in ipairs(db.minimap.mouseActions) do
         if action.trigger == triggerStr and action.effect then
             local eff = action.effect
             if eff == "TOGGLE_WINDOW" then
@@ -373,6 +480,7 @@ function VS:ProcessMinimapAction(triggerStr, clickedFrame)
                     Settings.OpenToCategory("Volume Sliders")
                 end
             elseif eff == "RESET_POSITION" then
+                -- Reset the minimalist button to its default corner anchor.
                 VolumeSlidersMMDB.minimalistOffsetX = -35
                 VolumeSlidersMMDB.minimalistOffsetY = -5
                 if VS.minimalistButton then
@@ -384,11 +492,17 @@ function VS:ProcessMinimapAction(triggerStr, clickedFrame)
                 if VS.Presets and VS.Presets.RefreshEventState then VS.Presets:RefreshEventState() end
                 if VS.triggerCheck then VS.triggerCheck:SetChecked(VolumeSlidersMMDB.enableTriggers) end
                 PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-            elseif string.match(eff, "^PRESET_") then
-                local idx = tonumber(string.match(eff, "%d+"))
-                if idx and db.presets[idx] then
+            elseif eff == "SCROLL_VOLUME" then
+                local channel = action.stringTarget or "Sound_MasterVolume"
+                local step = action.numStep or 0.05
+                if delta then
+                    VS:AdjustVolume(delta, step, channel)
+                end
+            elseif eff == "TOGGLE_PRESET" then
+                local idx = tonumber(action.stringTarget)
+                if idx and db.automation.presets[idx] then
                     if VS.Presets and VS.Presets.TogglePreset then
-                        VS.Presets:TogglePreset(db.presets[idx], idx)
+                        VS.Presets:TogglePreset(db.automation.presets[idx], idx)
                         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
                     end
                 end
@@ -399,11 +513,14 @@ function VS:ProcessMinimapAction(triggerStr, clickedFrame)
     return false
 end
 
+--- Process a mouse action on a slider widget (excluding scroll).
+-- @param triggerStr string The modifier+input string to look up.
+-- @return number? The increment step if found, or nil.
 function VS:ProcessSliderAction(triggerStr)
     local db = VolumeSlidersMMDB
-    if not db.mouseActions or not db.mouseActions.sliders then return nil end
+    if not db.layout.mouseActions or not db.layout.mouseActions.sliders then return nil end
 
-    for _, action in ipairs(db.mouseActions.sliders) do
+    for _, action in ipairs(db.layout.mouseActions.sliders) do
         if action.trigger == triggerStr and action.effect then
             local eff = action.effect
             if eff == "ADJUST_1" then return 0.01 end
@@ -417,11 +534,14 @@ function VS:ProcessSliderAction(triggerStr)
     return nil
 end
 
+--- Process a scroll wheel action on a slider widget.
+-- @param triggerStr string The modifier+input string to look up.
+-- @return number? The increment step if found, or nil.
 function VS:ProcessScrollAction(triggerStr)
     local db = VolumeSlidersMMDB
-    if not db.mouseActions or not db.mouseActions.scrollWheel then return nil end
+    if not db.layout.mouseActions or not db.layout.mouseActions.scrollWheel then return nil end
 
-    for _, action in ipairs(db.mouseActions.scrollWheel) do
+    for _, action in ipairs(db.layout.mouseActions.scrollWheel) do
         if action.trigger == triggerStr and action.effect then
             local eff = action.effect
             if eff == "ADJUST_1" then return 0.01
@@ -439,46 +559,79 @@ end
 -------------------------------------------------------------------------------
 -- Dynamic Tooltip Helper
 -------------------------------------------------------------------------------
+--- Append descriptive lines to a GameTooltip based on custom mouse action bindings.
+-- @param tooltip GameTooltip The tooltip object to append to.
+-- @param elementKey "minimap"|"sliders"|"scrollWheel" The component being hovered.
+-- @param defaultActions table List of {trigger, effectName} to display if not overridden.
+-- @return boolean True if any lines were added, false otherwise.
 function VS:AppendActionTooltipLines(tooltip, elementKey, defaultActions)
     local db = VolumeSlidersMMDB
-    local customActions = (db.mouseActions and db.mouseActions[elementKey]) or {}
+    local customActions = {}
+    if elementKey == "minimap" then
+        customActions = db.minimap.mouseActions or {}
+    elseif elementKey == "sliders" or elementKey == "scrollWheel" then
+        customActions = (db.layout.mouseActions and db.layout.mouseActions[elementKey]) or {}
+    end
     local overriddenTriggers = {}
     local added = false
 
-    local function getEffectName(eff, key)
+    -- Internal helper to map internal effect codes to user-friendly strings.
+    local function getEffectName(action, key)
+        local eff = action.effect
+        
+        -- 1. Minimap-Specific Effects
         if key == "minimap" then
             if eff == "TOGGLE_WINDOW" then return "Toggle Slider Window" end
             if eff == "MUTE_MASTER" then return "Toggle Master Mute" end
             if eff == "OPEN_SETTINGS" then return "Open Settings Panel" end
             if eff == "RESET_POSITION" then return "Reset Window Position" end
             if eff == "TOGGLE_TRIGGERS" then return "Toggle Zone Triggers" end
-        elseif key == "sliders" then
-            if eff == "ADJUST_1" then return "Change by 1%" end
-            if eff == "ADJUST_5" then return "Change by 5%" end
-            if eff == "ADJUST_10" then return "Change by 10%" end
-            if eff == "ADJUST_15" then return "Change by 15%" end
-            if eff == "ADJUST_20" then return "Change by 20%" end
-            if eff == "ADJUST_25" then return "Change by 25%" end
-        end
-        if string.match(eff, "^PRESET_") then
-            local idx = tonumber(string.match(eff, "%d+"))
-            if idx and db.presets and db.presets[idx] then
-                return "Toggle Preset: " .. db.presets[idx].name
+            
+            if eff == "TOGGLE_PRESET" then
+                local idx = tonumber(action.stringTarget)
+                if idx and db.automation.presets and db.automation.presets[idx] then
+                    return "Toggle Preset: " .. (db.automation.presets[idx].name or "Unnamed")
+                end
+            end
+
+            if eff == "SCROLL_VOLUME" then
+                local chan = action.stringTarget or "Sound_MasterVolume"
+                local step = (action.numStep or 0.05) * 100
+                local niceNames = {
+                    ["Sound_MasterVolume"] = "Master",
+                    ["Sound_SFXVolume"] = "SFX",
+                    ["Sound_MusicVolume"] = "Music",
+                    ["Sound_AmbienceVolume"] = "Ambience",
+                    ["Sound_DialogVolume"] = "Dialog",
+                    ["Sound_GameplaySFX"] = "Gameplay",
+                    ["Sound_PingVolume"] = "Pings",
+                    ["Sound_EncounterWarningsVolume"] = "Warnings"
+                }
+                return string.format("Adjust %s (%d%%)", niceNames[chan] or "Volume", step)
             end
         end
+
+        -- 2. Layout & Volume Adjustment Effects (shared across components)
+        if eff == "ADJUST_1" then return "Change by 1%" end
+        if eff == "ADJUST_5" then return "Change by 5%" end
+        if eff == "ADJUST_10" then return "Change by 10%" end
+        if eff == "ADJUST_15" then return "Change by 15%" end
+        if eff == "ADJUST_20" then return "Change by 20%" end
+        if eff == "ADJUST_25" then return "Change by 25%" end
+
         return "Unknown Action"
     end
 
-    -- 1. Print all custom actions and record their triggers
+    -- 1. Print all custom actions and record their triggers to block defaults.
     for _, action in ipairs(customActions) do
         if action.trigger and action.effect then
-            tooltip:AddLine(string.format("|cff00ff00%s|r to %s", action.trigger, getEffectName(action.effect, elementKey)))
+            tooltip:AddLine(string.format("|cff00ff00%s|r to %s", action.trigger, getEffectName(action, elementKey)))
             overriddenTriggers[action.trigger] = true
             added = true
         end
     end
 
-    -- 2. Print default actions if their trigger wasn't overridden
+    -- 2. Print default actions only if their specific trigger was not overridden by a custom one.
     if defaultActions then
         for _, def in ipairs(defaultActions) do
             if not overriddenTriggers[def.trigger] then

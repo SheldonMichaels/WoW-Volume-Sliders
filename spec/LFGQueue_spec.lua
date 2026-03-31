@@ -10,12 +10,11 @@ describe("LFG Queue volume tests", function()
     before_each(function()
         -- Reset state
         _G.VolumeSlidersMMDB = {
-            enableLfgVolume = true,
-            enableLfgMaster = true,
-            enableLfgSFX = true,
-            originalVolumes = {},
-            lfgTargetMaster = 1.0,
-            lfgTargetSFX = 1.0,
+            schemaVersion = 2,
+            automation = {
+                enableLfgVolume = true,
+            },
+            toggles = {}, channels = {}, layout = {}, voice = {}, minimap = {}, appearance = {}, hardware = {}
         }
         
         -- Mock CreateFrame
@@ -94,7 +93,7 @@ describe("LFG Queue volume tests", function()
     end)
 
     it("does nothing if lfg volume is disabled", function()
-        _G.VolumeSlidersMMDB.enableLfgVolume = false
+        _G.VolumeSlidersMMDB.automation.enableLfgVolume = false
         VS.LFGQueue:Initialize()
         
         assert.is_false(mockLFGFrame.events["LFG_UPDATE"] == true)

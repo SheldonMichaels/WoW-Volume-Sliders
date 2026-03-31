@@ -1,13 +1,18 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/..\FrameXML\UI.xsd">
+    <!-- Channel & Footer reordering row templates (used in Settings.lua) -->
     <Frame name="VolumeSlidersChannelRowTemplate" virtual="true" inherits="BackdropTemplate">
         <Size x="150" y="28"/>
     </Frame>
     <Frame name="VolumeSlidersFooterRowTemplate" virtual="true" inherits="BackdropTemplate">
         <Size x="145" y="28"/>
     </Frame>
+    
+    <!-- Tooltip customization row template -->
     <Button name="VolumeSlidersTooltipRowTemplate" virtual="true" inherits="BackdropTemplate">
         <Size x="280" y="28"/>
     </Button>
+    
+    <!-- Drag-and-Drop insertion point indicator -->
     <Frame name="VolumeSlidersDropIndicatorTemplate" virtual="true">
         <Size x="150" y="3"/>
         <Layers>

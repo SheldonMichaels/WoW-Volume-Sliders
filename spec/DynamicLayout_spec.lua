@@ -8,13 +8,27 @@ describe("Dynamic Layout tests", function()
 
     before_each(function()
         _G.VolumeSlidersMMDB = {
-            showTitle = true,
-            showSlider = true,
-            showMaster = true,
-            showSFX = true,
-            sliderOrder = {"Sound_MasterVolume", "Sound_SFXVolume"},
-            layoutDirty = true,
+            schemaVersion = 2,
+            toggles = {
+                showTitle = true,
+                showSlider = true,
+                showMaster = true,
+                showSFX = true,
+            },
+            channels = {
+                ["Sound_MasterVolume"] = true,
+                ["Sound_SFXVolume"] = true,
+            },
+            layout = {
+                sliderOrder = {"Sound_MasterVolume", "Sound_SFXVolume"},
+            },
+            voice = {},
+            automation = {},
+            minimap = {},
+            appearance = {},
+            hardware = {},
         }
+        -- layoutDirty is now part of VS.session, which gets initialized by Core.lua
         
         local addonName = "VolumeSliders"
         local addonTable = {}
@@ -47,8 +61,8 @@ describe("Dynamic Layout tests", function()
     end)
 
     it("should calculate dynamic spacing correctly with titles shown", function()
-        _G.VolumeSlidersMMDB.showTitle = true
-        _G.VolumeSlidersMMDB.layoutDirty = true
+        _G.VolumeSlidersMMDB.toggles.showTitle = true
+        VS.session.layoutDirty = true
         VS:UpdateAppearance()
         
         -- Logic: 
@@ -70,8 +84,8 @@ describe("Dynamic Layout tests", function()
     end)
 
     it("should use -20px spacing floor when titles are hidden", function()
-        _G.VolumeSlidersMMDB.showTitle = false
-        _G.VolumeSlidersMMDB.layoutDirty = true
+        _G.VolumeSlidersMMDB.toggles.showTitle = false
+        VS.session.layoutDirty = true
         -- Make window extremely narrow to trigger the floor
         VS.container:SetWidth(100)
         VS:UpdateAppearance()
@@ -89,7 +103,7 @@ describe("Dynamic Layout tests", function()
     end)
     
     it("should set correct resize bounds based on slider count", function()
-        _G.VolumeSlidersMMDB.layoutDirty = true
+        VS.session.layoutDirty = true
         VS:UpdateAppearance()
         -- minW = (10 * 2) + (2 * 60) + (1 * -5) = 135
         -- + border (7+3) = 145
@@ -98,7 +112,7 @@ describe("Dynamic Layout tests", function()
     end)
 
     it("should skip layout if dirty flag is false", function()
-        _G.VolumeSlidersMMDB.layoutDirty = false
+        VS.session.layoutDirty = false
         local s1 = VS.sliders["Sound_MasterVolume"]
         s1:ClearAllPoints()
         

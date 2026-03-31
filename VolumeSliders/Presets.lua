@@ -3,8 +3,14 @@
 --
 -- Logic for Automation Presets (formerly Zone Triggers). Registers for zone
 -- change events, evaluates presets by priority, and dynamically adjusts
--- volume levels. Uses O(1) zone lookups and unregisters events when
--- automation is disabled.
+-- volume levels.
+--
+-- DESIGN PATTERNS:
+-- 1. O(1) Lookup: Zones are mapped to preset IDs in a hash table for speed.
+-- 2. Priority Stack: Overlapping presets (e.g. Zone + Fishing) are sorted
+--    by user-defined priority before application.
+-- 3. Snapshotted Toggles: Manual presets record CVars before applying,
+--    allowing for a perfect "undo" toggle.
 --
 -- Author: Sheldon Michaels
 -- License: All Rights Reserved (Non-commercial use permitted)
@@ -44,13 +50,13 @@ local activeStates = {}
 
 -- Maintain a list of original CVars before they were overridden by presets.
 -- originalVolumes[channel] = originalValue
-VolumeSlidersMMDB.originalVolumes = VolumeSlidersMMDB.originalVolumes or {}
+VS.session = VS.session or {}
+VS.session.originalVolumes = VS.session.originalVolumes or {}
 -- originalMutes[channel] = originalEnableValue ("0" or "1")
-VolumeSlidersMMDB.originalMutes = VolumeSlidersMMDB.originalMutes or {}
+VS.session.originalMutes = VS.session.originalMutes or {}
 
--- Tracks manually toggled presets for the current session.
--- manualToggleState[presetIndex] = { volumes = {channel=val}, mutes = {channel=enableVal} }
-local manualToggleState = {}
+-- Tracks manually toggled presets for the current session and across sessions.
+-- Stored in VolumeSlidersMMDB.automation.manualToggleState[presetIndex].
 
 -------------------------------------------------------------------------------
 -- Logic Implementation
@@ -64,6 +70,7 @@ local function SortPresetsByPriority(a, b)
 end
 
 --- Refresh all slider UI elements and broker text.
+-- Ensures the UI reflects external CVar changes made by presets.
 local function RefreshUI()
     if VS.sliders then
         for _, slider in pairs(VS.sliders) do
@@ -79,10 +86,12 @@ end
 --- Apply a list of active automation presets to the game state.
 -- This is the central orchestrator that applies overrides based on priority
 -- and restores original volumes for any channel not governed by an active preset.
+--
+-- @param activePresetList table A list of preset objects to evaluate.
 local function ApplyAutomationPresets(activePresetList)
     local db = VolumeSlidersMMDB
-    db.originalVolumes = db.originalVolumes or {}
-    db.originalMutes = db.originalMutes or {}
+    VS.session.originalVolumes = VS.session.originalVolumes or {}
+    VS.session.originalMutes = VS.session.originalMutes or {}
 
     -- We want to track which channels are currently overridden so we can restore the rest
     local overriddenChannels = {}
@@ -106,14 +115,13 @@ local function ApplyAutomationPresets(activePresetList)
         end
     end
 
-    -- Known valid channels from CVAR_TO_VAR mapping
-    for channel, _ in pairs(VS.CVAR_TO_VAR) do
+    for _, channel in ipairs(VS.DEFAULT_CVAR_ORDER) do
         if overriddenChannels[channel] then
             -- We need to apply an override
             local currentCVarVol = tonumber(GetCVar(channel)) or 1
             -- Save the original volume ONLY IF it hasn't already been saved
-            if not db.originalVolumes[channel] then
-                db.originalVolumes[channel] = currentCVarVol
+            if not VS.session.originalVolumes[channel] then
+                VS.session.originalVolumes[channel] = currentCVarVol
             end
 
             local wantVol = finalVolumes[channel]
@@ -124,27 +132,27 @@ local function ApplyAutomationPresets(activePresetList)
             -- Handle mute override (only if explicitly configured)
             local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
             if muteCvar and finalMutes[channel] then
-                if not db.originalMutes[channel] then
-                    db.originalMutes[channel] = GetCVar(muteCvar)
+                if not VS.session.originalMutes[channel] then
+                    VS.session.originalMutes[channel] = GetCVar(muteCvar)
                 end
                 SetCVar(muteCvar, 0)
             end
         else
             -- No active preset is overriding this channel. Restore if it was overridden previously.
-            if db.originalVolumes[channel] then
-                local restoreVol = db.originalVolumes[channel]
+            if VS.session.originalVolumes[channel] then
+                local restoreVol = VS.session.originalVolumes[channel]
                 local currentCVarVol = tonumber(GetCVar(channel)) or 1
                 if currentCVarVol ~= restoreVol then
                     SetCVar(channel, restoreVol)
                 end
                 -- Clear original since we restored it
-                db.originalVolumes[channel] = nil
+                VS.session.originalVolumes[channel] = nil
             end
             -- Restore mute state if it was overridden
             local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
-            if muteCvar and db.originalMutes[channel] then
-                SetCVar(muteCvar, db.originalMutes[channel])
-                db.originalMutes[channel] = nil
+            if muteCvar and VS.session.originalMutes[channel] then
+                SetCVar(muteCvar, VS.session.originalMutes[channel])
+                VS.session.originalMutes[channel] = nil
             end
         end
     end
@@ -155,6 +163,7 @@ end
 --- Applies a single preset immediately (called from automation or direct apply).
 -- Does NOT modify originalVolumes (so it's permanent until changed again).
 -- Supports per-channel mute overrides when preset.mutes[channel] = true.
+-- @param preset table The preset object to apply.
 function VS.Presets:ApplyPreset(preset)
     if not preset or type(preset.volumes) ~= "table" then return end
 
@@ -186,12 +195,13 @@ end
 -- Second call (if channels unchanged): restores the snapshot.
 -- Second call (if channels changed): re-snapshots and re-applies.
 -- @param preset table The preset object.
--- @param presetIndex number The 1-based index in db.presets.
+-- @param presetIndex number The 1-based index in db.automation.presets.
 -- @return boolean True if the preset is now active, false if un-toggled.
 function VS.Presets:TogglePreset(preset, presetIndex)
     if not preset or type(preset.volumes) ~= "table" then return false end
 
-    local snapshot = manualToggleState[presetIndex]
+    local db = VolumeSlidersMMDB
+    local snapshot = db.automation.manualToggleState[presetIndex]
 
     if snapshot then
         -- Preset is currently "active" — check if channels still match
@@ -236,12 +246,12 @@ function VS.Presets:TogglePreset(preset, presetIndex)
                     end
                 end
             end
-            manualToggleState[presetIndex] = nil
+            db.automation.manualToggleState[presetIndex] = nil
             RefreshUI()
             return false
         else
             -- RE-APPLY: channels were modified, take fresh snapshot
-            manualToggleState[presetIndex] = nil
+            db.automation.manualToggleState[presetIndex] = nil
             -- Fall through to the "apply" path below
         end
     end
@@ -267,7 +277,7 @@ function VS.Presets:TogglePreset(preset, presetIndex)
         end
     end
 
-    manualToggleState[presetIndex] = {
+    db.automation.manualToggleState[presetIndex] = {
         volumes = volSnapshot,
         mutes = hasMuteSnapshot and muteSnapshot or nil
     }
@@ -277,26 +287,26 @@ function VS.Presets:TogglePreset(preset, presetIndex)
 end
 
 --- Event handler for all registered zone/login events.
---- Event handler for all registered zone/login events.
 -- Also called manually by RefreshEventState/SetStateActive when automation triggers.
+-- Matches current location and active states to a list of presets.
 local function OnPresetEvent()
     local db = VolumeSlidersMMDB
-    if not db.presets or #db.presets == 0 then return end
+    if not db.automation.presets or #db.automation.presets == 0 then return end
 
     local matchedPresets = {}
     local matchedPresetIndices = {} -- deduplication map
 
     -- 1. Helper to safely add matched presets by index
     local function AddMatchedPresetByIndex(id)
-        -- id is the 1-based index in db.presets as selected by the user in Settings.
-        if id and db.presets[id] and not matchedPresetIndices[id] then
+        -- id is the 1-based index in db.automation.presets as selected by the user in Settings.
+        if id and db.automation.presets[id] and not matchedPresetIndices[id] then
             matchedPresetIndices[id] = true
-            table.insert(matchedPresets, db.presets[id])
+            table.insert(matchedPresets, db.automation.presets[id])
         end
     end
 
     -- 2. Check Area/Zone Triggers
-    if db.enableTriggers then
+    if db.automation.enableTriggers then
         local realZone = GetRealZoneText() and string_lower(GetRealZoneText()) or ""
         local subZone = GetSubZoneText() and string_lower(GetSubZoneText()) or ""
         local miniZone = GetMinimapZoneText() and string_lower(GetMinimapZoneText()) or ""
@@ -318,13 +328,13 @@ local function OnPresetEvent()
     end
 
     -- 3. Check Fishing Automation
-    if db.enableFishingVolume and activeStates["fishing"] then
-        AddMatchedPresetByIndex(db.fishingPresetIndex)
+    if db.automation.enableFishingVolume and activeStates["fishing"] then
+        AddMatchedPresetByIndex(db.automation.fishingPresetIndex)
     end
 
     -- 4. Check LFG Automation
-    if db.enableLfgVolume and activeStates["lfg"] then
-        AddMatchedPresetByIndex(db.lfgPresetIndex)
+    if db.automation.enableLfgVolume and activeStates["lfg"] then
+        AddMatchedPresetByIndex(db.automation.lfgPresetIndex)
     end
 
     ApplyAutomationPresets(matchedPresets)
@@ -339,19 +349,19 @@ presetFrame:SetScript("OnEvent", OnPresetEvent)
 --- Returns a comma-separated string of currently active presets.
 function VS.Presets:GetActiveTriggersString()
     local db = VolumeSlidersMMDB
-    if not db.presets or #db.presets == 0 then return "None" end
+    if not db.automation.presets or #db.automation.presets == 0 then return "None" end
 
     local matchedNames = {}
     local matchedPresetIndices = {}
 
     local function AddMatchedPresetByIndex(id)
-        if id and db.presets[id] and not matchedPresetIndices[id] then
+        if id and db.automation.presets[id] and not matchedPresetIndices[id] then
             matchedPresetIndices[id] = true
-            table.insert(matchedNames, db.presets[id].name or "Unnamed Preset")
+            table.insert(matchedNames, db.automation.presets[id].name or "Unnamed Preset")
         end
     end
 
-    if db.enableTriggers then
+    if db.automation.enableTriggers then
         local realZone = GetRealZoneText() and string_lower(GetRealZoneText()) or ""
         local subZone = GetSubZoneText() and string_lower(GetSubZoneText()) or ""
         local miniZone = GetMinimapZoneText() and string_lower(GetMinimapZoneText()) or ""
@@ -371,12 +381,19 @@ function VS.Presets:GetActiveTriggersString()
         end
     end
 
-    if db.enableFishingVolume and activeStates["fishing"] then
-        AddMatchedPresetByIndex(db.fishingPresetIndex)
+    if db.automation.enableFishingVolume and activeStates["fishing"] then
+        AddMatchedPresetByIndex(db.automation.fishingPresetIndex)
     end
 
-    if db.enableLfgVolume and activeStates["lfg"] then
-        AddMatchedPresetByIndex(db.lfgPresetIndex)
+    if db.automation.enableLfgVolume and activeStates["lfg"] then
+        AddMatchedPresetByIndex(db.automation.lfgPresetIndex)
+    end
+
+    -- 4. Manual Presets (applied via TogglePreset or Minimap Action)
+    if db.automation.manualToggleState then
+        for presetIndex, _ in pairs(db.automation.manualToggleState) do
+            AddMatchedPresetByIndex(presetIndex)
+        end
     end
 
     if #matchedNames > 0 then
@@ -387,6 +404,8 @@ end
 
 --- Toggles an automation state (like "fishing" or "lfg") on or off.
 -- Triggers a re-evaluation of all presets.
+-- @param stateName string The internal key for the state (e.g. "fishing").
+-- @param isActive boolean Whether the state is now engaged.
 function VS.Presets:SetStateActive(stateName, isActive)
     activeStates[stateName] = isActive
     self:RefreshEventState()
@@ -398,16 +417,16 @@ function VS.Presets:RefreshEventState()
     local db = VolumeSlidersMMDB
 
     -- Ensure required tables exist
-    db.originalVolumes = db.originalVolumes or {}
-    db.presets = db.presets or {}
+    VS.session.originalVolumes = VS.session.originalVolumes or {}
+    db.automation.presets = db.automation.presets or {}
 
     -- Wipe lookup
     for k in pairs(activeZones) do activeZones[k] = nil end
 
     -- Check if automation is enabled AND if there are any presets that ACTUALLY have zones defined
     local hasZonePresets = false
-    if db.presets and #db.presets > 0 then
-        for _, preset in ipairs(db.presets) do
+    if db.automation.presets and #db.automation.presets > 0 then
+        for _, preset in ipairs(db.automation.presets) do
             if preset.zones and #preset.zones > 0 then
                 hasZonePresets = true
                 break
@@ -421,7 +440,7 @@ function VS.Presets:RefreshEventState()
         if active then anyActiveStates = true; break end
     end
 
-    if not anyActiveStates and (not db.enableTriggers or not hasZonePresets) then
+    if not anyActiveStates and (not db.automation.enableTriggers or not hasZonePresets) then
         -- Complete shutdown of zone events
         presetFrame:UnregisterAllEvents()
 
@@ -432,8 +451,8 @@ function VS.Presets:RefreshEventState()
     end
 
     -- If zone triggers are enabled, build map for presets with zones
-    if db.enableTriggers then
-        for i, preset in ipairs(db.presets) do
+    if db.automation.enableTriggers then
+        for i, preset in ipairs(db.automation.presets) do
             if preset.zones and type(preset.zones) == "table" and #preset.zones > 0 then
                 for _, z in ipairs(preset.zones) do
                     local lowerZ = string_lower(z)

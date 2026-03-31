@@ -40,8 +40,8 @@ function VS:CreateOptionsFrame()
 
     -- Create the popup using the modern settings frame template.
     VS.container = CreateFrame("Frame", "VolumeSlidersFrame", UIParent, "SettingsFrameTemplate")
-    local initW = db.windowWidth or VS.DEFAULT_WINDOW_WIDTH
-    local initH = db.windowHeight or VS.DEFAULT_WINDOW_HEIGHT
+    local initW = (db.appearance and db.appearance.windowWidth) or VS.DEFAULT_WINDOW_WIDTH
+    local initH = (db.appearance and db.appearance.windowHeight) or VS.DEFAULT_WINDOW_HEIGHT
     VS.container:SetSize(initW, initH)
     VS.container:SetPoint("CENTER")
     VS.container:SetFrameStrata("DIALOG")
@@ -100,13 +100,13 @@ function VS:CreateOptionsFrame()
     end
 
     lockBtn:SetScript("OnClick", function()
-        VolumeSlidersMMDB.isLocked = not VolumeSlidersMMDB.isLocked
+        db.toggles.isLocked = not db.toggles.isLocked
         UpdateLockIcon()
-        if VolumeSlidersMMDB.isLocked then
+        if db.toggles.isLocked then
             VS:Reposition()
         else
-            VolumeSlidersMMDB.customX = VS.container:GetLeft()
-            VolumeSlidersMMDB.customY = VS.container:GetBottom()
+            db.layout.customX = VS.container:GetLeft()
+            db.layout.customY = VS.container:GetBottom()
             VS:Reposition()
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -114,7 +114,7 @@ function VS:CreateOptionsFrame()
 
     lockBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        if VolumeSlidersMMDB.isLocked then
+        if db.toggles.isLocked then
             GameTooltip:SetText("Window Locked\n\nClick to unlock and move freely.", nil, nil, nil, nil, true)
         else
             GameTooltip:SetText("Window Unlocked\n\nClick to lock to minimap button.", nil, nil, nil, nil, true)
@@ -158,15 +158,15 @@ function VS:CreateOptionsFrame()
     dragFrame:RegisterForDrag("LeftButton")
 
     dragFrame:SetScript("OnDragStart", function()
-        if not VolumeSlidersMMDB.isLocked then
+        if not db.toggles.isLocked then
             VS.container:StartMoving()
         end
     end)
     dragFrame:SetScript("OnDragStop", function()
         VS.container:StopMovingOrSizing()
-        if not VolumeSlidersMMDB.isLocked then
-            VolumeSlidersMMDB.customX = VS.container:GetLeft()
-            VolumeSlidersMMDB.customY = VS.container:GetBottom()
+        if not db.toggles.isLocked then
+            db.layout.customX = VS.container:GetLeft()
+            db.layout.customY = VS.container:GetBottom()
         end
     end)
 
@@ -179,15 +179,15 @@ function VS:CreateOptionsFrame()
         f:EnableMouse(true)
         f:RegisterForDrag("LeftButton")
         f:SetScript("OnDragStart", function()
-            if not VolumeSlidersMMDB.isLocked then
+            if not db.toggles.isLocked then
                 parent:StartSizing(sizingPoint)
             end
         end)
         f:SetScript("OnDragStop", function()
             parent:StopMovingOrSizing()
-            if not VolumeSlidersMMDB.isLocked then
-                VolumeSlidersMMDB.windowWidth = parent:GetWidth()
-                VolumeSlidersMMDB.windowHeight = parent:GetHeight()
+            if not db.toggles.isLocked then
+                db.appearance.windowWidth = parent:GetWidth()
+                db.appearance.windowHeight = parent:GetHeight()
             end
         end)
 
@@ -277,7 +277,7 @@ function VS:CreateOptionsFrame()
             self:Hide()
         elseif event == "GLOBAL_MOUSE_DOWN" then
             -- Persistent window mode: don't close on outside click.
-            if VolumeSlidersMMDB.persistentWindow then return end
+            if db.toggles.persistentWindow then return end
 
             -- Close the panel when the user clicks anywhere outside it.
             if self:IsShown() and not self:IsMouseOver() then
@@ -305,7 +305,7 @@ function VS:CreateOptionsFrame()
         -- Start listening for outside clicks when the panel opens.
         self:RegisterEvent("GLOBAL_MOUSE_DOWN")
 
-        if VolumeSlidersMMDB.layoutDirty then
+        if VS.session and VS.session.layoutDirty then
             VS:UpdateAppearance()
         end
 
@@ -425,7 +425,7 @@ function VS:CreateOptionsFrame()
         if VS.Presets and VS.Presets.TogglePreset then
             local db = VolumeSlidersMMDB
             local presetIndex = nil
-            for i, p in ipairs(db.presets) do
+            for i, p in ipairs(db.automation.presets) do
                 if p == preset then presetIndex = i; break end
             end
             if presetIndex then
@@ -438,9 +438,9 @@ function VS:CreateOptionsFrame()
     local function GeneratePresetMenu(dropdown, rootDescription)
         rootDescription:CreateTitle("Toggle Preset")
         local db = VolumeSlidersMMDB
-        if db.presets and #db.presets > 0 then
+        if db.automation.presets and #db.automation.presets > 0 then
             local hasPresets = false
-            for _, preset in ipairs(db.presets) do
+            for _, preset in ipairs(db.automation.presets) do
                 if preset.showInDropdown ~= false then -- default true
                     hasPresets = true
                     rootDescription:CreateButton(preset.name, function()
@@ -471,8 +471,10 @@ function VS:CreateOptionsFrame()
     ---------------------------------------------------------------------------
     -- Volume Sliders
     --
-    -- Sliders are laid out in a horizontal row.  Each column is
-    -- SLIDER_COLUMN_WIDTH wide with a dynamic spacing between them.
+    -- V2 SCHEMA REF: Sliders map directly to keys in `db.channels`. They are
+    -- laid out in a horizontal row initially. Each column is SLIDER_COLUMN_WIDTH
+    -- wide. Final positioning is orchestrated by `Appearance.lua:UpdateAppearance`
+    -- reading from `db.layout.sliderOrder`.
     ---------------------------------------------------------------------------
     local startX = VS.CONTENT_PADDING_X
     local startY = -(VS.CONTENT_PADDING_TOP + 95)
@@ -539,7 +541,11 @@ function VS:CreateOptionsFrame()
     VS.sliders["Voice_MicSensitivity"] = micSensSlider
 
     ---------------------------------------------------------------------------
-    -- Bottom Row Controls
+    -- Bottom Row Controls (Footer Elements)
+    --
+    -- V2 SCHEMA REF: Visibility is bound to `db.toggles`. Structural layout
+    -- is computed via Flex Grid in `Appearance.lua:UpdateFooterLayout` reading
+    -- from `db.layout.footerOrder`.
     ---------------------------------------------------------------------------
 
     local function AddTooltip(frame, text)
@@ -554,32 +560,32 @@ function VS:CreateOptionsFrame()
     end
 
     VS.triggerCheck = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckTrigger", "Zone Triggers", function(checked)
-        VolumeSlidersMMDB.enableTriggers = checked
+        db.automation.enableTriggers = checked
         if VS.Presets and VS.Presets.RefreshEventState then
             VS.Presets:RefreshEventState()
         end
     end, function()
-        return VolumeSlidersMMDB.enableTriggers == true
+        return db.automation.enableTriggers == true
     end)
     AddTooltip(VS.triggerCheck, "Automatically adjust volume levels when entering zones designated in your presets.")
 
     VS.fishingCheck = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckFishing", "Fishing Boost", function(checked)
-        VolumeSlidersMMDB.enableFishingVolume = checked
+        db.automation.enableFishingVolume = checked
         if VS.Fishing and VS.Fishing.Initialize then
             VS.Fishing:Initialize()
         end
     end, function()
-        return VolumeSlidersMMDB.enableFishingVolume == true
+        return db.automation.enableFishingVolume == true
     end)
     AddTooltip(VS.fishingCheck, "Temporarily overrides volumes while fishing so you can hear the splash.")
 
     VS.lfgCheck = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckLFG", "LFG Pop Boost", function(checked)
-        VolumeSlidersMMDB.enableLfgVolume = checked
+        db.automation.enableLfgVolume = checked
         if VS.LFGQueue and VS.LFGQueue.Initialize then
             VS.LFGQueue:Initialize()
         end
     end, function()
-        return VolumeSlidersMMDB.enableLfgVolume == true
+        return db.automation.enableLfgVolume == true
     end)
     AddTooltip(VS.lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.")
 
@@ -805,21 +811,21 @@ function VS:CreateOptionsFrame()
                 btn.text:SetText(name)
                 btn:SetScript("OnClick", function()
                     local db = VolumeSlidersMMDB
-                    db.deviceVolumes = db.deviceVolumes or {}
+                    db.hardware.deviceVolumes = db.hardware.deviceVolumes or {}
 
                     -- Save the current master volume under the active device's name before swapping.
                     -- Ensure numeric storage for consistent retrieval later.
                     local oldIndex = tonumber(GetCVar("Sound_OutputDriverIndex")) or 0
                     local oldName = Sound_GameSystem_GetOutputDriverNameByIndex(oldIndex) or "System Default"
                     local currentMaster = tonumber(GetCVar("Sound_MasterVolume")) or 1
-                    db.deviceVolumes[oldName] = currentMaster
+                    db.hardware.deviceVolumes[oldName] = currentMaster
 
                     -- Apply the selected output device and restart the sound system
                     SetCVar("Sound_OutputDriverIndex", i)
                     Sound_GameSystem_RestartSoundSystem()
 
                     -- Decide the target volume for the newly selected device.
-                    local targetVol = tonumber(db.deviceVolumes[name]) or currentMaster
+                    local targetVol = tonumber(db.hardware.deviceVolumes[name]) or currentMaster
 
                     ---------------------------------------------------------
                     -- Visual Disable: dim the Master slider during recovery
@@ -1055,8 +1061,8 @@ function VS:CreateOptionsFrame()
         handle:SetScript("OnMouseUp", function()
             VS.container:StopMovingOrSizing()
             local dbL = VolumeSlidersMMDB
-            dbL.windowWidth = VS.container:GetWidth()
-            dbL.windowHeight = VS.container:GetHeight()
+            dbL.appearance.windowWidth = VS.container:GetWidth()
+            dbL.appearance.windowHeight = VS.container:GetHeight()
         end)
         return handle
     end
@@ -1074,8 +1080,8 @@ function VS:CreateOptionsFrame()
     leftHandle:SetScript("OnMouseDown", function() VS.container:StartSizing("LEFT") end)
     leftHandle:SetScript("OnMouseUp", function()
         VS.container:StopMovingOrSizing()
-        VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
-        VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+        VolumeSlidersMMDB.appearance.windowWidth = VS.container:GetWidth()
+        VolumeSlidersMMDB.appearance.windowHeight = VS.container:GetHeight()
     end)
 
     -- RIGHT edge
@@ -1086,8 +1092,8 @@ function VS:CreateOptionsFrame()
     rightHandle:SetScript("OnMouseDown", function() VS.container:StartSizing("RIGHT") end)
     rightHandle:SetScript("OnMouseUp", function()
         VS.container:StopMovingOrSizing()
-        VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
-        VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+        VolumeSlidersMMDB.appearance.windowWidth = VS.container:GetWidth()
+        VolumeSlidersMMDB.appearance.windowHeight = VS.container:GetHeight()
     end)
 
     -- TOP edge
@@ -1098,8 +1104,8 @@ function VS:CreateOptionsFrame()
     topHandle:SetScript("OnMouseDown", function() VS.container:StartSizing("TOP") end)
     topHandle:SetScript("OnMouseUp", function()
         VS.container:StopMovingOrSizing()
-        VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
-        VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+        VolumeSlidersMMDB.appearance.windowWidth = VS.container:GetWidth()
+        VolumeSlidersMMDB.appearance.windowHeight = VS.container:GetHeight()
     end)
 
     -- BOTTOM edge
@@ -1110,8 +1116,8 @@ function VS:CreateOptionsFrame()
     bottomHandle:SetScript("OnMouseDown", function() VS.container:StartSizing("BOTTOM") end)
     bottomHandle:SetScript("OnMouseUp", function()
         VS.container:StopMovingOrSizing()
-        VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
-        VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+        VolumeSlidersMMDB.appearance.windowWidth = VS.container:GetWidth()
+        VolumeSlidersMMDB.appearance.windowHeight = VS.container:GetHeight()
     end)
 
     -- Corner handles â€” small fixed-size squares at each corner
@@ -1129,8 +1135,8 @@ function VS:CreateOptionsFrame()
         corner:SetScript("OnMouseDown", function() VS.container:StartSizing(c.point) end)
         corner:SetScript("OnMouseUp", function()
             VS.container:StopMovingOrSizing()
-            VolumeSlidersMMDB.windowWidth = VS.container:GetWidth()
-            VolumeSlidersMMDB.windowHeight = VS.container:GetHeight()
+            VolumeSlidersMMDB.appearance.windowWidth = VS.container:GetWidth()
+            VolumeSlidersMMDB.appearance.windowHeight = VS.container:GetHeight()
         end)
     end
 
@@ -1162,8 +1168,8 @@ function VS:Reposition()
     if not VS.container then return end
     VS.container:ClearAllPoints()
 
-    if not VolumeSlidersMMDB.isLocked and VolumeSlidersMMDB.customX and VolumeSlidersMMDB.customY then
-        VS.container:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", VolumeSlidersMMDB.customX, VolumeSlidersMMDB.customY)
+    if not VolumeSlidersMMDB.toggles.isLocked and VolumeSlidersMMDB.layout.customX and VolumeSlidersMMDB.layout.customY then
+        VS.container:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", VolumeSlidersMMDB.layout.customX, VolumeSlidersMMDB.layout.customY)
         return
     end
 

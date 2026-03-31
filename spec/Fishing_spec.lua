@@ -10,12 +10,11 @@ describe("Fishing volume tests", function()
     before_each(function()
         -- Reset state
         _G.VolumeSlidersMMDB = {
-            enableFishingVolume = true,
-            enableFishingMaster = true,
-            enableFishingSFX = true,
-            fishingTargetMaster = 1.0,
-            fishingTargetSFX = 1.0,
-            originalVolumes = {},
+            schemaVersion = 2,
+            automation = {
+                enableFishingVolume = true,
+            },
+            toggles = {}, channels = {}, layout = {}, voice = {}, minimap = {}, appearance = {}, hardware = {}
         }
         
         -- Mock CreateFrame
@@ -79,7 +78,7 @@ describe("Fishing volume tests", function()
     end)
 
     it("does nothing returning instantly if fishing volume is disabled", function()
-        _G.VolumeSlidersMMDB.enableFishingVolume = false
+        _G.VolumeSlidersMMDB.automation.enableFishingVolume = false
         VS.Fishing:Initialize()
         
         -- Trigger event

@@ -25,28 +25,27 @@ local GetCVar    = GetCVar
 local SetCVar    = SetCVar
 
 -------------------------------------------------------------------------------
--- CreateSliderBase  (Optimization 1 — Shared Factory)
+-- CreateSliderBase (Optimization 1 — Shared Factory)
 --
--- Builds the common vertical slider frame structure shared by both
--- CVar-based and Voice Chat sliders:
+-- Builds the common vertical slider frame structure shared by all slider types:
 --   • Slider frame with vertical orientation and hit rect expansion
 --   • Three-piece track (top cap, middle fill, bottom cap) using rotated atlases
 --   • Diamond thumb texture
---   • Stepper arrow buttons (▲ / ▼) with 5% snap behavior
+--   • Stepper arrow buttons (▲ / ▼) with configurable snap behavior
 --   • Labels: title, percentage, High, Low
---   • Mouse wheel handler (1% per tick)
+--   • Mouse wheel handler
 --
--- The caller is responsible for wiring up:
---   • OnValueChanged behavior (CVar-based or getter/setter-based)
---   • Mute checkbox (CVar toggle or manual save/restore)
---   • RefreshValue / RefreshMute methods
---   • Tooltip (for voice sliders)
+-- DESIGN NOTE: The slider uses "Inverted Value" logic internally.
+--   - Slider Value 0 = 100% Volume (Thumb at Top)
+--   - Slider Value 1 = 0% Volume (Thumb at Bottom)
+-- This is necessary because WoW's vertical Slider widget maps its internal
+-- min-value to the top of the track, but users expect "up" to be louder.
 --
--- @param parent    Frame    Parent frame to attach child elements to.
--- @param name      string   Global frame name for the slider.
--- @param label     string   Display text above the slider (e.g., "Master").
--- @param tooltipText string   Optional tooltip text for the slider title.
--- @return Slider            The created slider widget (with sub-elements attached).
+-- @param parent Frame Parent frame to attach child elements to.
+-- @param name string Global frame name for the slider.
+-- @param label string Display text above the slider (e.g., "Master").
+-- @param tooltipText string? Optional tooltip text for the slider title.
+-- @return Slider The created slider widget (with sub-elements attached).
 -------------------------------------------------------------------------------
 local function CreateSliderBase(parent, name, label, tooltipText)
     local db = VolumeSlidersMMDB
@@ -251,8 +250,8 @@ local function CreateSliderBase(parent, name, label, tooltipText)
         if not step and modTrigger == "None" then
             local adjust1Bound = false
             local db = VolumeSlidersMMDB
-            if db and db.mouseActions and db.mouseActions.scrollWheel then
-                for _, action in ipairs(db.mouseActions.scrollWheel) do
+            if db and db.layout.mouseActions and db.layout.mouseActions.scrollWheel then
+                for _, action in ipairs(db.layout.mouseActions.scrollWheel) do
                     if action.effect == "ADJUST_1" then
                         adjust1Bound = true
                         break
@@ -435,21 +434,21 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
         slider.muteCheck = muteCheck
 
         slider.RefreshMute = function(self)
-            muteCheck:SetChecked(db["MuteState_"..muteKey] == true)
+            muteCheck:SetChecked(db.voice["MuteState_"..muteKey] == true)
         end
 
         muteCheck:SetScript("OnClick", function(self)
             local isMuted = self:GetChecked()
-            db["MuteState_"..muteKey] = isMuted
+            db.voice["MuteState_"..muteKey] = isMuted
 
             if isMuted then
                 local currentRaw = getterFunc() or 100
                 if currentRaw > 0 then
-                   db["SavedVol_"..muteKey] = currentRaw
+                   db.voice["SavedVol_"..muteKey] = currentRaw
                 end
                 setterFunc(0)
             else
-                local savedRaw = db["SavedVol_"..muteKey] or 100
+                local savedRaw = db.voice["SavedVol_"..muteKey] or 100
                 setterFunc(savedRaw)
             end
             PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -461,8 +460,8 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
     ---------------------------------------------------------------------------
     slider.RefreshValue = function(self)
         local currentRaw
-        if muteKey and db["MuteState_"..muteKey] then
-            currentRaw = db["SavedVol_"..muteKey] or 100
+        if muteKey and db.voice["MuteState_"..muteKey] then
+            currentRaw = db.voice["SavedVol_"..muteKey] or 100
         else
             currentRaw = getterFunc() or 100
         end
@@ -493,13 +492,13 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
 
         if muteKey and slider.muteCheck and slider.muteCheck:GetChecked() then
              slider.muteCheck:SetChecked(false)
-             db["MuteState_"..muteKey] = false
+             db.voice["MuteState_"..muteKey] = false
         end
 
         setterFunc(rawValue * 100)
 
         if muteKey then
-            db["SavedVol_"..muteKey] = rawValue * 100
+            db.voice["SavedVol_"..muteKey] = rawValue * 100
         end
     end)
 
@@ -546,9 +545,24 @@ end
 -------------------------------------------------------------------------------
 -- CreateTriggerSlider
 --
--- Builds a faux vertical slider for the Trigger Settings page.
--- Modifies a provided working Lua table instead of directly changing CVars.
--- Includes an "Ignore" checkbox at the top to disable the channel for the trigger.
+-- Builds a faux vertical slider for the Automation/Trigger Settings page.
+-- Unlike standard sliders, this does NOT modify live CVars directly. Instead,
+-- it modifies a provided "working table" which is later saved to the DB.
+--
+-- Functional Additions:
+--   - "Ignore" Checkbox: When checked, the trigger will not affect this channel.
+--   - Per-Channel Mute Toggle: Stores a mute override for the trigger.
+--
+-- @param parent Frame Parent frame.
+-- @param name string Global frame name.
+-- @param label string Display text (e.g., "Music").
+-- @param channelKey string The CVar key being represented.
+-- @param workingTable table The Lua table being edited (contains .volumes, .ignored, .mutes).
+-- @param minVal number 0.
+-- @param maxVal number 1.
+-- @param step number 0.01.
+-- @param tooltipText? string Optional tooltip for the title.
+-- @return Slider
 -------------------------------------------------------------------------------
 function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, minVal, maxVal, step, tooltipText)
     local slider = CreateSliderBase(parent, name, label, tooltipText)
