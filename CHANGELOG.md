@@ -1,3 +1,8 @@
+## v3.0.1 — 2026-03-31
+
+### Changed
+- **Tooltip Label Refinement**: Renamed "Active Zone Presets" to "Active Presets" in the Minimap Icon settings for a cleaner look and terminology consistency.
+
 ## v3.0.0 — 2026-03-30
 
 ### SPECIAL NOTE

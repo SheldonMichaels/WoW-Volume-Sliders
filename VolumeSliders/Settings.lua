@@ -2683,7 +2683,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
         elseif elementData.type == "OutputDevice" then
             name = "Current Audio Output Device"
         elseif elementData.type == "ActivePresets" then
-            name = "Active Zone Presets"
+            name = "Active Presets"
         elseif elementData.type == "ChannelVolume" then
             name = "Volume: " .. (elementData.channel or "")
         end
@@ -2785,7 +2785,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
         end
         
         rootDescription:CreateButton("Mouse Action Bindings", function() AddType("MouseActions") end)
-        rootDescription:CreateButton("Active Zone Presets", function() AddType("ActivePresets") end)
+        rootDescription:CreateButton("Active Presets", function() AddType("ActivePresets") end)
         rootDescription:CreateButton("Audio Output Device", function() AddType("OutputDevice") end)
         
         local channelsMenu = rootDescription:CreateButton("Channel Volume...")
