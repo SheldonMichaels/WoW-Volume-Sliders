@@ -9,13 +9,13 @@ This document defines the exact shape of the saved variables used by Volume Slid
 
 > **Contract:** Any agent modifying the boundaries of persisted configuration versus transient state MUST update this document. See `AGENTS.md` for enforcement details.
 
-## Root Structure (V2 Schema)
+## Root Structure
 
-As of version 2.17.0, the monolithic flat-key structure has been deprecated in favor of nested functional namespaces to optimize data bounding and Settings UI integration.
+As of version 3.0.0, the monolithic flat-key structure has been deprecated in favor of nested functional namespaces to optimize data bounding and Settings UI integration.
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -199,6 +199,9 @@ As of version 2.17.0, the monolithic flat-key structure has been deprecated in f
         },
         "mutes": {
           "[cvarName]": "boolean"    // True if the channel should be force-muted
+        },
+        "modes": {
+          "[cvarName]": "string"     // Mathematical operation: "absolute" (default), "floor", or "ceiling"
         }
       }
     ],
@@ -241,4 +244,8 @@ The following properties have been removed from the database and now live exclus
 
 ## Migration Contract (`Init.lua:Migrate_V1_to_V2`)
 
-Any V1 keys remaining in the root namespace are aggressively routed into their V2 namespaces and `nil`'d out upon `PLAYER_LOGIN`. Legacy automation parameters from the pre-preset era (e.g., `fishingTargetMaster`, `enableFishingSFX`) are purged unconditionally during migration to ensure a clean V2 namespace. Additionally, any existing legacy presets will automatically have previously non-existent channels ("Sound_GameplaySFX", "Sound_PingVolume", "Sound_EncounterWarningsVolume") added to their `.ignored` lists as `true` to prevent accidental volume zeroing upon migration to V2.
+Any V1 keys remaining in the root namespace are aggressively routed into their V2 namespaces and `nil`'d out upon `PLAYER_LOGIN`. Legacy automation parameters from the pre-preset era (e.g., `fishingTargetMaster`, `enableFishingSFX`) are purged unconditionally during migration to ensure a clean V2 namespace. Additionally, any existing legacy presets will automatically have previously non-existent channels ("Sound_GameplaySFX", "Sound_PingVolume", "Sound_EncounterWarningsVolume") added to their `.ignored` lists as `true` to prevent accidental volume zeroing upon migration.
+
+## Migration Contract (`Init.lua:Migrate_V2_to_V3`)
+
+Ensures that all V2-compliant presets are upgraded with the mathematical limiting engine introduced in v3.1.0. All existing presets have an empty `.modes` table initialized. New installs receive the `modes` table via `DEFAULT_DB` or the "Sunwell Silencer" factory.

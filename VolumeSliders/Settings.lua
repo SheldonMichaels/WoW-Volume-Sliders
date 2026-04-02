@@ -350,6 +350,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         volumes = {},
         ignored = {},
         mutes = {},
+        modes = {},
         showInDropdown = true,
         index = nil -- The index in db.automation.presets if it already exists
     }
@@ -571,7 +572,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         local startX = (containerWidth - totalWidth) / 2
         for idx, slider in ipairs(presetSliders) do
             slider:ClearAllPoints()
-            slider:SetPoint("TOPLEFT", slidersContainer, "TOPLEFT", startX + (idx-1) * (sliderWidth + sliderSpacing), -130)
+            slider:SetPoint("TOPLEFT", slidersContainer, "TOPLEFT", startX + (idx-1) * (sliderWidth + sliderSpacing), -160)
         end
     end
 
@@ -694,12 +695,14 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         VS.PresetWorkingState.volumes = {}
         VS.PresetWorkingState.ignored = {}
         VS.PresetWorkingState.mutes = {}
+        VS.PresetWorkingState.modes = {}
 
         if preset then
             for _, z in ipairs(preset.zones or {}) do table.insert(VS.PresetWorkingState.zones, z) end
             for k,v in pairs(preset.volumes or {}) do VS.PresetWorkingState.volumes[k] = v end
             for k,v in pairs(preset.ignored or {}) do VS.PresetWorkingState.ignored[k] = v end
             for k,v in pairs(preset.mutes or {}) do VS.PresetWorkingState.mutes[k] = v end
+            for k,v in pairs(preset.modes or {}) do VS.PresetWorkingState.modes[k] = v end
         end
 
         -- Fill in any missing channels with the current CVar values so the sliders don't default to 100% incorrectly
@@ -796,11 +799,13 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             volumes = {},
             ignored = {},
             mutes = {},
+            modes = {},
             showInDropdown = VS.PresetWorkingState.showInDropdown
         }
         for k,v in pairs(VS.PresetWorkingState.volumes) do newObj.volumes[k] = v end
         for k,v in pairs(VS.PresetWorkingState.ignored) do newObj.ignored[k] = v end
         for k,v in pairs(VS.PresetWorkingState.mutes or {}) do newObj.mutes[k] = v end
+        for k,v in pairs(VS.PresetWorkingState.modes or {}) do newObj.modes[k] = v end
 
         if currentSelectedIndex then
             ShiftAutomationIndexes(currentSelectedIndex, desiredIndex)

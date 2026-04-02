@@ -1,3 +1,15 @@
+# Changelog (v3.1.0)
+
+## v3.1.0-beta1 — 2026-04-02
+### Added
+- **Preset Mathematical Limiting**: Presets can now act as a **Floor** (minimum) or **Ceiling** (maximum). 
+    - *Example*: A Fishing preset can ensure your SFX adjusts to at *least* 80%, leaving it as is if it is already above 80%.
+    - *Example*: A silencer preset can ensure Ambience stays *below* 20%, leaving it untouched if it is already less than 20%.
+- **Unified State Stack Architecture**: Completely refactored preset management to ensure consistent volume behavior across overlapping automations.
+- **V3 Database Migration**: Upgraded the internal data schema to V3. Legacy presets are automatically initialized for the new mathematical limiting system.
+- **Persistent Baseline & Manual Overrides**: Manual slider adjustments now take absolute priority over active automated presets and are automatically cleaned up once automation ends.
+- **Improved Voice Sync**: Voice Chat channels now correctly participate in the preset state stack.
+
 ## v3.0.1 — 2026-03-31
 
 ### Changed

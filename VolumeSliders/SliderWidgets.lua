@@ -451,6 +451,11 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
                 local savedRaw = db.voice["SavedVol_"..muteKey] or 100
                 setterFunc(savedRaw)
             end
+
+            -- Unified State Sync: Flag the manual override for voice channels.
+            local finalVol = isMuted and 0 or (db.voice["SavedVol_"..muteKey] or 100) / 100
+            VS:SyncBaseline(muteKey, finalVol)
+
             PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         end)
     end
@@ -495,7 +500,13 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
              db.voice["MuteState_"..muteKey] = false
         end
 
-        setterFunc(rawValue * 100)
+        if not db.voice["MuteState_"..muteKey] then
+            setterFunc(rawValue * 100)
+            self.valueText:SetText(math_floor(rawValue * 100 + 0.5) .. "%")
+            
+            -- Unified State Sync: Keep the baseline informed of manual user adjustments.
+            VS:SyncBaseline(muteKey, rawValue)
+        end
 
         if muteKey then
             db.voice["SavedVol_"..muteKey] = rawValue * 100
@@ -634,6 +645,96 @@ function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, m
         self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
     end)
 
+    -- Push the value text and title up even further for more breathing room
+    slider.valueText:ClearAllPoints()
+    slider.valueText:SetPoint("BOTTOM", slider.highLabel, "TOP", 0, 32)
+
+    ---------------------------------------------------------------------------
+    -- Mode Dropdown (Absolute, Floor, Ceiling)
+    ---------------------------------------------------------------------------
+    local modeDropdown = CreateFrame("DropdownButton", name .. "Mode", slider)
+    modeDropdown:SetSize(48, 18)
+    modeDropdown:SetPoint("TOP", slider.valueText, "BOTTOM", 0, -6)
+
+    -- Branded Background (Matching PopupFrame style)
+    local ddBg = modeDropdown:CreateTexture(nil, "BACKGROUND")
+    ddBg:SetAtlas("common-dropdown-c-button")
+    ddBg:SetPoint("TOPLEFT", -4, 4)
+    ddBg:SetPoint("BOTTOMRIGHT", 4, -4)
+    modeDropdown.Background = ddBg
+
+    -- Hover arrow indicator
+    local arrow = modeDropdown:CreateTexture(nil, "OVERLAY")
+    arrow:SetAtlas("common-dropdown-c-button-hover-arrow", true)
+    arrow:SetPoint("BOTTOM", 0, -4)
+    arrow:SetSize(12, 6)
+    arrow:Hide()
+    modeDropdown.Arrow = arrow
+
+    local modeText = modeDropdown:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    modeText:SetPoint("CENTER", 0, 0)
+    modeText:SetWidth(44)
+    modeText:SetJustifyH("CENTER")
+    modeDropdown.Text = modeText
+
+    local function RefreshModeUI()
+        local mode = workingTable.modes and workingTable.modes[channelKey] or "absolute"
+        if mode == "floor" then
+            modeText:SetText(">=")
+            modeText:SetTextColor(0, 1, 0) -- Green
+        elseif mode == "ceiling" then
+            modeText:SetText("<=")
+            modeText:SetTextColor(1, 0.2, 0.2) -- Reddish
+        else
+            modeText:SetText("=")
+            modeText:SetTextColor(1, 0.82, 0) -- Gold/Neutral
+        end
+    end
+
+    local function IsSelected(mode)
+        return (workingTable.modes and workingTable.modes[channelKey] or "absolute") == mode
+    end
+
+    local function SetMode(mode)
+        if not workingTable.modes then workingTable.modes = {} end
+        workingTable.modes[channelKey] = mode
+        RefreshModeUI()
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end
+
+    modeDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:SetTag("VS_MODE_SELECT")
+        rootDescription:CreateTitle("Math Mode")
+        rootDescription:CreateRadio("Absolute  =", IsSelected, SetMode, "absolute")
+        rootDescription:CreateRadio("Floor     >=", IsSelected, SetMode, "floor")
+        rootDescription:CreateRadio("Ceiling   <=", IsSelected, SetMode, "ceiling")
+    end)
+
+    -- Hover behaviors
+    modeDropdown:SetScript("OnEnter", function(self)
+        self.Background:SetAtlas("common-dropdown-c-button-hover-1")
+        self.Arrow:Show()
+        
+        local mode = workingTable.modes and workingTable.modes[channelKey] or "absolute"
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Preset Mode", 1, 1, 1)
+        if mode == "floor" then
+            GameTooltip:AddLine("Floor: Ensures volume is AT LEAST this high.", 0, 1, 0, true)
+        elseif mode == "ceiling" then
+            GameTooltip:AddLine("Ceiling: Ensures volume is NO HIGHER than this.", 1, 0.2, 0.2, true)
+        else
+            GameTooltip:AddLine("Absolute: Forces volume to exactly this level.", 1, 0.82, 0, true)
+        end
+        GameTooltip:AddLine("\nClick to select math strategy.", 0.5, 0.5, 0.5, true)
+        GameTooltip:Show()
+    end)
+
+    modeDropdown:SetScript("OnLeave", function(self)
+        self.Background:SetAtlas("common-dropdown-c-button")
+        self.Arrow:Hide()
+        GameTooltip:Hide()
+    end)
+
     ---------------------------------------------------------------------------
     -- Mute Checkbox (opt-in per-channel mute override)
     ---------------------------------------------------------------------------
@@ -669,6 +770,9 @@ function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, m
 
         -- Refresh mute checkbox state
         muteCheck:SetChecked(workingTable.mutes and workingTable.mutes[channelKey] == true)
+
+        -- Refresh mathematical mode
+        RefreshModeUI()
     end
 
     return slider

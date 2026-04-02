@@ -2,7 +2,7 @@
 ## Title: Volume Sliders
 ## Notes: Volume sliders for all sound channels
 ## Author: Sheldon Michaels
-## Version: v3.0.1
+## Version: v3.1.0-beta1
 ## SavedVariables: VolumeSlidersMMDB
 ## SavedVariablesPerCharacter:
 ## OptionalDeps:

@@ -128,7 +128,7 @@ local function Migrate_V1_to_V2(db)
 
     -- 4. Layout
     if db.sliderOrder then db.layout.sliderOrder = db.sliderOrder; db.sliderOrder = nil end
-    if db.maxFooterCols ~= nil then db.layout.maxFooterCols = db.maxFooterCols; db.maxFooterCols = nil end
+    if db.maxFooterCols ~= nil then db.layout.maxFooterCols = db.maxFooterCols; db.layout.maxFooterCols = nil end
     if db.limitFooterCols ~= nil then db.layout.limitFooterCols = db.limitFooterCols; db.limitFooterCols = nil end
     if db.customX ~= nil then db.layout.customX = db.customX; db.customX = nil end
     if db.customY ~= nil then db.layout.customY = db.customY; db.customY = nil end
@@ -192,8 +192,6 @@ local function Migrate_V1_to_V2(db)
     end
 
     -- 9. Purge transient session caches
-    -- V2 SCHEMA REF: These are strictly managed by VS.session now and must vanish
-    -- from the persistent database on login to prevent lingering state corruption.
     db.originalVolumes = nil
     db.originalMutes = nil
     db.layoutDirty = nil
@@ -275,6 +273,27 @@ local function Migrate_V1_to_V2(db)
 end
 
 -------------------------------------------------------------------------------
+-- V2 -> V3 Schema Migration Engine
+--
+-- Initializes the mathematical 'modes' dictionary for presets introduced in 
+-- the v3.1.0 "Limiters" update.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V2_to_V3(db)
+    if db.schemaVersion and db.schemaVersion >= 3 then return end
+
+    local presets = db.automation and db.automation.presets
+    if presets then
+        for _, preset in ipairs(presets) do
+            preset.modes = preset.modes or {}
+        end
+    end
+
+    db.schemaVersion = 3
+end
+
+-------------------------------------------------------------------------------
 -- Main Event Handler (PLAYER_LOGIN)
 --
 -- Orchestrates the addon bootstrap sequence:
@@ -289,6 +308,7 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Apply namespaced structural migration if upgrading from V1
     Migrate_V1_to_V2(db)
+    Migrate_V2_to_V3(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"
@@ -307,6 +327,32 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Merge structural defaults safely
     MergeTable(db, VS.DEFAULT_DB)
+
+    -- Initialize Unified State Stack Baseline
+    -- We capture the user's current volume levels as the "baseline" upon which
+    -- presets will be layered. This is done early to ensure subsequent 
+    -- RefreshEventState calls have a valid baseline to work with.
+    for _, channel in ipairs(VS.DEFAULT_CVAR_ORDER) do
+        local vol = 1
+        if channel == "Voice_ChatVolume" then
+            vol = (C_VoiceChat.GetOutputVolume() or 100) / 100
+        elseif channel == "Voice_ChatDucking" then
+            vol = C_VoiceChat.GetMasterVolumeScale() or 1
+        elseif channel == "Voice_MicVolume" then
+            vol = (C_VoiceChat.GetInputVolume() or 100) / 100
+        elseif channel == "Voice_MicSensitivity" then
+            vol = C_VoiceChat.GetVADSensitivity() or 0
+        else
+            vol = tonumber(GetCVar(channel)) or 1
+        end
+        VS.session.baselineVolumes[channel] = vol
+
+        -- Initialize baseline mutes
+        local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+        if muteCvar then
+            VS.session.baselineMutes[channel] = GetCVar(muteCvar)
+        end
+    end
 
     -- Preset Default (must be done post-merge if presets array is empty)
     db.automation.presets = db.automation.presets or {}
@@ -331,6 +377,7 @@ initFrame:SetScript("OnEvent", function(self, event)
                     ["Voice_MicSensitivity"] = true
                 },
                 mutes = {},
+                modes = {},
                 showInDropdown = true
             }
         }

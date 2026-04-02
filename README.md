@@ -21,6 +21,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 
 ### Automation & Presets
 - **Volume Presets** — Save custom volume profiles and apply them instantly via the in window dropdown or automated triggers.
+- **Mathematical Preset Limiting** — Presets now support "Floor" (minimum) and "Ceiling" (maximum) modes, allowing for nuanced automation that reacts to the current baseline.
 - **Preset Toggles** — Manual presets (dropdown and minimap hotkeys) work as toggles: the first press applies; the second restores your original volumes. Presets support opt-in per-channel muting.
 - **Zone Automation** — Configure presets to automatically activate when entering specific zones (e.g., muting Ambience in the Isle of Quel'Danas) and revert when leaving the zone.
 - **LFG & Fishing Boosts** — Apply a preset during Queue Pops or Fishing casts, with automatic restoration afterwards.
@@ -45,7 +46,6 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 - **Expanded Channel Control** — Adding support for "Emote Sounds" and other hidden game audio channels.
 - **Dynamic Volume Units** — Choose your preferred display unit between percentages (Default), decimals (0.0-1.0), or raw decibels (dB).
 - **Contextual Automation** — New triggers for automatic volume "ducking" when mounting specific creatures or during cinematic cutscenes.
-- **Advanced Preset Logic** — Implementation of directional rules (e.g., "Only lower volume") and "hard mutes" that cannot be overridden by automation.
 
 ### UI & UX Improvements
 - **Profile Export/Import** — Share your complex automation setups and UI layouts with the community or sync them across multiple accounts.

@@ -65,6 +65,20 @@ VolumeSlidersMMDB = VolumeSlidersMMDB or {}
 -- be saved to the database (e.g., dynamic layout flags, automation caches).
 VS.session = {
     layoutDirty = true,
+    
+    -- UNIFIED STATE STACK:
+    -- baselineVolumes[channel] = user intended volume (0.0-1.0)
+    baselineVolumes = {},
+    -- baselineMutes[channel] = user intended enabled state ("0" or "1")
+    baselineMutes = {},
+    -- manualOverrides[channel] = true (preset should ignore this channel)
+    manualOverrides = {},
+    -- registry[type][id] = preset object (flattened during evaluation)
+    activeRegistry = {},
+    -- Semaphore to prevent recursive infinite loops in CVAR_UPDATE handler.
+    isSettingInternal = false,
+
+    -- [DEPRECATED] To be removed in v3.1.0/Cleanup Phase
     originalVolumes = {},
     originalMutes = {},
 }
@@ -168,7 +182,7 @@ VS.DEFAULT_FOOTER_ORDER = {
 -- V2 Database Schema Defaults
 -------------------------------------------------------------------------------
 VS.DEFAULT_DB = {
-    schemaVersion = 2,
+    schemaVersion = 3,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -337,6 +351,52 @@ function VS:AdjustVolume(delta, customStep, cvar)
          local sliderVal = 1 - current
          VS.sliders[targetCVar]:SetValue(sliderVal)
          VS.sliders[targetCVar].valueText:SetText(math_floor(current * 100 + 0.5) .. "%")
+    end
+
+    -- Unified State Sync: Keep the baseline informed of manual user adjustments.
+    self:SyncBaseline(targetCVar, current)
+end
+
+--- Centralized dispatcher for synchronizing the volume baseline and manual overrides.
+-- @param channel string CVar name or Voice Chat identifier.
+-- @param value number|string New volume level (0.0-1.0) OR mute state ("0"/"1").
+function VS:SyncBaseline(channel, value)
+    local sess = self.session
+    local targetChannel = channel
+    local isMuteCVar = false
+
+    -- Check if this is a mute CVar and map it back to the parent channel
+    for volChan, muteChan in pairs(self.CHANNEL_MUTE_CVAR) do
+        if muteChan == channel then
+            targetChannel = volChan
+            isMuteCVar = true
+            break
+        end
+    end
+
+    if isMuteCVar then
+        sess.baselineMutes[targetChannel] = value
+    else
+        sess.baselineVolumes[targetChannel] = tonumber(value) or 1
+    end
+
+    -- If any presets are active, this user action constitutes a "Manual Override" 
+    local anyActive = false
+    for _, typeTable in pairs(sess.activeRegistry) do
+        for _, _ in pairs(typeTable) do
+            anyActive = true
+            break
+        end
+        if anyActive then break end
+    end
+
+    if anyActive then
+        sess.manualOverrides[targetChannel] = true
+    end
+
+    -- Trigger re-evaluation of the entire stack to merge this new baseline.
+    if VS.Presets and VS.Presets.EvaluateAllPresets then
+        VS.Presets:EvaluateAllPresets()
     end
 end
 
