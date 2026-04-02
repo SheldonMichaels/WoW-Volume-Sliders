@@ -10,7 +10,7 @@ describe("Fishing volume tests", function()
     before_each(function()
         -- Reset state
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 2,
+            schemaVersion = 3,
             automation = {
                 enableFishingVolume = true,
             },

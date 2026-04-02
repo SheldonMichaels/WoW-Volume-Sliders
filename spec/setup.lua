@@ -213,7 +213,7 @@ _G.CreateFrame = createMockFrame
 
 -- Config & Variables
 _G.VolumeSlidersMMDB = {
-    schemaVersion = 2,
+    schemaVersion = 3,
     toggles = {
         isLocked = false,
         showTitle = true,
