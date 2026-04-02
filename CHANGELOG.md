@@ -1,6 +1,6 @@
 # Changelog (v3.1.0)
 
-## v3.1.0-beta1 — 2026-04-02
+## v3.1.0 — 2026-04-02
 ### Added
 - **Preset Mathematical Limiting**: Presets can now act as a **Floor** (minimum) or **Ceiling** (maximum). 
     - *Example*: A Fishing preset can ensure your SFX adjusts to at *least* 80%, leaving it as is if it is already above 80%.

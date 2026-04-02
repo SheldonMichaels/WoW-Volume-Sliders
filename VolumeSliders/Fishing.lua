@@ -133,7 +133,6 @@ function VS.Fishing:Initialize()
     
     -- Ensure tracked state exists
     VS.session = VS.session or {}
-    VS.session.originalVolumes = VS.session.originalVolumes or {}
     
     if db.automation.enableFishingVolume then
         fishingFrame:RegisterEvent("UNIT_SPELLCAST_CHANNEL_START")

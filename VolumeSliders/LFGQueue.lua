@@ -151,7 +151,6 @@ function VS.LFGQueue:Initialize()
 
     -- Ensure tracked state exists
     VS.session = VS.session or {}
-    VS.session.originalVolumes = VS.session.originalVolumes or {}
 
     if db.automation.enableLfgVolume then
         lfgFrame:RegisterEvent("LFG_UPDATE")

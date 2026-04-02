@@ -78,9 +78,6 @@ VS.session = {
     -- Semaphore to prevent recursive infinite loops in CVAR_UPDATE handler.
     isSettingInternal = false,
 
-    -- [DEPRECATED] To be removed in v3.1.0/Cleanup Phase
-    originalVolumes = {},
-    originalMutes = {},
 }
 
 -------------------------------------------------------------------------------

@@ -361,7 +361,6 @@ function VS.Presets:RefreshEventState()
     local db = VolumeSlidersMMDB
 
     -- Ensure required tables exist
-    VS.session.originalVolumes = VS.session.originalVolumes or {}
     db.automation.presets = db.automation.presets or {}
 
     -- Wipe lookup
