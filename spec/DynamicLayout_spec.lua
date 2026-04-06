@@ -8,7 +8,7 @@ describe("Dynamic Layout tests", function()
 
     before_each(function()
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 3,
+            schemaVersion = 4,
             toggles = {
                 showTitle = true,
                 showSlider = true,

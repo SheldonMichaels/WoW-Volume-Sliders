@@ -10,7 +10,7 @@ describe("LFG Queue volume tests", function()
     before_each(function()
         -- Reset state
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 3,
+            schemaVersion = 4,
             automation = {
                 enableLfgVolume = true,
             },
