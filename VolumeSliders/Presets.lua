@@ -339,7 +339,7 @@ function VS.Presets:GetActiveTriggersString()
     local sess = VS.session
     local matchedNames = {}
     
-    for _registryType, presets in pairs(sess.activeRegistry) do
+    for _, presets in pairs(sess.activeRegistry) do
         for _, preset in pairs(presets) do
             if preset and preset.name then
                 table.insert(matchedNames, preset.name)
