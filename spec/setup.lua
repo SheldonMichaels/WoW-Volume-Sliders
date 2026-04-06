@@ -255,6 +255,8 @@ _G.VolumeSlidersMMDB = {
         ["Voice_MicSensitivity"] = true,
     },
     automation = {
+        persistedBaseline = {},
+        lastAppliedState = {},
         enableTriggers = true,
         enableFishingVolume = true,
         enableLfgVolume = true,

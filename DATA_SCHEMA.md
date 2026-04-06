@@ -15,7 +15,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
 
 ```json
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -178,6 +178,8 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   // 7. AUTOMATION & PRESETS
   // ---------------------------------------------------------
   "automation": {
+    "persistedBaseline": {},           // { [channel] = volume } The user's true intended volumes
+    "lastAppliedState": {},            // { [channel] = volume } The last state written by EvaluateAllPresets
     "enableTriggers": "boolean",       // Master toggle for zone-triggered preset automation
     "enableFishingVolume": "boolean",  // Enables fishing splash boost automation
     "enableLfgVolume": "boolean",      // Enables LFG queue pop boost automation
@@ -249,3 +251,7 @@ Any V1 keys remaining in the root namespace are aggressively routed into their V
 ## Migration Contract (`Init.lua:Migrate_V2_to_V3`)
 
 Ensures that all V2-compliant presets are upgraded with the mathematical limiting engine introduced in v3.1.0. All existing presets have an empty `.modes` table initialized. New installs receive the `modes` table via `DEFAULT_DB` or the "Sunwell Silencer" factory.
+
+## Migration Contract (`Init.lua:Migrate_V3_to_V4`)
+
+Initializes the `automation.persistedBaseline` and `automation.lastAppliedState` tables to support baseline volume preservation across sessions. This additive migration does not alter any existing user presets. On first run of V4, baseline state is transparently captured from current CVars to seed the new DB tracking maps.

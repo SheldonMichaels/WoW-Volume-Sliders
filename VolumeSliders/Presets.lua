@@ -231,6 +231,13 @@ function VS.Presets:EvaluateAllPresets()
         if current ~= finalVol then
             SetCurrentVolume(channel, finalVol)
         end
+        
+        db.automation.lastAppliedState = db.automation.lastAppliedState or {}
+        db.automation.lastAppliedState[channel] = finalVol
+        local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+        if muteCvar then
+            db.automation.lastAppliedState[channel .. "_Mute"] = GetCVar(muteCvar)
+        end
     end
 
     VS.session.isSettingInternal = false
