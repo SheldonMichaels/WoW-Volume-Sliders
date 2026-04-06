@@ -176,10 +176,10 @@ VS.DEFAULT_FOOTER_ORDER = {
 }
 
 -------------------------------------------------------------------------------
--- V2 Database Schema Defaults
+-- V4 Database Schema Defaults
 -------------------------------------------------------------------------------
 VS.DEFAULT_DB = {
-    schemaVersion = 3,
+    schemaVersion = 4,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },

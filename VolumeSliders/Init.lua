@@ -386,14 +386,14 @@ initFrame:SetScript("OnEvent", function(self, event)
             local persistedMute = db.automation.persistedBaseline and db.automation.persistedBaseline[channel .. "_Mute"]
             local lastAppliedMute = db.automation.lastAppliedState and db.automation.lastAppliedState[channel .. "_Mute"]
             
-            if persistedMute then
-                if lastAppliedMute and currentMute == lastAppliedMute then
-                    VS.session.baselineMutes[channel] = persistedMute
+            if persistedMute ~= nil then
+                if lastAppliedMute ~= nil and tostring(currentMute) == tostring(lastAppliedMute) then
+                    VS.session.baselineMutes[channel] = tostring(persistedMute)
                 else
-                    VS.session.baselineMutes[channel] = currentMute
+                    VS.session.baselineMutes[channel] = tostring(currentMute)
                 end
             else
-                VS.session.baselineMutes[channel] = currentMute
+                VS.session.baselineMutes[channel] = tostring(currentMute)
             end
         end
     end
