@@ -391,12 +391,11 @@ function VS:SyncBaseline(channel, value)
         end
     end
 
-    -- If any presets are active, this user action constitutes a "Manual Override" 
+    -- If any presets are active, this user action constitutes a "Manual Override"
     local anyActive = false
     for _, typeTable in pairs(sess.activeRegistry) do
         for _, _ in pairs(typeTable) do
             anyActive = true
-            break
         end
         if anyActive then break end
     end

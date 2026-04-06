@@ -67,7 +67,7 @@ end
 
 --- Get current volume for a channel (Standard CVar or Voice API).
 local function GetCurrentVolume(channel)
-    if channel == "Voice_ChatVolume" then 
+    if channel == "Voice_ChatVolume" then
         return (C_VoiceChat.GetOutputVolume() or 100) / 100
     elseif channel == "Voice_ChatDucking" then
         return C_VoiceChat.GetMasterVolumeScale() or 1
@@ -234,9 +234,9 @@ function VS.Presets:EvaluateAllPresets()
         
         db.automation.lastAppliedState = db.automation.lastAppliedState or {}
         db.automation.lastAppliedState[channel] = finalVol
-        local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
-        if muteCvar then
-            db.automation.lastAppliedState[channel .. "_Mute"] = GetCVar(muteCvar)
+        local muteCvar2 = VS.CHANNEL_MUTE_CVAR[channel]
+        if muteCvar2 then
+            db.automation.lastAppliedState[channel .. "_Mute"] = GetCVar(muteCvar2)
         end
     end
 
@@ -339,7 +339,7 @@ function VS.Presets:GetActiveTriggersString()
     local sess = VS.session
     local matchedNames = {}
     
-    for type, presets in pairs(sess.activeRegistry) do
+    for _registryType, presets in pairs(sess.activeRegistry) do
         for _, preset in pairs(presets) do
             if preset and preset.name then
                 table.insert(matchedNames, preset.name)

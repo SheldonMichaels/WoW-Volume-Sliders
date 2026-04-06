@@ -576,7 +576,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
     end
 
-    for i, chan in ipairs(channels) do
+    for _, chan in ipairs(channels) do
         local slider = VS:CreateTriggerSlider(slidersContainer, "VSPresetSlider"..chan.label, chan.label, chan.key, VS.PresetWorkingState, 0, 1, 0.01)
 
         -- Start hidden

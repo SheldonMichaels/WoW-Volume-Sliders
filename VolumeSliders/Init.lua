@@ -42,7 +42,7 @@ local function MergeTable(target, source)
     for k, v in pairs(source) do
         if type(v) == "table" then
             -- If the source value is an array, we treat it as an atomic list.
-            -- We do not deep-merge arrays to prevent re-inserting deleted items 
+            -- We do not deep-merge arrays to prevent re-inserting deleted items
             -- or re-shuffling user-defined orders.
             if v[1] ~= nil then
                 if target[k] == nil then
@@ -275,7 +275,7 @@ end
 -------------------------------------------------------------------------------
 -- V2 -> V3 Schema Migration Engine
 --
--- Initializes the mathematical 'modes' dictionary for presets introduced in 
+-- Initializes the mathematical 'modes' dictionary for presets introduced in
 -- the v3.1.0 "Limiters" update.
 --
 -- @param db table The VolumeSlidersMMDB global table.
@@ -350,10 +350,10 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Initialize Unified State Stack Baseline
     -- We capture the user's current volume levels as the "baseline" upon which
-    -- presets will be layered. This is done early to ensure subsequent 
+    -- presets will be layered. This is done early to ensure subsequent
     -- RefreshEventState calls have a valid baseline to work with.
     for _, channel in ipairs(VS.DEFAULT_CVAR_ORDER) do
-        local currentCVar = 1
+        local currentCVar
         if channel == "Voice_ChatVolume" then
             currentCVar = (C_VoiceChat.GetOutputVolume() or 100) / 100
         elseif channel == "Voice_ChatDucking" then
