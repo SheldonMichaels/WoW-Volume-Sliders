@@ -1,5 +1,10 @@
 # Changelog (v3.1.0)
 
+## v3.1.1 — 2026-04-06
+
+### Fixed
+- **Baseline Volume Persistence**: Resolved a high-severity bug where logging in while standing in a zone with an active volume preset would permanently erase your normal baseline volumes. The addon now uses intelligent 3-way merge tracking to seamlessly reconstruct your intended volumes upon logging in under passive automation restraints.
+
 ## v3.1.0 — 2026-04-02
 ### Added
 - **Preset Mathematical Limiting**: Presets can now act as a **Floor** (minimum) or **Ceiling** (maximum). 
