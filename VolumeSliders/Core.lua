@@ -176,10 +176,10 @@ VS.DEFAULT_FOOTER_ORDER = {
 }
 
 -------------------------------------------------------------------------------
--- V2 Database Schema Defaults
+-- V4 Database Schema Defaults
 -------------------------------------------------------------------------------
 VS.DEFAULT_DB = {
-    schemaVersion = 3,
+    schemaVersion = 4,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -266,6 +266,8 @@ VS.DEFAULT_DB = {
     },
     
     automation = {
+        persistedBaseline = {},
+        lastAppliedState = {},
         presets = {},
         manualToggleState = {},
         enableTriggers = true,
@@ -373,16 +375,27 @@ function VS:SyncBaseline(channel, value)
 
     if isMuteCVar then
         sess.baselineMutes[targetChannel] = value
+        local db = VolumeSlidersMMDB
+        if db then
+            db.automation = db.automation or {}
+            db.automation.persistedBaseline = db.automation.persistedBaseline or {}
+            db.automation.persistedBaseline[targetChannel .. "_Mute"] = value
+        end
     else
         sess.baselineVolumes[targetChannel] = tonumber(value) or 1
+        local db = VolumeSlidersMMDB
+        if db then
+            db.automation = db.automation or {}
+            db.automation.persistedBaseline = db.automation.persistedBaseline or {}
+            db.automation.persistedBaseline[targetChannel] = sess.baselineVolumes[targetChannel]
+        end
     end
 
-    -- If any presets are active, this user action constitutes a "Manual Override" 
+    -- If any presets are active, this user action constitutes a "Manual Override"
     local anyActive = false
     for _, typeTable in pairs(sess.activeRegistry) do
         for _, _ in pairs(typeTable) do
             anyActive = true
-            break
         end
         if anyActive then break end
     end

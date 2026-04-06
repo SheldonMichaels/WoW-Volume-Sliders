@@ -42,7 +42,7 @@ local function MergeTable(target, source)
     for k, v in pairs(source) do
         if type(v) == "table" then
             -- If the source value is an array, we treat it as an atomic list.
-            -- We do not deep-merge arrays to prevent re-inserting deleted items 
+            -- We do not deep-merge arrays to prevent re-inserting deleted items
             -- or re-shuffling user-defined orders.
             if v[1] ~= nil then
                 if target[k] == nil then
@@ -275,7 +275,7 @@ end
 -------------------------------------------------------------------------------
 -- V2 -> V3 Schema Migration Engine
 --
--- Initializes the mathematical 'modes' dictionary for presets introduced in 
+-- Initializes the mathematical 'modes' dictionary for presets introduced in
 -- the v3.1.0 "Limiters" update.
 --
 -- @param db table The VolumeSlidersMMDB global table.
@@ -294,6 +294,25 @@ local function Migrate_V2_to_V3(db)
 end
 
 -------------------------------------------------------------------------------
+-- V3 -> V4 Schema Migration Engine
+--
+-- Initializes the persistedBaseline and lastAppliedState tables to support
+-- baseline volume preservation across sessions.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V3_to_V4(db)
+    if db.schemaVersion and db.schemaVersion >= 4 then return end
+
+    db.automation = db.automation or {}
+    db.automation.persistedBaseline = db.automation.persistedBaseline or {}
+    db.automation.lastAppliedState = db.automation.lastAppliedState or {}
+
+    -- Initial seeding will happen in the PLAYER_LOGIN event below.
+    db.schemaVersion = 4
+end
+
+-------------------------------------------------------------------------------
 -- Main Event Handler (PLAYER_LOGIN)
 --
 -- Orchestrates the addon bootstrap sequence:
@@ -309,6 +328,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     -- Apply namespaced structural migration if upgrading from V1
     Migrate_V1_to_V2(db)
     Migrate_V2_to_V3(db)
+    Migrate_V3_to_V4(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"
@@ -330,27 +350,60 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Initialize Unified State Stack Baseline
     -- We capture the user's current volume levels as the "baseline" upon which
-    -- presets will be layered. This is done early to ensure subsequent 
+    -- presets will be layered. This is done early to ensure subsequent
     -- RefreshEventState calls have a valid baseline to work with.
     for _, channel in ipairs(VS.DEFAULT_CVAR_ORDER) do
-        local vol = 1
+        local currentCVar
         if channel == "Voice_ChatVolume" then
-            vol = (C_VoiceChat.GetOutputVolume() or 100) / 100
+            currentCVar = (C_VoiceChat.GetOutputVolume() or 100) / 100
         elseif channel == "Voice_ChatDucking" then
-            vol = C_VoiceChat.GetMasterVolumeScale() or 1
+            currentCVar = C_VoiceChat.GetMasterVolumeScale() or 1
         elseif channel == "Voice_MicVolume" then
-            vol = (C_VoiceChat.GetInputVolume() or 100) / 100
+            currentCVar = (C_VoiceChat.GetInputVolume() or 100) / 100
         elseif channel == "Voice_MicSensitivity" then
-            vol = C_VoiceChat.GetVADSensitivity() or 0
+            currentCVar = C_VoiceChat.GetVADSensitivity() or 0
         else
-            vol = tonumber(GetCVar(channel)) or 1
+            currentCVar = tonumber(GetCVar(channel)) or 1
         end
-        VS.session.baselineVolumes[channel] = vol
+        
+        local persisted = db.automation.persistedBaseline and db.automation.persistedBaseline[channel]
+        local lastApplied = db.automation.lastAppliedState and db.automation.lastAppliedState[channel]
+        
+        if persisted then
+            if lastApplied and math.abs(currentCVar - lastApplied) < 0.001 then
+                VS.session.baselineVolumes[channel] = persisted
+            else
+                VS.session.baselineVolumes[channel] = currentCVar
+            end
+        else
+            VS.session.baselineVolumes[channel] = currentCVar
+        end
 
         -- Initialize baseline mutes
         local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
         if muteCvar then
-            VS.session.baselineMutes[channel] = GetCVar(muteCvar)
+            local currentMute = GetCVar(muteCvar)
+            local persistedMute = db.automation.persistedBaseline and db.automation.persistedBaseline[channel .. "_Mute"]
+            local lastAppliedMute = db.automation.lastAppliedState and db.automation.lastAppliedState[channel .. "_Mute"]
+            
+            if persistedMute ~= nil then
+                if lastAppliedMute ~= nil and tostring(currentMute) == tostring(lastAppliedMute) then
+                    VS.session.baselineMutes[channel] = tostring(persistedMute)
+                else
+                    VS.session.baselineMutes[channel] = tostring(currentMute)
+                end
+            else
+                VS.session.baselineMutes[channel] = tostring(currentMute)
+            end
+        end
+    end
+    
+    db.automation.persistedBaseline = db.automation.persistedBaseline or {}
+    for _, channel in ipairs(VS.DEFAULT_CVAR_ORDER) do
+        db.automation.persistedBaseline[channel] = VS.session.baselineVolumes[channel]
+        local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+        if muteCvar then
+            db.automation.persistedBaseline[channel .. "_Mute"] = VS.session.baselineMutes[channel]
         end
     end
 

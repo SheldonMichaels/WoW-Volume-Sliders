@@ -26,7 +26,7 @@ local SetCVar    = SetCVar
 -- Broker Scroll Hook
 --
 -- Third-party LDB display addons (ElvUI data texts, Titan Panel, etc.)
--- create their own frames.  We selectively hook OnMouseWheel on each display 
+-- create their own frames.  We selectively hook OnMouseWheel on each display
 -- frame the moment the user hovers it (via OnTooltipShow) so that scroll-to-
 -- adjust-volume works immediately, without requiring a click first.
 -----------------------------------------
@@ -86,8 +86,8 @@ end
 -- This is the core integration point for minimap icons and data-broker
 -- display addons (e.g., Titan Panel, ChocolateBar).  It defines what
 -- icon to show, what text to display, and how to respond to clicks.
--- 
--- V2 SCHEMA REF: `Init.lua` strictly passes `db.minimap` into LibDBIcon 
+--
+-- V2 SCHEMA REF: `Init.lua` strictly passes `db.minimap` into LibDBIcon
 -- so the library cannot pollute the global database root with its own settings.
 -----------------------------------------
 VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {

@@ -8,7 +8,7 @@ describe("Registry-based Preset Logic (Unified State Stack)", function()
 
     before_each(function()
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 3,
+            schemaVersion = 4,
             automation = {
                 enableTriggers = true,
                 presets = {}

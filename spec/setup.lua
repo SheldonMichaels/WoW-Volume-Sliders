@@ -213,7 +213,7 @@ _G.CreateFrame = createMockFrame
 
 -- Config & Variables
 _G.VolumeSlidersMMDB = {
-    schemaVersion = 3,
+    schemaVersion = 4,
     toggles = {
         isLocked = false,
         showTitle = true,
@@ -255,6 +255,8 @@ _G.VolumeSlidersMMDB = {
         ["Voice_MicSensitivity"] = true,
     },
     automation = {
+        persistedBaseline = {},
+        lastAppliedState = {},
         enableTriggers = true,
         enableFishingVolume = true,
         enableLfgVolume = true,
