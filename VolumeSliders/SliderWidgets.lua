@@ -363,8 +363,14 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
         local isMuted = self:GetChecked()
         if isMuted then
             SetCVar(muteCvar, 0) -- Disable (mute) the sound channel
+            if muteCvar ~= "Sound_EnableAllSound" then
+                VS:SyncBaseline(muteCvar, "0")
+            end
         else
             SetCVar(muteCvar, 1) -- Enable (unmute) the sound channel
+            if muteCvar ~= "Sound_EnableAllSound" then
+                VS:SyncBaseline(muteCvar, "1")
+            end
         end
 
         -- The Master channel mute also drives the minimap icon state.
@@ -452,9 +458,9 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
                 setterFunc(savedRaw)
             end
 
-            -- Unified State Sync: Flag the manual override for voice channels.
+            -- Unified State Sync: Update the baseline. DO NOT flag manual override (Rule 11)
             local finalVol = isMuted and 0 or (db.voice["SavedVol_"..muteKey] or 100) / 100
-            VS:SyncBaseline(muteKey, finalVol)
+            VS:SyncBaseline(muteKey, finalVol, true)
 
             PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         end)

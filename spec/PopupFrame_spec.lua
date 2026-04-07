@@ -8,7 +8,7 @@ describe("PopupFrame behavioral tests", function()
 
     before_each(function()
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 4,
+            schemaVersion = 5,
             toggles = {
                 persistentWindow = false,
             },

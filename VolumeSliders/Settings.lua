@@ -628,6 +628,58 @@ function VS:CreateAutomationSettingsContents(parentFrame)
                 end
             end
         end
+
+        local function ShiftMap(map)
+            if not map then return end
+            if not insertedIndex then
+                map[deletedIndex] = nil
+                local newMap = {}
+                for k, v in pairs(map) do
+                    if k > deletedIndex then
+                        newMap[k - 1] = v
+                    elseif k < deletedIndex then
+                        newMap[k] = v
+                    end
+                end
+                wipe(map)
+                for k, v in pairs(newMap) do map[k] = v end
+            else
+                local movedItem = map[deletedIndex]
+                map[deletedIndex] = nil
+                local newMap = {}
+                for k, v in pairs(map) do
+                    if deletedIndex < insertedIndex then
+                        if k > deletedIndex and k <= insertedIndex then
+                            newMap[k - 1] = v
+                        else
+                            newMap[k] = v
+                        end
+                    elseif deletedIndex > insertedIndex then
+                        if k >= insertedIndex and k < deletedIndex then
+                            newMap[k + 1] = v
+                        else
+                            newMap[k] = v
+                        end
+                    end
+                end
+                if movedItem ~= nil then
+                    newMap[insertedIndex] = movedItem
+                end
+                wipe(map)
+                for k, v in pairs(newMap) do map[k] = v end
+            end
+        end
+
+        local sess = VS.session
+        if sess then
+            if sess.activeRegistry then
+                ShiftMap(sess.activeRegistry["manual"])
+            end
+            ShiftMap(sess.manualActivationTimes)
+        end
+        if db.automation then
+            ShiftMap(db.automation.activeManualPresets)
+        end
     end
 
     ---------------------------------------------------------------------------
@@ -878,6 +930,20 @@ function VS:CreateAutomationSettingsContents(parentFrame)
                 db.automation[key] = idxA
             end
         end
+
+        local function SwapMap(map)
+            if not map then return end
+            local tempVal = map[idxA]
+            map[idxA] = map[idxB]
+            map[idxB] = tempVal
+        end
+        
+        local sess = VS.session
+        if sess then
+            if sess.activeRegistry then SwapMap(sess.activeRegistry["manual"]) end
+            SwapMap(sess.manualActivationTimes)
+        end
+        if db.automation then SwapMap(db.automation.activeManualPresets) end
 
         local temp = db.automation.presets[idxA]
         db.automation.presets[idxA] = db.automation.presets[idxB]

@@ -156,32 +156,41 @@ function VS.Presets:EvaluateAllPresets()
     local automationTypes = { "zone", "fishing", "lfg" }
     for _, t in ipairs(automationTypes) do
         if sess.activeRegistry[t] then
-            for _, preset in pairs(sess.activeRegistry[t]) do
-                table.insert(presetsToApply, preset)
+            for idx, preset in pairs(sess.activeRegistry[t]) do
+                table.insert(presetsToApply, { preset = preset, type = t, idx = idx })
             end
         end
     end
-    table_sort(presetsToApply, SortPresetsByPriority)
+    table_sort(presetsToApply, function(a, b)
+        return SortPresetsByPriority(a.preset, b.preset)
+    end)
 
     -- Layer 2: Manual Toggles (Always Highest Priority)
-    local manualPresets = {}
+    local manualWrappers = {}
     if sess.activeRegistry["manual"] then
-        for _, preset in pairs(sess.activeRegistry["manual"]) do
-            table.insert(manualPresets, preset)
+        for idx, preset in pairs(sess.activeRegistry["manual"]) do
+            table.insert(manualWrappers, { preset = preset, type = "manual", idx = idx })
         end
     end
-    -- Sorting manual toggles relative to each other (if multiple)
-    table_sort(manualPresets, SortPresetsByPriority)
-    for _, p in ipairs(manualPresets) do
-        table.insert(presetsToApply, p)
+    -- Sorting manual toggles relative to each other (Rule 5: Newest Wins)
+    table_sort(manualWrappers, function(a, b)
+        local timeA = sess.manualActivationTimes[a.idx] or 0
+        local timeB = sess.manualActivationTimes[b.idx] or 0
+        return timeA < timeB
+    end)
+    for _, wrapper in ipairs(manualWrappers) do
+        table.insert(presetsToApply, wrapper)
     end
 
     -- 3. Layer volumes over baseline (Respecting Manual Overrides)
     local activeMutes = {} -- channel => true
-    for _, preset in ipairs(presetsToApply) do
+    for _, wrapper in ipairs(presetsToApply) do
+        local preset = wrapper.preset
+        local isTransient = (wrapper.type == "fishing" or wrapper.type == "lfg")
         for channel, presetVal in pairs(preset.volumes) do
-            -- A preset applies ONLY if the user hasn't moved that slider manually during this preset session.
-            if not sess.manualOverrides[channel] then
+            -- A preset applies ONLY if the user hasn't moved that slider manually during this session.
+            -- Rule 4 Transient Punch-Through: fishing and lfg bypass manualOverrides.
+            if not sess.manualOverrides[channel] or isTransient then
                 if not preset.ignored or not preset.ignored[channel] then
                     local mode = preset.modes and preset.modes[channel] or "absolute"
                     local currentVal = targetState[channel]
@@ -210,7 +219,7 @@ function VS.Presets:EvaluateAllPresets()
 
         -- Handle Muting (CVars only, Voice is handled via Soft-Mute in UI/DB)
         local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
-        if muteCvar then
+        if muteCvar and muteCvar ~= "Sound_EnableAllSound" then
             local shouldMute = activeMutes[channel]
             local targetMuteValue = shouldMute and "0" or targetMutes[channel]
             local currentMute = GetCVar(muteCvar)
@@ -252,14 +261,47 @@ function VS.Presets:TogglePreset(preset, presetIndex)
     if not preset then return false end
     
     local sess = VS.session
+    local db = VolumeSlidersMMDB
     local isActive = sess.activeRegistry["manual"] and sess.activeRegistry["manual"][presetIndex]
     
     if isActive then
         -- Toggle OFF
         self:RegisterActivePreset("manual", presetIndex, nil)
+        sess.manualActivationTimes[presetIndex] = nil
+        if db.automation.activeManualPresets then
+            db.automation.activeManualPresets[presetIndex] = nil
+        end
         return false
     else
-        -- Toggle ON
+        -- Toggle ON (Rule 1: Iron Fist)
+        for channel, _ in pairs(preset.volumes) do
+            if not preset.ignored or not preset.ignored[channel] then
+                sess.manualOverrides[channel] = nil
+                
+                -- Decoupled Mutes: Unmute if it's not explicitly muted by the preset
+                local shouldMute = preset.mutes and preset.mutes[channel]
+                if not shouldMute then
+                    local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
+                    if muteCvar then
+                        sess.baselineMutes[channel] = "1"
+                        db.automation = db.automation or {}
+                        db.automation.persistedBaseline = db.automation.persistedBaseline or {}
+                        db.automation.persistedBaseline[channel .. "_Mute"] = "1"
+                        SetCVar(muteCvar, 1)
+                    end
+                    if channel:find("^Voice_") then
+                        db.voice = db.voice or {}
+                        db.voice["MuteState_"..channel] = nil
+                    end
+                end
+            end
+        end
+
+        local now = GetTime()
+        sess.manualActivationTimes[presetIndex] = now
+        db.automation.activeManualPresets = db.automation.activeManualPresets or {}
+        db.automation.activeManualPresets[presetIndex] = now
+
         self:RegisterActivePreset("manual", presetIndex, preset)
         return true
     end
@@ -273,6 +315,13 @@ local function OnPresetEvent()
     
     -- Clear current zone/auto registration in session to recalculate
     local sess = VS.session
+    local oldZoneRegistry = {}
+    if sess.activeRegistry["zone"] then
+        for idx, obj in pairs(sess.activeRegistry["zone"]) do
+            oldZoneRegistry[idx] = obj
+        end
+    end
+
     sess.activeRegistry["zone"] = {}
     sess.activeRegistry["fishing"] = {}
     sess.activeRegistry["lfg"] = {}
@@ -298,6 +347,17 @@ local function OnPresetEvent()
             AddZoneMatches(realZone)
             AddZoneMatches(subZone)
             AddZoneMatches(miniZone)
+        end
+        
+        -- Rule 2 (Zone Bleed): Clear overrides if a zone preset newly activates
+        for idx, preset in pairs(sess.activeRegistry["zone"]) do
+            if not oldZoneRegistry[idx] then
+                for channel, _ in pairs(preset.volumes) do
+                    if not preset.ignored or not preset.ignored[channel] then
+                        sess.manualOverrides[channel] = nil
+                    end
+                end
+            end
         end
     end
 

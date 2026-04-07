@@ -73,6 +73,8 @@ VS.session = {
     baselineMutes = {},
     -- manualOverrides[channel] = true (preset should ignore this channel)
     manualOverrides = {},
+    -- manualActivationTimes[presetIndex] = GetTime() timestamp
+    manualActivationTimes = {},
     -- registry[type][id] = preset object (flattened during evaluation)
     activeRegistry = {},
     -- Semaphore to prevent recursive infinite loops in CVAR_UPDATE handler.
@@ -179,7 +181,7 @@ VS.DEFAULT_FOOTER_ORDER = {
 -- V4 Database Schema Defaults
 -------------------------------------------------------------------------------
 VS.DEFAULT_DB = {
-    schemaVersion = 4,
+    schemaVersion = 5,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -269,7 +271,7 @@ VS.DEFAULT_DB = {
         persistedBaseline = {},
         lastAppliedState = {},
         presets = {},
-        manualToggleState = {},
+        activeManualPresets = {},
         enableTriggers = true,
         enableFishingVolume = true,
         enableLfgVolume = true,
@@ -359,7 +361,8 @@ end
 --- Centralized dispatcher for synchronizing the volume baseline and manual overrides.
 -- @param channel string CVar name or Voice Chat identifier.
 -- @param value number|string New volume level (0.0-1.0) OR mute state ("0"/"1").
-function VS:SyncBaseline(channel, value)
+-- @param isVoiceMuteToggle boolean Optional. True if this call originated from a Voice Chat mute checkbox.
+function VS:SyncBaseline(channel, value, isVoiceMuteToggle)
     local sess = self.session
     local targetChannel = channel
     local isMuteCVar = false
@@ -400,7 +403,7 @@ function VS:SyncBaseline(channel, value)
         if anyActive then break end
     end
 
-    if anyActive then
+    if anyActive and not isMuteCVar and not isVoiceMuteToggle then
         sess.manualOverrides[targetChannel] = true
     end
 
