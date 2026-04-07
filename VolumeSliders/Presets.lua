@@ -219,7 +219,7 @@ function VS.Presets:EvaluateAllPresets()
 
         -- Handle Muting (CVars only, Voice is handled via Soft-Mute in UI/DB)
         local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]
-        if muteCvar and muteCvar ~= "Sound_EnableAllSound" then
+        if muteCvar then
             local shouldMute = activeMutes[channel]
             local targetMuteValue = shouldMute and "0" or targetMutes[channel]
             local currentMute = GetCVar(muteCvar)

@@ -1,4 +1,16 @@
-# Changelog (v3.1.0)
+# Changelog (v3.2.0)
+
+## v3.2.0 — 2026-04-07
+
+### Added
+- **Mute & Volume Independence**: Muting a channel while a preset is active no longer locks the slider into "manual override" mode. Mutes behave fully independently, allowing presets to seamlessly take control of standard volume values tracking behind the scenes.
+- **Preset Stacking (Most-Recent-Wins)**: Replaced the fixed priority layers for manual presets. When multiple overlapping presets are activated manually, the most recently activated preset will dynamically take absolute control. Turning it off elegantly falls back to the previous preset. 
+- **Registry Shift Integrity**: Hardened the Settings Preset panel so deleting or re-prioritizing presets out of order natively shifts indexing algorithms immediately without corrupting your active automation trackers.
+
+### Known Bugs
+- **Preset Selection Dropdown in Settings**:
+    - Does not currently update the dropdown text when a preset is saved until the dropdown is activated again.
+    - The displayed preset is wrongly displayed after the selected preset's list order is changed.
 
 ## v3.1.1 — 2026-04-06
 

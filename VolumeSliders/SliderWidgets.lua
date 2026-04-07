@@ -363,14 +363,10 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
         local isMuted = self:GetChecked()
         if isMuted then
             SetCVar(muteCvar, 0) -- Disable (mute) the sound channel
-            if muteCvar ~= "Sound_EnableAllSound" then
-                VS:SyncBaseline(muteCvar, "0")
-            end
+            VS:SyncBaseline(muteCvar, "0")
         else
             SetCVar(muteCvar, 1) -- Enable (unmute) the sound channel
-            if muteCvar ~= "Sound_EnableAllSound" then
-                VS:SyncBaseline(muteCvar, "1")
-            end
+            VS:SyncBaseline(muteCvar, "1")
         end
 
         -- The Master channel mute also drives the minimap icon state.
