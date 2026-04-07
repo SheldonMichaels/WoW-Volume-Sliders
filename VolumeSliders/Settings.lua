@@ -156,6 +156,7 @@ end
 -- @param parentFrame Frame The canvas frame provided by Blizzard Settings API.
 -------------------------------------------------------------------------------
 function VS:CreateAutomationSettingsContents(parentFrame)
+    --- @type VolumeSlidersDB
     local db = VolumeSlidersMMDB
     db.automation.presets = db.automation.presets or {}
 
@@ -279,6 +280,9 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     local lfgDropdown, lfgLabel = CreatePresetSelector("LFG Profile", "lfgPresetIndex", lfgCheck, 0, -15, "Select a preset profile to apply when a group queue pops.")
 
     --- Populates the dropdown menu with "None" and all user-defined presets.
+    --- @param dropdown any The dropdown frame
+    --- @param rootDescription any The root menu description
+    --- @param dbKey "fishingPresetIndex"|"lfgPresetIndex" The automation pointer to update
     local function PopulateAutomationDropdown(dropdown, rootDescription, dbKey)
         rootDescription:CreateButton("None", function()
             db.automation[dbKey] = nil
@@ -595,38 +599,41 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     --- @param deletedIndex number The index being removed or moved FROM.
     --- @param insertedIndex number|nil Optional. The index being moved TO (for reordering).
     local function ShiftAutomationIndexes(deletedIndex, insertedIndex)
+        --- @type VolumeSlidersDB
+        local db = VolumeSlidersMMDB
         local keys = {"fishingPresetIndex", "lfgPresetIndex"}
         for _, key in ipairs(keys) do
             local idx = db.automation[key]
-            if idx then
-                if idx == deletedIndex then
-                    -- The assigned preset is the one being moved or deleted
-                    if insertedIndex then
-                        db.automation[key] = insertedIndex
-                    else
-                        db.automation[key] = nil
-                    end
-                elseif not insertedIndex then
-                    -- Pure deletion: Shift down all items above the deleted hole
-                    if idx > deletedIndex then
-                        db.automation[key] = idx - 1
-                    end
-                else
-                    -- Reordering: A preset was moved from deletedIndex to insertedIndex.
-                    -- Everyone in between shifts relative to the direction of travel.
-                    if deletedIndex < insertedIndex then
-                        -- Moved from top to bottom. Elements in (deletedIndex, insertedIndex] move UP
-                        if idx > deletedIndex and idx <= insertedIndex then
-                            db.automation[key] = idx - 1
+                    if idx then
+                        if idx == deletedIndex then
+                            -- The assigned preset is the one being moved or deleted
+                            if insertedIndex then
+                                ---@cast insertedIndex integer
+                                db.automation[key --[[@as string]]] = insertedIndex
+                            else
+                                db.automation[key --[[@as string]]] = nil
+                            end
+                        elseif not insertedIndex then
+                            -- Pure deletion: Shift down all items above the deleted hole
+                            if idx > deletedIndex then
+                                db.automation[key --[[@as string]]] = idx - 1
+                            end
+                        else
+                            -- Reordering: A preset was moved from deletedIndex to insertedIndex.
+                            -- Everyone in between shifts relative to the direction of travel.
+                            if deletedIndex < insertedIndex then
+                                -- Moved from top to bottom. Elements in (deletedIndex, insertedIndex] move UP
+                                if idx > deletedIndex and idx <= insertedIndex then
+                                    db.automation[key --[[@as string]]] = idx - 1
+                                end
+                            elseif deletedIndex > insertedIndex then
+                                -- Moved from bottom to top. Elements in [insertedIndex, deletedIndex) move DOWN
+                                if idx >= insertedIndex and idx < deletedIndex then
+                                    db.automation[key --[[@as string]]] = idx + 1
+                                end
+                            end
                         end
-                    elseif deletedIndex > insertedIndex then
-                        -- Moved from bottom to top. Elements in [insertedIndex, deletedIndex) move DOWN
-                        if idx >= insertedIndex and idx < deletedIndex then
-                            db.automation[key] = idx + 1
-                        end
                     end
-                end
-            end
         end
 
         if db.minimap and db.minimap.mouseActions then

@@ -180,6 +180,28 @@ VS.DEFAULT_FOOTER_ORDER = {
 -------------------------------------------------------------------------------
 -- V4 Database Schema Defaults
 -------------------------------------------------------------------------------
+--- @class VolumeSlidersAutomation
+--- @field persistedBaseline table<string, number>
+--- @field lastAppliedState table<string, number>
+--- @field presets table
+--- @field activeManualPresets table<number, number>
+--- @field enableTriggers boolean
+--- @field enableFishingVolume boolean
+--- @field enableLfgVolume boolean
+--- @field fishingPresetIndex integer|nil
+--- @field lfgPresetIndex integer|nil
+
+--- @class VolumeSlidersDB
+--- @field schemaVersion integer
+--- @field appearance table
+--- @field layout table
+--- @field toggles table
+--- @field channels table
+--- @field minimap table
+--- @field hardware table
+--- @field automation VolumeSlidersAutomation
+--- @field voice table
+
 VS.DEFAULT_DB = {
     schemaVersion = 5,
     
@@ -275,6 +297,8 @@ VS.DEFAULT_DB = {
         enableTriggers = true,
         enableFishingVolume = true,
         enableLfgVolume = true,
+        fishingPresetIndex = 0,
+        lfgPresetIndex = 0,
     },
     
     voice = {},
