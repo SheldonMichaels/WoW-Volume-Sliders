@@ -7,10 +7,10 @@
 - **Preset Stacking (Most-Recent-Wins)**: Replaced the fixed priority layers for manual presets. When multiple overlapping presets are activated manually, the most recently activated preset will dynamically take absolute control. Turning it off elegantly falls back to the previous preset. 
 - **Registry Shift Integrity**: Hardened the Settings Preset panel so deleting or re-prioritizing presets out of order natively shifts indexing algorithms immediately without corrupting your active automation trackers.
 
-### Known Bugs
-- **Preset Selection Dropdown in Settings**:
-    - Does not currently update the dropdown text when a preset is saved until the dropdown is activated again.
-    - The displayed preset is wrongly displayed after the selected preset's list order is changed.
+### Fixed
+- **Settings Preset Dropdown**: Fixed an issue where the displayed preset name was occasionally incorrect or not updating synchronously when saving edits or shifting list priorities.
+- **Minimap Keybind Accuracy**: Preset targeting assigned to Minimap Mouse Actions is now fully protected against array shifting and will no longer scramble when you delete or reorder presets in your main settings list.
+
 
 ## v3.1.1 — 2026-04-06
 

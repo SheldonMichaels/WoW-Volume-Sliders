@@ -629,6 +629,37 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             end
         end
 
+        if db.minimap and db.minimap.mouseActions then
+            for _, action in ipairs(db.minimap.mouseActions) do
+                if action.effect == "TOGGLE_PRESET" and action.stringTarget then
+                    local idx = tonumber(action.stringTarget)
+                    if idx then
+                        if idx == deletedIndex then
+                            if insertedIndex then
+                                action.stringTarget = tostring(insertedIndex)
+                            else
+                                action.stringTarget = nil
+                            end
+                        elseif not insertedIndex then
+                            if idx > deletedIndex then
+                                action.stringTarget = tostring(idx - 1)
+                            end
+                        else
+                            if deletedIndex < insertedIndex then
+                                if idx > deletedIndex and idx <= insertedIndex then
+                                    action.stringTarget = tostring(idx - 1)
+                                end
+                            elseif deletedIndex > insertedIndex then
+                                if idx >= insertedIndex and idx < deletedIndex then
+                                    action.stringTarget = tostring(idx + 1)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
         local function ShiftMap(map)
             if not map then return end
             if not insertedIndex then
@@ -792,15 +823,15 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     end
 
     local function RefreshDropdown()
-        presetDropdown:SetupMenu(GenerateDropdownMenu)
-        presetDropdown:GenerateMenu()
-
         if currentSelectedIndex and db.automation.presets[currentSelectedIndex] then
             presetDropdown:SetDefaultText(db.automation.presets[currentSelectedIndex].name)
         else
             -- Ensure New Profile is selected if none is active or list is empty
             SelectNewProfile()
         end
+
+        presetDropdown:SetupMenu(GenerateDropdownMenu)
+        presetDropdown:GenerateMenu()
 
         if VS.RefreshAutomationProfiles then
             VS:RefreshAutomationProfiles()
@@ -948,6 +979,20 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         local temp = db.automation.presets[idxA]
         db.automation.presets[idxA] = db.automation.presets[idxB]
         db.automation.presets[idxB] = temp
+
+        if db.minimap and db.minimap.mouseActions then
+            for _, action in ipairs(db.minimap.mouseActions) do
+                if action.effect == "TOGGLE_PRESET" and action.stringTarget then
+                    local idx = tonumber(action.stringTarget)
+                    if idx == idxA then
+                        action.stringTarget = tostring(idxB)
+                    elseif idx == idxB then
+                        action.stringTarget = tostring(idxA)
+                    end
+                end
+            end
+        end
+
         RefreshDropdown()
 
         if VS.Presets and VS.Presets.RefreshEventState then VS.Presets:RefreshEventState() end
