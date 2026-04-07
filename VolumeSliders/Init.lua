@@ -315,8 +315,8 @@ end
 -------------------------------------------------------------------------------
 -- V4 -> V5 Schema Migration Engine
 --
--- Tears down the deprecated snapshot-based `manualToggleState` payload system in 
--- favor of the stateless, timestamp-based stack model.  
+-- Tears down the deprecated snapshot-based `manualToggleState` payload system in
+-- favor of the stateless, timestamp-based stack model.
 --
 -- @param db table The VolumeSlidersMMDB global table.
 -------------------------------------------------------------------------------
