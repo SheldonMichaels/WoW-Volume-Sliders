@@ -467,7 +467,7 @@ initFrame:SetScript("OnEvent", function(self, event)
             local numIdx = tonumber(idx)
             -- Apply "Iron Fist" Rule 10 (Registry Integrity) check
             if db.automation.presets and numIdx and db.automation.presets[numIdx] then
-                VS.session.activeRegistry.manual[numIdx] = true
+                VS.session.activeRegistry.manual[numIdx] = db.automation.presets[numIdx]
                 VS.session.manualActivationTimes[numIdx] = tonumber(timestamp)
             else
                 -- Orphaned index, clean it up
