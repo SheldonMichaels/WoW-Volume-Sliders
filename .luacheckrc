@@ -111,7 +111,8 @@ read_globals = {
     "GetLFGQueueStats",
     "GetLFGProposal",
     "MinimapZoomIn",
-    "MinimapZoomOut"
+    "MinimapZoomOut",
+    "GetTime"
 }
 
 -- Globals that the addon creates and assigns values to

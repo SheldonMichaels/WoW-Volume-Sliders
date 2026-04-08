@@ -213,7 +213,7 @@ _G.CreateFrame = createMockFrame
 
 -- Config & Variables
 _G.VolumeSlidersMMDB = {
-    schemaVersion = 4,
+    schemaVersion = 5,
     toggles = {
         isLocked = false,
         showTitle = true,
@@ -342,6 +342,10 @@ _G.Sound_GameSystem_RestartSoundSystem = function() end
 -- C_Timer Mocking Engine
 local mockTime = 0
 local activeTickers = {}
+
+_G.GetTime = function()
+    return mockTime
+end
 
 _G.AdvanceTime = function(delta)
     mockTime = mockTime + delta

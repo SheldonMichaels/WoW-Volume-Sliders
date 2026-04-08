@@ -156,6 +156,7 @@ end
 -- @param parentFrame Frame The canvas frame provided by Blizzard Settings API.
 -------------------------------------------------------------------------------
 function VS:CreateAutomationSettingsContents(parentFrame)
+    --- @type VolumeSlidersDB
     local db = VolumeSlidersMMDB
     db.automation.presets = db.automation.presets or {}
 
@@ -279,6 +280,9 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     local lfgDropdown, lfgLabel = CreatePresetSelector("LFG Profile", "lfgPresetIndex", lfgCheck, 0, -15, "Select a preset profile to apply when a group queue pops.")
 
     --- Populates the dropdown menu with "None" and all user-defined presets.
+    --- @param dropdown any The dropdown frame
+    --- @param rootDescription any The root menu description
+    --- @param dbKey "fishingPresetIndex"|"lfgPresetIndex" The automation pointer to update
     local function PopulateAutomationDropdown(dropdown, rootDescription, dbKey)
         rootDescription:CreateButton("None", function()
             db.automation[dbKey] = nil
@@ -595,38 +599,124 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     --- @param deletedIndex number The index being removed or moved FROM.
     --- @param insertedIndex number|nil Optional. The index being moved TO (for reordering).
     local function ShiftAutomationIndexes(deletedIndex, insertedIndex)
+        --- @type VolumeSlidersDB
+        local db = VolumeSlidersMMDB
         local keys = {"fishingPresetIndex", "lfgPresetIndex"}
         for _, key in ipairs(keys) do
             local idx = db.automation[key]
-            if idx then
-                if idx == deletedIndex then
-                    -- The assigned preset is the one being moved or deleted
-                    if insertedIndex then
-                        db.automation[key] = insertedIndex
-                    else
-                        db.automation[key] = nil
-                    end
-                elseif not insertedIndex then
-                    -- Pure deletion: Shift down all items above the deleted hole
-                    if idx > deletedIndex then
-                        db.automation[key] = idx - 1
-                    end
-                else
-                    -- Reordering: A preset was moved from deletedIndex to insertedIndex.
-                    -- Everyone in between shifts relative to the direction of travel.
-                    if deletedIndex < insertedIndex then
-                        -- Moved from top to bottom. Elements in (deletedIndex, insertedIndex] move UP
-                        if idx > deletedIndex and idx <= insertedIndex then
-                            db.automation[key] = idx - 1
+                    if idx then
+                        if idx == deletedIndex then
+                            -- The assigned preset is the one being moved or deleted
+                            if insertedIndex then
+                                ---@cast insertedIndex integer
+                                db.automation[key --[[@as string]]] = insertedIndex
+                            else
+                                db.automation[key --[[@as string]]] = nil
+                            end
+                        elseif not insertedIndex then
+                            -- Pure deletion: Shift down all items above the deleted hole
+                            if idx > deletedIndex then
+                                db.automation[key --[[@as string]]] = idx - 1
+                            end
+                        else
+                            -- Reordering: A preset was moved from deletedIndex to insertedIndex.
+                            -- Everyone in between shifts relative to the direction of travel.
+                            if deletedIndex < insertedIndex then
+                                -- Moved from top to bottom. Elements in (deletedIndex, insertedIndex] move UP
+                                if idx > deletedIndex and idx <= insertedIndex then
+                                    db.automation[key --[[@as string]]] = idx - 1
+                                end
+                            elseif deletedIndex > insertedIndex then
+                                -- Moved from bottom to top. Elements in [insertedIndex, deletedIndex) move DOWN
+                                if idx >= insertedIndex and idx < deletedIndex then
+                                    db.automation[key --[[@as string]]] = idx + 1
+                                end
+                            end
                         end
-                    elseif deletedIndex > insertedIndex then
-                        -- Moved from bottom to top. Elements in [insertedIndex, deletedIndex) move DOWN
-                        if idx >= insertedIndex and idx < deletedIndex then
-                            db.automation[key] = idx + 1
+                    end
+        end
+
+        if db.minimap and db.minimap.mouseActions then
+            for _, action in ipairs(db.minimap.mouseActions) do
+                if action.effect == "TOGGLE_PRESET" and action.stringTarget then
+                    local idx = tonumber(action.stringTarget)
+                    if idx then
+                        if idx == deletedIndex then
+                            if insertedIndex then
+                                action.stringTarget = tostring(insertedIndex)
+                            else
+                                action.stringTarget = nil
+                            end
+                        elseif not insertedIndex then
+                            if idx > deletedIndex then
+                                action.stringTarget = tostring(idx - 1)
+                            end
+                        else
+                            if deletedIndex < insertedIndex then
+                                if idx > deletedIndex and idx <= insertedIndex then
+                                    action.stringTarget = tostring(idx - 1)
+                                end
+                            elseif deletedIndex > insertedIndex then
+                                if idx >= insertedIndex and idx < deletedIndex then
+                                    action.stringTarget = tostring(idx + 1)
+                                end
+                            end
                         end
                     end
                 end
             end
+        end
+
+        local function ShiftMap(map)
+            if not map then return end
+            if not insertedIndex then
+                map[deletedIndex] = nil
+                local newMap = {}
+                for k, v in pairs(map) do
+                    if k > deletedIndex then
+                        newMap[k - 1] = v
+                    elseif k < deletedIndex then
+                        newMap[k] = v
+                    end
+                end
+                wipe(map)
+                for k, v in pairs(newMap) do map[k] = v end
+            else
+                local movedItem = map[deletedIndex]
+                map[deletedIndex] = nil
+                local newMap = {}
+                for k, v in pairs(map) do
+                    if deletedIndex < insertedIndex then
+                        if k > deletedIndex and k <= insertedIndex then
+                            newMap[k - 1] = v
+                        else
+                            newMap[k] = v
+                        end
+                    elseif deletedIndex > insertedIndex then
+                        if k >= insertedIndex and k < deletedIndex then
+                            newMap[k + 1] = v
+                        else
+                            newMap[k] = v
+                        end
+                    end
+                end
+                if movedItem ~= nil then
+                    newMap[insertedIndex] = movedItem
+                end
+                wipe(map)
+                for k, v in pairs(newMap) do map[k] = v end
+            end
+        end
+
+        local sess = VS.session
+        if sess then
+            if sess.activeRegistry then
+                ShiftMap(sess.activeRegistry["manual"])
+            end
+            ShiftMap(sess.manualActivationTimes)
+        end
+        if db.automation then
+            ShiftMap(db.automation.activeManualPresets)
         end
     end
 
@@ -740,15 +830,15 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     end
 
     local function RefreshDropdown()
-        presetDropdown:SetupMenu(GenerateDropdownMenu)
-        presetDropdown:GenerateMenu()
-
         if currentSelectedIndex and db.automation.presets[currentSelectedIndex] then
             presetDropdown:SetDefaultText(db.automation.presets[currentSelectedIndex].name)
         else
             -- Ensure New Profile is selected if none is active or list is empty
             SelectNewProfile()
         end
+
+        presetDropdown:SetupMenu(GenerateDropdownMenu)
+        presetDropdown:GenerateMenu()
 
         if VS.RefreshAutomationProfiles then
             VS:RefreshAutomationProfiles()
@@ -879,9 +969,37 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             end
         end
 
+        local function SwapMap(map)
+            if not map then return end
+            local tempVal = map[idxA]
+            map[idxA] = map[idxB]
+            map[idxB] = tempVal
+        end
+        
+        local sess = VS.session
+        if sess then
+            if sess.activeRegistry then SwapMap(sess.activeRegistry["manual"]) end
+            SwapMap(sess.manualActivationTimes)
+        end
+        if db.automation then SwapMap(db.automation.activeManualPresets) end
+
         local temp = db.automation.presets[idxA]
         db.automation.presets[idxA] = db.automation.presets[idxB]
         db.automation.presets[idxB] = temp
+
+        if db.minimap and db.minimap.mouseActions then
+            for _, action in ipairs(db.minimap.mouseActions) do
+                if action.effect == "TOGGLE_PRESET" and action.stringTarget then
+                    local idx = tonumber(action.stringTarget)
+                    if idx == idxA then
+                        action.stringTarget = tostring(idxB)
+                    elseif idx == idxB then
+                        action.stringTarget = tostring(idxA)
+                    end
+                end
+            end
+        end
+
         RefreshDropdown()
 
         if VS.Presets and VS.Presets.RefreshEventState then VS.Presets:RefreshEventState() end

@@ -313,6 +313,29 @@ local function Migrate_V3_to_V4(db)
 end
 
 -------------------------------------------------------------------------------
+-- V4 -> V5 Schema Migration Engine
+--
+-- Tears down the deprecated snapshot-based `manualToggleState` payload system in
+-- favor of the stateless, timestamp-based stack model.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V4_to_V5(db)
+    if db.schemaVersion and db.schemaVersion >= 5 then return end
+
+    db.automation = db.automation or {}
+    -- Destroy legacy snapshot state
+    if db.automation.manualToggleState ~= nil then
+        db.automation.manualToggleState = nil
+    end
+
+    -- Setup new session persistence map
+    db.automation.activeManualPresets = db.automation.activeManualPresets or {}
+
+    db.schemaVersion = 5
+end
+
+-------------------------------------------------------------------------------
 -- Main Event Handler (PLAYER_LOGIN)
 --
 -- Orchestrates the addon bootstrap sequence:
@@ -329,6 +352,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     Migrate_V1_to_V2(db)
     Migrate_V2_to_V3(db)
     Migrate_V3_to_V4(db)
+    Migrate_V4_to_V5(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"
@@ -434,6 +458,22 @@ initFrame:SetScript("OnEvent", function(self, event)
                 showInDropdown = true
             }
         }
+    end
+
+    -- Repopulate session state for manual presets
+    VS.session.activeRegistry.manual = VS.session.activeRegistry.manual or {}
+    if db.automation.activeManualPresets then
+        for idx, timestamp in pairs(db.automation.activeManualPresets) do
+            local numIdx = tonumber(idx)
+            -- Apply "Iron Fist" Rule 10 (Registry Integrity) check
+            if db.automation.presets and numIdx and db.automation.presets[numIdx] then
+                VS.session.activeRegistry.manual[numIdx] = true
+                VS.session.manualActivationTimes[numIdx] = tonumber(timestamp)
+            else
+                -- Orphaned index, clean it up
+                db.automation.activeManualPresets[idx] = nil
+            end
+        end
     end
 
     -- Register the minimap icon via LibDBIcon.

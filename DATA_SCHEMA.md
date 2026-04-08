@@ -15,7 +15,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
 
 ```json
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -207,16 +207,9 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
         }
       }
     ],
-    // Tracks the snapshot of pre-toggled channels for a given manual preset application.
-    "manualToggleState": {
-      "[presetIndex]": {
-        "volumes": {
-          "[cvarName]": "number"     // The original volume before the preset was toggled
-        },
-        "mutes": {
-          "[cvarName]": "string"     // The original mute state ("0" or "1") before toggle
-        }
-      }
+    // Tracks manually toggled presets and their exact activation timestamp.
+    "activeManualPresets": {
+      "[presetIndex]": "number" // GetTime() timestamp when toggled ON
     }
   },
 
@@ -255,3 +248,7 @@ Ensures that all V2-compliant presets are upgraded with the mathematical limitin
 ## Migration Contract (`Init.lua:Migrate_V3_to_V4`)
 
 Initializes the `automation.persistedBaseline` and `automation.lastAppliedState` tables to support baseline volume preservation across sessions. This additive migration does not alter any existing user presets. On first run of V4, baseline state is transparently captured from current CVars to seed the new DB tracking maps.
+
+## Migration Contract (`Init.lua:Migrate_V4_to_V5`)
+
+Tears down the deprecated snapshot-based `manualToggleState` payload system in favor of the stateless, timestamp-based unified stack model. The `db.automation.manualToggleState` table is destroyed unconditionally. A new tracking map, `db.automation.activeManualPresets`, is initialized to persist session-to-session manual preset activation and stack order.
