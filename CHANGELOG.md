@@ -1,6 +1,6 @@
 # Changelog (v3.2.0)
 
-## v3.2.0 — 2026-04-07
+## v3.2.0 — 2026-04-08
 
 ### Added
 - **Mute & Volume Independence**: Muting a channel while a preset is active no longer locks the slider into "manual override" mode. Mutes behave fully independently, allowing presets to seamlessly take control of standard volume values tracking behind the scenes.
