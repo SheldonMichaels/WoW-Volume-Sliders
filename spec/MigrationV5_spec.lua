@@ -89,7 +89,7 @@ describe("Schema V4 to V5 Migration", function()
 
         -- Check session recovery
         assert.is_table(VS.session.activeRegistry.manual)
-        assert.is_true(VS.session.activeRegistry.manual[1])
+        assert.is_table(VS.session.activeRegistry.manual[1])
         assert.are.equal(5000, VS.session.manualActivationTimes[1])
     end)
 

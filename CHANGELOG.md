@@ -1,6 +1,9 @@
-# Changelog (v3.2.0)
+# Changelog (v3.2.1)
 
-## v3.2.0 — 2026-04-08
+## v3.2.1 — 2026-04-08
+
+### Fixed
+- **Login Preset Crash**: Fixed a critical crash that occurred when logging in with active manual presets. Manual presets are now correctly restored as functional objects during the initialization sequence.
 
 ### Added
 - **Mute & Volume Independence**: Muting a channel while a preset is active no longer locks the slider into "manual override" mode. Mutes behave fully independently, allowing presets to seamlessly take control of standard volume values tracking behind the scenes.
