@@ -1,4 +1,9 @@
-# Changelog (v3.2.1)
+# Changelog (v3.2.2)
+
+## v3.2.2 — 2026-04-11
+
+### Fixed
+- **Preset Priority Inversion**: Fixed a logic bug where automation presets with higher priority (lower numbers) were being incorrectly overwritten by lower-priority ones. Priority 1 now properly overrides Priority 10.
 
 ## v3.2.1 — 2026-04-08
 

@@ -58,11 +58,13 @@ local activeStates = {}
 -- Logic Implementation
 -------------------------------------------------------------------------------
 
---- Sort function for presets based on priority. Higher priority overwrites lower.
+--- Sort function for presets based on priority.
+--- Lower numbers equal higher priority. Sorting descending (>) pushes
+--- highest priority to the end of the array so they are applied last and win.
 local function SortPresetsByPriority(a, b)
     local pA = a.priority or 0
     local pB = b.priority or 0
-    return pA < pB
+    return pA > pB
 end
 
 --- Get current volume for a channel (Standard CVar or Voice API).
