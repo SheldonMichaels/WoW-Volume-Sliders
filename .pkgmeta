@@ -11,7 +11,9 @@ manual-changelog:
 ignore:
   - README.md
   - local_dev_assets
+  - docs
   - GEMINI.md
+  - AGENTS.md
   - .agent
   - spec
   - .luarc.json
