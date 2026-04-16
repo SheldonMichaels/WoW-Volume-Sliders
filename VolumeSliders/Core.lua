@@ -625,6 +625,7 @@ function VS:ProcessMinimapAction(triggerStr, clickedFrame, delta)
                     end
                 end
             end
+            VS:RefreshMinimapTooltip()
             return true
         end
     end

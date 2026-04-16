@@ -1,4 +1,9 @@
-# Changelog (v3.3.1)
+# Changelog (v3.4.0)
+
+## v3.4.0 — 2026-04-16
+
+### Added
+- **Live Tooltip Refresh**: The minimap icon tooltip now updates in real-time as you interact with it. Scroll to adjust volume or click to toggle mutes/presets, and see the changes reflected immediately in the tooltip text without needing to re-hover.
 
 ## v3.3.1 — 2026-04-16
 

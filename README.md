@@ -17,6 +17,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 - **Two Visual Styles** — Choose the classic ringed button or a "minimalist" speaker icon that automatically fades out when not in use.
 - **Customizable Tooltips** — Use a drag-and-drop list to decide exactly what displays on hover and in what order (Master Volume, Active Presets, Output Device, etc.).
 - **Smart Scroll Wheel** — Scroll over the icon to adjust volume for a selected channel. Configure unique `Shift/Ctrl/Alt` modifiers for additional channels.
+- **Live Tooltip Refresh** — Tooltips now update in real-time as you scroll or click the minimap icon, providing instant visual feedback on volume and state changes.
 - **PTT Shortcut** — Press and hold the minimalist icon to temporarily force "Open Mic" mode if you have Push-to-Talk enabled for the in game voice chat.
 
 ### Automation & Presets
