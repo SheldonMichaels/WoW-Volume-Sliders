@@ -1,6 +1,10 @@
-# Changelog (v3.2.3)
+# Changelog (v3.3.0)
 
-## v3.2.3 — 2026-04-16
+## v3.3.0 — 2026-04-16
+
+### Changed
+- **Internal Architecture**: Completed a major refactor of the settings configuration modules to improve performance and long-term maintainability.
+
 
 ### Added
 - **GitHub Feedback Button**: Added a prominent button on the main settings page to encourage bug reporting and feature requests via GitHub.
