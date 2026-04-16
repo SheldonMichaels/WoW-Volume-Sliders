@@ -22,6 +22,32 @@ local ipairs     = ipairs
 local pairs      = pairs
 
 -------------------------------------------------------------------------------
+-- Static Popups
+-------------------------------------------------------------------------------
+StaticPopupDialogs["VOLUME_SLIDERS_COPY_URL"] = {
+    text = "Use Ctrl+C to copy the GitHub URL below:",
+    button1 = CLOSE,
+    hasEditBox = 1,
+    editBoxWidth = 260,
+    maxLetters = 128,
+    OnShow = function(self, url)
+        if self.EditBox then
+            self.EditBox:SetText(url)
+            self.EditBox:HighlightText()
+        end
+    end,
+    EditBoxOnEnterPressed = function(self)
+        self:GetParent():Hide()
+    end,
+    EditBoxOnEscapePressed = function(self)
+        self:GetParent():Hide()
+    end,
+    timeout = 0,
+    whileDead = 1,
+    hideOnEscape = 1,
+}
+
+-------------------------------------------------------------------------------
 -- InitializeSettings
 --
 -- Registers the native WoW Options Settings page using a Canvas Layout.
@@ -138,6 +164,30 @@ function VS:CreateSettingsContents(parentFrame)
     divider:SetPoint("TOPLEFT", urlText, "BOTTOMLEFT", 0, -10)
     divider:SetWidth(560)
     divider:SetColorTexture(1, 1, 1, 0.2)
+
+    ---------------------------------------------------------------------------
+    -- GitHub Feedback Section
+    ---------------------------------------------------------------------------
+    local feedbackHeader = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    feedbackHeader:SetPoint("TOPLEFT", divider, "BOTTOMLEFT", 0, -20)
+    feedbackHeader:SetText("Found a bug or have an idea?")
+    feedbackHeader:SetTextColor(1, 0.82, 0) -- Gold
+
+    local feedbackBody = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    feedbackBody:SetPoint("TOPLEFT", feedbackHeader, "BOTTOMLEFT", 0, -5)
+    feedbackBody:SetWidth(540)
+    feedbackBody:SetJustifyH("LEFT")
+    feedbackBody:SetWordWrap(true)
+    feedbackBody:SetText("Open an issue on GitHub — it's the fastest way to get help or request a feature.")
+
+    local copyButton = CreateFrame("Button", nil, categoryFrame, "UIPanelButtonTemplate")
+    copyButton:SetPoint("TOPLEFT", feedbackBody, "BOTTOMLEFT", 0, -10)
+    copyButton:SetText("Copy GitHub Link")
+    copyButton:SetWidth(140)
+    copyButton:SetHeight(22)
+    copyButton:SetScript("OnClick", function()
+        StaticPopup_Show("VOLUME_SLIDERS_COPY_URL", nil, nil, "https://github.com/SheldonMichaels/WoW-Volume-Sliders/issues")
+    end)
 
     -- No content; Persistent Window has been moved explicitly.
 end

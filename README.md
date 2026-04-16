@@ -32,6 +32,7 @@ A World of Warcraft addon that provides quick-access vertical volume sliders for
 - **Movable & Persistent** — Slider window can locked in place or movable. Window persistence can be toggled on/off.
 
 ### Integration
+- **GitHub Feedback Prompt** — Integrated direct GitHub Issue tracker access into the main settings page for easy bug reporting and feature requests.
 - **Addon Compartment** — Fully integrated with the native WoW 10.x+ AddOn compartment menu.
 - **Data Broker (LDB)** — Compatible with display addons like Titan Panel, ChocolateBar, and ElvUI. (Mostly untested)
 

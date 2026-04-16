@@ -9,7 +9,7 @@
 -- and exposes constants and utilities they depend on.
 --
 -- Author:  Sheldon Michaels
--- Version: 3.0.0
+-- Version: 3.2.3
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 

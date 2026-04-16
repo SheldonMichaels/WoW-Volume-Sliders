@@ -107,6 +107,8 @@ read_globals = {
     "strsplit",
     "StaticPopupDialogs",
     "StaticPopup_Show",
+    "CLOSE",
+    "OKAY",
     "ColorPickerFrame",
     "GetLFGQueueStats",
     "GetLFGProposal",
