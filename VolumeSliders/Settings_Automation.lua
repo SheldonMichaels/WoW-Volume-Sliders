@@ -1,42 +1,5 @@
--------------------------------------------------------------------------------
--- Settings_Automation.lua
---
--- Builds the "Automation" subcategory UI. This handles both simple master
--- toggles (Zone Triggers, Fishing, LFG) and the full Preset CRUD system.
---
--- Author:  Sheldon Michaels
--- License: All Rights Reserved (Non-commercial use permitted)
--------------------------------------------------------------------------------
-
 local addonName, VS = ...
 
--------------------------------------------------------------------------------
--- Localized Globals
--------------------------------------------------------------------------------
-local _G = _G
-local math_floor = math.floor
-local math_max   = math.max
-local math_min   = math.min
-local tonumber   = tonumber
-local tostring   = tostring
-local ipairs     = ipairs
-local pairs      = pairs
-local table_insert = table.insert
-local table_remove = table.remove
-
--------------------------------------------------------------------------------
--- CreateAutomationSettingsContents
---
--- Builds the "Automation" subcategory UI. This is the most complex settings
--- page, handling both simple master toggles and the full Preset CRUD system.
---
--- COMPONENT PARTS:
--- 1. Master Toggles: Zone Triggers, Fishing Boost, LFG Pop Boost.
--- 2. Preset Selectors: Maps specific automation events to profiles.
--- 3. Preset Editor: A state-managed form for creating/editing profiles.
---
--- @param parentFrame Frame The canvas frame provided by Blizzard Settings API.
--------------------------------------------------------------------------------
 function VS:CreateAutomationSettingsContents(parentFrame)
     --- @type VolumeSlidersDB
     local db = VolumeSlidersMMDB
@@ -71,219 +34,467 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     ---------------------------------------------------------------------------
     -- Master Toggle
     ---------------------------------------------------------------------------
-    local triggerCheck = VS:CreateCheckbox(contentFrame, "VSAutomationCheckTrigger", "Enable Zone Triggers", function(checked)
-        db.automation.enableTriggers = checked
+
+    local enableCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    enableCheck:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -15)
+    enableCheck.text:SetFontObject("GameFontNormal")
+    enableCheck.text:SetText("Zone Triggers")
+    enableCheck:SetChecked(db.automation.enableTriggers == true)
+
+    enableCheck:SetScript("OnClick", function(self)
+        db.automation.enableTriggers = self:GetChecked()
         if VS.Presets and VS.Presets.RefreshEventState then
             VS.Presets:RefreshEventState()
         end
-        if VS.triggerCheck then VS.triggerCheck:SetChecked(checked) end
-    end, function()
-        return db.automation.enableTriggers == true
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    triggerCheck:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 0, -20)
-    VS:AddTooltip(triggerCheck, "Automatically adjust volume levels when entering zones designated in your presets.")
+    VS:AddTooltip(enableCheck, "Automatically adjust volume levels when entering zones designated in your presets. Original volumes are restored when leaving the area.")
 
-    local fishingCheck = VS:CreateCheckbox(contentFrame, "VSAutomationCheckFishing", "Enable Fishing Boost", function(checked)
-        db.automation.enableFishingVolume = checked
+    local fishingCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    fishingCheck:SetPoint("TOPLEFT", enableCheck, "TOPRIGHT", 100, 0)
+    fishingCheck.text:SetFontObject("GameFontNormal")
+    fishingCheck.text:SetText("Fishing Splash Boost")
+    fishingCheck:SetChecked(db.automation.enableFishingVolume == true)
+
+    fishingCheck:SetScript("OnClick", function(self)
+        db.automation.enableFishingVolume = self:GetChecked()
         if VS.Fishing and VS.Fishing.Initialize then
             VS.Fishing:Initialize()
         end
-        if VS.fishingCheck then VS.fishingCheck:SetChecked(checked) end
-    end, function()
-        return db.automation.enableFishingVolume == true
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    fishingCheck:SetPoint("TOPLEFT", triggerCheck, "BOTTOMLEFT", 0, -8)
-    VS:AddTooltip(fishingCheck, "Temporarily overrides volumes while fishing so you can hear the splash.")
+    VS:AddTooltip(fishingCheck, "Temporarily overrides volumes while fishing so you can clearly hear the bobber splash. Disabled during combat.")
 
-    local lfgCheck = VS:CreateCheckbox(contentFrame, "VSAutomationCheckLFG", "Enable LFG Pop Boost", function(checked)
-        db.automation.enableLfgVolume = checked
+    local lfgCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    lfgCheck:SetPoint("TOPLEFT", fishingCheck, "TOPRIGHT", 130, 0)
+    lfgCheck.text:SetFontObject("GameFontNormal")
+    lfgCheck.text:SetText("LFG Queue Pop Boost")
+    lfgCheck:SetChecked(db.automation.enableLfgVolume == true)
+
+    lfgCheck:SetScript("OnClick", function(self)
+        db.automation.enableLfgVolume = self:GetChecked()
         if VS.LFGQueue and VS.LFGQueue.Initialize then
             VS.LFGQueue:Initialize()
         end
-        if VS.lfgCheck then VS.lfgCheck:SetChecked(checked) end
-    end, function()
-        return db.automation.enableLfgVolume == true
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    lfgCheck:SetPoint("TOPLEFT", fishingCheck, "BOTTOMLEFT", 0, -8)
     VS:AddTooltip(lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.")
 
-    VS.RefreshTriggerSettings = function()
-        triggerCheck:SetChecked(db.automation.enableTriggers == true)
-        fishingCheck:SetChecked(db.automation.enableFishingVolume == true)
-        lfgCheck:SetChecked(db.automation.enableLfgVolume == true)
+    local separator1 = contentFrame:CreateTexture(nil, "ARTWORK")
+    separator1:SetHeight(1)
+    separator1:SetPoint("LEFT", enableCheck, "LEFT", -10, 0)
+    separator1:SetPoint("TOP", enableCheck, "BOTTOM", 0, -10)
+    separator1:SetWidth(540)
+    separator1:SetColorTexture(1, 1, 1, 0.2)
+
+    ---------------------------------------------------------------------------
+    -- Automation Preset Selectors
+    ---------------------------------------------------------------------------
+    --- Helper to create a dropdown for selecting a preset profile.
+    -- @param label string The text to display above the dropdown.
+    -- @param dbKey string The key in the database where the index is stored.
+    -- @param anchorFrame Frame The frame to anchor the label to.
+    -- @param xOff number Horizontal offset.
+    -- @param yOff number Vertical offset.
+    -- @param tooltip string Descriptive text shown on hover.
+    -- @param anchorPoint string The relative point on the anchorFrame (defaults to BOTTOMLEFT).
+    local function CreatePresetSelector(label, dbKey, anchorFrame, xOff, yOff, tooltip, anchorPoint)
+        local fontString = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        fontString:SetPoint("TOPLEFT", anchorFrame, anchorPoint or "BOTTOMLEFT", xOff, yOff)
+        fontString:SetText(label)
+
+        local dropdown = CreateFrame("DropdownButton", nil, contentFrame, "WowStyle1DropdownTemplate")
+        dropdown:SetPoint("TOPLEFT", fontString, "BOTTOMLEFT", -5, -5)
+        dropdown:SetWidth(150)
+        VS:AddTooltip(dropdown, tooltip)
+
+        return dropdown, fontString
     end
 
-    ---------------------------------------------------------------------------
-    -- Preset System
-    ---------------------------------------------------------------------------
-    local presetTitle = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    presetTitle:SetPoint("TOPLEFT", lfgCheck, "BOTTOMLEFT", 0, -30)
-    presetTitle:SetText("Preset Profiles")
+    local fishingDropdown, fishingLabel = CreatePresetSelector("Fishing Profile", "fishingPresetIndex", fishingCheck, 0, -15, "Select a preset profile to apply while fishing.")
+    local lfgDropdown, lfgLabel = CreatePresetSelector("LFG Profile", "lfgPresetIndex", lfgCheck, 0, -15, "Select a preset profile to apply when a group queue pops.")
 
-    local presetDesc = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    presetDesc:SetPoint("TOPLEFT", presetTitle, "BOTTOMLEFT", 0, -5)
-    presetDesc:SetWidth(560)
-    presetDesc:SetText("Create profiles with specific volume levels and math modes. Profiles can be assigned to zones or applied manually via the minimap button popout.")
-    presetDesc:SetJustifyH("LEFT")
+    --- Populates the dropdown menu with "None" and all user-defined presets.
+    --- @param dropdown any The dropdown frame
+    --- @param rootDescription any The root menu description
+    --- @param dbKey "fishingPresetIndex"|"lfgPresetIndex" The automation pointer to update
+    local function PopulateAutomationDropdown(dropdown, rootDescription, dbKey)
+        rootDescription:CreateButton("None", function()
+            db.automation[dbKey] = nil
+            dropdown:SetDefaultText("None")
+            VS.Presets:RefreshEventState()
+        end)
 
-    ---------------------------------------------------------------------------
-    -- Profile Selection Dropdown
-    ---------------------------------------------------------------------------
-    local presetDropdown = CreateFrame("DropdownButton", "VSAutomationPresetDropdown", contentFrame)
-    presetDropdown:SetPoint("TOPLEFT", presetDesc, "BOTTOMLEFT", 4, -20)
-    presetDropdown:SetSize(180, 26)
-
-    local ddBg = presetDropdown:CreateTexture(nil, "BACKGROUND")
-    ddBg:SetAtlas("common-dropdown-c-button")
-    ddBg:SetPoint("TOPLEFT", -7, 7)
-    ddBg:SetPoint("BOTTOMRIGHT", 7, -7)
-    presetDropdown.Background = ddBg
-
-    local arrow = presetDropdown:CreateTexture(nil, "OVERLAY")
-    arrow:SetAtlas("common-dropdown-c-button-hover-arrow", true)
-    arrow:SetPoint("BOTTOM", 0, -5)
-    arrow:Hide()
-    presetDropdown.Arrow = arrow
-
-    local ddText = presetDropdown:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    ddText:SetPoint("CENTER", 0, 0)
-    ddText:SetWidth(160)
-    ddText:SetJustifyH("CENTER")
-    presetDropdown.Text = ddText
-
-    presetDropdown.SetText = function(self, text)
-        self.Text:SetText(text)
+        for i, preset in ipairs(db.automation.presets) do
+            rootDescription:CreateButton(preset.name, function()
+                db.automation[dbKey] = i
+                dropdown:SetDefaultText(preset.name)
+                VS.Presets:RefreshEventState()
+            end)
+        end
     end
 
-    local currentSelectedIndex = nil
+    function VS:RefreshAutomationProfiles()
+        fishingDropdown:SetupMenu(function(dropdown, rootDescription)
+            PopulateAutomationDropdown(dropdown, rootDescription, "fishingPresetIndex")
+        end)
+
+        lfgDropdown:SetupMenu(function(dropdown, rootDescription)
+            PopulateAutomationDropdown(dropdown, rootDescription, "lfgPresetIndex")
+        end)
+
+        local fishingPreset = db.automation.fishingPresetIndex and db.automation.presets[db.automation.fishingPresetIndex]
+        fishingDropdown:SetDefaultText(fishingPreset and fishingPreset.name or "None")
+
+        local lfgPreset = db.automation.lfgPresetIndex and db.automation.presets[db.automation.lfgPresetIndex]
+        lfgDropdown:SetDefaultText(lfgPreset and lfgPreset.name or "None")
+    end
+
+    VS.fishingDropdown = fishingDropdown
+    VS.lfgDropdown = lfgDropdown
+
+    local separatorTop = contentFrame:CreateTexture(nil, "ARTWORK")
+    separatorTop:SetHeight(2)
+    separatorTop:SetPoint("LEFT", enableCheck, "LEFT", -10, 0)
+    separatorTop:SetPoint("TOP", lfgDropdown, "BOTTOM", 0, -20)
+    separatorTop:SetWidth(540)
+    separatorTop:SetColorTexture(1, 1, 1, 0.2)
 
     ---------------------------------------------------------------------------
-    -- Form Elements (Sliders & Name)
+    -- Preset Configuration Info Text
     ---------------------------------------------------------------------------
-    local nameEditBox = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
-    nameEditBox:SetSize(180, 26)
-    nameEditBox:SetPoint("LEFT", presetDropdown, "RIGHT", 40, 0)
-    nameEditBox:SetAutoFocus(false)
-    nameEditBox:SetMaxLetters(32)
+    local presetInfoHeader = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    presetInfoHeader:SetPoint("TOPLEFT", separatorTop, "BOTTOMLEFT", 10, -15)
+    presetInfoHeader:SetText("How Presets Work")
+    presetInfoHeader:SetTextColor(1, 0.82, 0)
 
-    local nameLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    nameLabel:SetPoint("BOTTOMLEFT", nameEditBox, "TOPLEFT", 0, 4)
-    nameLabel:SetText("Internal Name")
+    local presetInfoBody = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    presetInfoBody:SetPoint("TOPLEFT", presetInfoHeader, "BOTTOMLEFT", 0, -5)
+    presetInfoBody:SetWidth(540)
+    presetInfoBody:SetJustifyH("LEFT")
+    presetInfoBody:SetWordWrap(true)
+    presetInfoBody:SetText("Presets set volume levels and can optionally mute specific channels. Zone automations apply and restore presets automatically as you move. Manual presets (from the main window dropdown or minimap hotkeys) work as toggles: the first activation applies the preset, and a second activation restores your previous values if nothing has changed in between.")
 
-    -- Working state table: acts as a buffer between the UI and the DB.
-    -- Changes are only written to db.automation.presets[index] when the user 
-    -- clicks "Save".
+    ---------------------------------------------------------------------------
+    -- Preset Management State & CRUD
+    --
+    -- To prevent accidental data loss, edits made in the settings UI are
+    -- stored in `VS.PresetWorkingState` and only committed to the database
+    -- when the "Save" button is clicked.
+    ---------------------------------------------------------------------------
     VS.PresetWorkingState = {
-        name = "",
+        name = "New Preset",
+        priority = 10,
+        zones = {},
         volumes = {},
         ignored = {},
-        modes = {},
         mutes = {},
+        modes = {},
         showInDropdown = true,
-        index = nil
+        index = nil -- The index in db.automation.presets if it already exists
     }
 
-    local sliders = {}
-    local channels = VS.DEFAULT_CVAR_ORDER
+    local currentSelectedIndex = nil
+    local presetSliders = {}
 
-    local startX = 40
-    local startY = -480
-    local columnWidth = 85
+    local presetDropdown = CreateFrame("DropdownButton", nil, contentFrame, "WowStyle1DropdownTemplate")
+    presetDropdown:SetPoint("TOPLEFT", presetInfoBody, "BOTTOMLEFT", 0, -25)
 
-    for i, channel in ipairs(channels) do
-        local label = channel:gsub("Sound_", ""):gsub("Voice_", ""):gsub("Volume", ""):gsub("Chat", ""):gsub("SFX", "Effects")
-        if label == "EncounterWarnings" then label = "Warn" end
-        if label == "Gameplay" then label = "Game" end
-        if label == "Mic" then label = "M Mic" end
-        if label == "MicSensitivity" then label = "M Sens" end
+    local priorityLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    priorityLabel:SetPoint("BOTTOMLEFT", presetDropdown, "TOPLEFT", 0, 5)
+    priorityLabel:SetText("Select Preset Profile")
 
-        local slider = VS:CreateTriggerSlider(contentFrame, "VSAutomationSlider" .. channel, label, channel, VS.PresetWorkingState, 0, 1, 0.01)
-        slider:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", startX + (i-1) * columnWidth, startY)
-        sliders[channel] = slider
-    end
+    local btnDelete = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnDelete:SetSize(80, 22)
+    btnDelete:SetPoint("TOPRIGHT", presetInfoBody, "BOTTOMRIGHT", -15, -25)
+    btnDelete:SetText("Delete")
 
-    local showCheck = VS:CreateCheckbox(contentFrame, "VSAutomationCheckShow", "Show in Popout Dropdown", function(checked)
-        VS.PresetWorkingState.showInDropdown = checked
-    end, function()
-        return VS.PresetWorkingState.showInDropdown == true
+    local btnCopy = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnCopy:SetSize(80, 22)
+    btnCopy:SetPoint("RIGHT", btnDelete, "LEFT", -5, 0)
+    btnCopy:SetText("Copy")
+
+    local btnSave = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnSave:SetSize(80, 22)
+    btnSave:SetPoint("RIGHT", btnCopy, "LEFT", -5, 0)
+    btnSave:SetText("Save")
+
+    presetDropdown:SetPoint("RIGHT", btnSave, "LEFT", -15, 0)
+
+    local btnMoveUp = CreateFrame("Button", nil, contentFrame)
+    btnMoveUp:SetSize(22, 22)
+    btnMoveUp:SetPoint("LEFT", btnDelete, "RIGHT", 5, 0)
+    btnMoveUp:SetNormalAtlas("glues-characterselect-icon-arrowup")
+    btnMoveUp:SetPushedAtlas("glues-characterselect-icon-arrowup-pressed")
+    btnMoveUp:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    VS:AddTooltip(btnMoveUp, "Move Preset Up")
+
+    local btnMoveDown = CreateFrame("Button", nil, contentFrame)
+    btnMoveDown:SetSize(22, 22)
+    btnMoveDown:SetPoint("LEFT", btnMoveUp, "RIGHT", 5, 0)
+    btnMoveDown:SetNormalAtlas("glues-characterSelect-icon-arrowDown")
+    btnMoveDown:SetPushedAtlas("glues-characterSelect-icon-arrowDown-pressed")
+    btnMoveDown:SetDisabledAtlas("glues-characterSelect-icon-arrowDown-disabled")
+    btnMoveDown:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+    VS:AddTooltip(btnMoveDown, "Move Preset Down")
+
+    ---------------------------------------------------------------------------
+    -- Zone List & Priority Edit
+    ---------------------------------------------------------------------------
+    local nameLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    nameLabel:SetPoint("TOPLEFT", presetDropdown, "BOTTOMLEFT", 0, -30)
+    nameLabel:SetText("Preset Name")
+
+    local priorityEditLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    priorityEditLabel:SetPoint("LEFT", nameLabel, "LEFT", 490, 0)
+    priorityEditLabel:SetText("Priority")
+
+    -- Add Tooltip for Priority
+    priorityEditLabel:EnableMouse(true)
+    priorityEditLabel:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Priority Level", 1, 1, 1)
+        GameTooltip:AddLine("Determines which preset wins if multiple zones overlap at the same time.", nil, nil, nil, true)
+        GameTooltip:AddLine("Lower numbers have higher priority (e.g., Priority 1 will override Priority 10).", 1, 0.82, 0, true)
+        GameTooltip:Show()
     end)
-    showCheck:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 20, -780)
+    priorityEditLabel:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-    ---------------------------------------------------------------------------
-    -- State Management & Lifecycle
-    ---------------------------------------------------------------------------
-    local function UpdateFormFromWorkingState()
-        nameEditBox:SetText(VS.PresetWorkingState.name or "")
-        showCheck:SetChecked(VS.PresetWorkingState.showInDropdown ~= false)
-        for _, slider in pairs(sliders) do
-            slider:RefreshValue()
-        end
-    end
+    local inputPriority = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
+    inputPriority:SetSize(40, 20)
+    inputPriority:SetPoint("TOPLEFT", priorityEditLabel, "BOTTOMLEFT", 5, -5)
+    inputPriority:SetNumeric(true)
+    inputPriority:SetAutoFocus(false)
 
-    local function LoadWorkingState(preset, index)
-        if preset then
-            VS.PresetWorkingState.name = preset.name
-            VS.PresetWorkingState.showInDropdown = (preset.showInDropdown ~= false)
-            VS.PresetWorkingState.index = index
-            for _, channel in ipairs(channels) do
-                VS.PresetWorkingState.volumes[channel] = preset.volumes[channel]
-                VS.PresetWorkingState.ignored[channel] = preset.ignored and preset.ignored[channel] or nil
-                VS.PresetWorkingState.modes[channel] = preset.modes and preset.modes[channel] or "absolute"
-                VS.PresetWorkingState.mutes[channel] = preset.mutes and preset.mutes[channel] or nil
-            end
-        else
-            VS.PresetWorkingState.name = "New Preset"
-            VS.PresetWorkingState.showInDropdown = true
-            VS.PresetWorkingState.index = nil
-            for _, channel in ipairs(channels) do
-                VS.PresetWorkingState.volumes[channel] = tonumber(GetCVar(channel)) or 1
-                VS.PresetWorkingState.ignored[channel] = nil
-                VS.PresetWorkingState.modes[channel] = "absolute"
-                VS.PresetWorkingState.mutes[channel] = nil
-            end
-        end
-    end
+    local listOrderLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    listOrderLabel:SetPoint("LEFT", nameLabel, "LEFT", 410, 0)
+    listOrderLabel:SetText("List Order")
 
-    local function RefreshDropdown()
-        presetDropdown:GenerateMenu()
-    end
+    -- Add Tooltip for List Order
+    listOrderLabel:EnableMouse(true)
+    listOrderLabel:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("List Order", 1, 1, 1)
+        GameTooltip:AddLine("Changes the order this preset appears in the quick apply dropdown.", nil, nil, nil, true)
+        GameTooltip:AddLine("Lower numbers appear higher in the list.", 1, 0.82, 0, true)
+        GameTooltip:Show()
+    end)
+    listOrderLabel:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-    VS.RefreshAutomationProfiles = function()
-        RefreshDropdown()
-        if currentSelectedIndex then
-            local preset = db.automation.presets[currentSelectedIndex]
-            if preset then
-                presetDropdown:SetText(preset.name)
+    local inputListOrder = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
+    inputListOrder:SetSize(40, 20)
+    inputListOrder:SetPoint("TOP", listOrderLabel, "BOTTOM", 0, -5)
+    inputListOrder:SetNumeric(true)
+    inputListOrder:SetAutoFocus(false)
+
+    -- Split the list order arrows to surround the input field with reduced padding
+    btnMoveUp:ClearAllPoints()
+    btnMoveUp:SetPoint("TOPRIGHT", inputListOrder, "TOPLEFT", -3, 1)
+
+    btnMoveDown:ClearAllPoints()
+    btnMoveDown:SetPoint("TOPLEFT", inputListOrder, "TOPRIGHT", -1, 1)
+
+    local inputName = CreateFrame("EditBox", nil, contentFrame, "InputBoxTemplate")
+    inputName:SetHeight(20)
+    inputName:SetPoint("TOPLEFT", nameLabel, "BOTTOMLEFT", 5, -5)
+    inputName:SetPoint("RIGHT", btnMoveUp, "LEFT", -10, 0)
+    inputName:SetAutoFocus(false)
+
+    local showDropdownCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    showDropdownCheck:SetPoint("TOPLEFT", inputName, "BOTTOMLEFT", -5, -15)
+    showDropdownCheck.text:SetFontObject("GameFontNormal")
+    showDropdownCheck.text:SetText("Show in main window presets list")
+    showDropdownCheck:SetChecked(true)
+
+    local zonesLabel = contentFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    zonesLabel:SetPoint("TOPLEFT", showDropdownCheck, "BOTTOMLEFT", 5, -15)
+    zonesLabel:SetText("Monitored Zones (Optional, semicolon separated)")
+
+    -- Add Tooltip for Zones
+    zonesLabel:EnableMouse(true)
+    zonesLabel:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Monitored Zones", 1, 1, 1)
+        GameTooltip:AddLine("Type zone names or subzones here in a semicolon-separated list.", nil, nil, nil, true)
+        GameTooltip:AddLine("When the 'Zone Triggers' toggle is enabled above, these volume settings will automatically apply while your character is in these zones.", 1, 0.82, 0, true)
+        GameTooltip:Show()
+    end)
+    zonesLabel:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    local btnAddCurrent = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
+    btnAddCurrent:SetSize(140, 22)
+    btnAddCurrent:SetPoint("LEFT", zonesLabel, "LEFT", 320, 0)
+    btnAddCurrent:SetText("Add Current Zone")
+
+    local zoneScrollFrame = CreateFrame("ScrollFrame", "VolumeSlidersZoneScrollFrame", contentFrame, "UIPanelScrollFrameTemplate")
+    local INPUT_WIDTH = 500
+    zoneScrollFrame:SetSize(INPUT_WIDTH, 70)
+    zoneScrollFrame:SetPoint("TOPLEFT", zonesLabel, "BOTTOMLEFT", 0, -10)
+
+    -- Add a visual backing frame so it looks like an input box
+    local scrollBg = CreateFrame("Frame", nil, zoneScrollFrame, "BackdropTemplate")
+    scrollBg:SetPoint("TOPLEFT", -7, 7)
+    scrollBg:SetPoint("BOTTOMRIGHT", 30, -7)
+    scrollBg:SetBackdrop({
+        bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tileSize = 16, edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    scrollBg:SetBackdropColor(0.05, 0.05, 0.05, 0.8)
+    scrollBg:SetBackdropBorderColor(0.4, 0.4, 0.4, 1)
+    scrollBg:SetFrameLevel(zoneScrollFrame:GetFrameLevel() - 1)
+
+    local inputZones = CreateFrame("EditBox", nil, zoneScrollFrame)
+    inputZones:SetMultiLine(true)
+    inputZones:SetFontObject("ChatFontNormal")
+    inputZones:SetWidth(INPUT_WIDTH)
+    inputZones:SetAutoFocus(false)
+    zoneScrollFrame:SetScrollChild(inputZones)
+
+    -- Hook cursor movement to standard scrolling logic
+    inputZones:SetScript("OnCursorChanged", ScrollingEdit_OnCursorChanged)
+    inputZones:SetScript("OnUpdate", function(self, elapsed)
+        ScrollingEdit_OnUpdate(self, elapsed, self:GetParent())
+    end)
+    inputZones:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+
+    btnAddCurrent:SetScript("OnClick", function()
+        local zone = GetRealZoneText()
+        if zone and zone ~= "" then
+            local t = inputZones:GetText()
+            if t == "" then
+                inputZones:SetText(zone)
             else
-                currentSelectedIndex = nil
-                presetDropdown:SetText("Select Profile...")
+                inputZones:SetText(t .. "; " .. zone)
             end
-        else
-            presetDropdown:SetText("Select Profile...")
+        end
+    end)
+
+    local separatorMid = contentFrame:CreateTexture(nil, "ARTWORK")
+    separatorMid:SetHeight(1)
+    separatorMid:SetPoint("TOPLEFT", zoneScrollFrame, "BOTTOMLEFT", -15, -35)
+    separatorMid:SetWidth(540)
+    separatorMid:SetColorTexture(1, 1, 1, 0.2)
+
+    ---------------------------------------------------------------------------
+    -- Faux Sliders Display Area
+    ---------------------------------------------------------------------------
+    local slidersContainer = CreateFrame("Frame", nil, contentFrame)
+    slidersContainer:SetHeight(420)
+    -- Vertical: below the separator. Horizontal: stretch to contentFrame edges.
+    slidersContainer:SetPoint("TOP", separatorMid, "BOTTOM", 0, -10)
+    slidersContainer:SetPoint("LEFT", contentFrame, "LEFT", 0, 0)
+    slidersContainer:SetPoint("RIGHT", contentFrame, "RIGHT", 0, 0)
+
+    -- Define the channels we want faux sliders for (all CVar-based channels)
+    local channels = {
+        { key="Sound_MasterVolume", label="Master"},
+        { key="Sound_SFXVolume", label="SFX"},
+        { key="Sound_MusicVolume", label="Music"},
+        { key="Sound_AmbienceVolume", label="Ambience"},
+        { key="Sound_DialogVolume", label="Dialog"},
+        { key="Sound_EncounterWarningsVolume", label="Warnings"},
+        { key="Sound_GameplaySFX", label="Gameplay"},
+        { key="Sound_PingVolume", label="Pings"}
+    }
+
+    local sliderWidth = VS.SLIDER_COLUMN_WIDTH or 60
+    local sliderSpacing = 8  -- tight spacing to fit all 8 channels within 540px
+    local totalWidth = (#channels * sliderWidth) + ((#channels - 1) * sliderSpacing)
+
+    -- Position sliders centered within the container using an OnSizeChanged hook
+    -- so they re-center if the settings panel is resized.
+    local function RepositionSliders()
+        local containerWidth = slidersContainer:GetWidth()
+        if containerWidth <= 0 then containerWidth = 540 end
+        local startX = (containerWidth - totalWidth) / 2
+        for idx, slider in ipairs(presetSliders) do
+            slider:ClearAllPoints()
+            slider:SetPoint("TOPLEFT", slidersContainer, "TOPLEFT", startX + (idx-1) * (sliderWidth + sliderSpacing), -160)
         end
     end
 
-    ---------------------------------------------------------------------------
-    -- ShiftAutomationIndexes
-    --
-    -- When a preset is deleted or moved, all references to its index in the
-    -- mouse actions or zones table must be shifted or cleared.
-    ---------------------------------------------------------------------------
-    local function ShiftAutomationIndexes(oldIndex, newIndex)
-        local shiftType = (newIndex == nil) and "DELETE" or "MOVE"
+    for _, chan in ipairs(channels) do
+        local slider = VS:CreateTriggerSlider(slidersContainer, "VSPresetSlider"..chan.label, chan.label, chan.key, VS.PresetWorkingState, 0, 1, 0.01)
 
-        -- 1. Minimap Mouse Actions
+        -- Start hidden
+        slider:Hide()
+        table.insert(presetSliders, slider)
+    end
+
+    slidersContainer:SetScript("OnSizeChanged", function() RepositionSliders() end)
+    C_Timer.After(0, RepositionSliders)  -- initial positioning after layout settles
+
+    ---------------------------------------------------------------------------
+    -- Automation Pointer Synchronization
+    ---------------------------------------------------------------------------
+
+    --- Synchronizes automation pointers (fishing/lfg) when the presets array is mutated.
+    --- @param deletedIndex number The index being removed or moved FROM.
+    --- @param insertedIndex number|nil Optional. The index being moved TO (for reordering).
+    local function ShiftAutomationIndexes(deletedIndex, insertedIndex)
+        --- @type VolumeSlidersDB
+        local db = VolumeSlidersMMDB
+        local keys = {"fishingPresetIndex", "lfgPresetIndex"}
+        for _, key in ipairs(keys) do
+            local idx = db.automation[key]
+                    if idx then
+                        if idx == deletedIndex then
+                            -- The assigned preset is the one being moved or deleted
+                            if insertedIndex then
+                                ---@cast insertedIndex integer
+                                db.automation[key --[[@as string]]] = insertedIndex
+                            else
+                                db.automation[key --[[@as string]]] = nil
+                            end
+                        elseif not insertedIndex then
+                            -- Pure deletion: Shift down all items above the deleted hole
+                            if idx > deletedIndex then
+                                db.automation[key --[[@as string]]] = idx - 1
+                            end
+                        else
+                            -- Reordering: A preset was moved from deletedIndex to insertedIndex.
+                            -- Everyone in between shifts relative to the direction of travel.
+                            if deletedIndex < insertedIndex then
+                                -- Moved from top to bottom. Elements in (deletedIndex, insertedIndex] move UP
+                                if idx > deletedIndex and idx <= insertedIndex then
+                                    db.automation[key --[[@as string]]] = idx - 1
+                                end
+                            elseif deletedIndex > insertedIndex then
+                                -- Moved from bottom to top. Elements in [insertedIndex, deletedIndex) move DOWN
+                                if idx >= insertedIndex and idx < deletedIndex then
+                                    db.automation[key --[[@as string]]] = idx + 1
+                                end
+                            end
+                        end
+                    end
+        end
+
         if db.minimap and db.minimap.mouseActions then
             for _, action in ipairs(db.minimap.mouseActions) do
                 if action.effect == "TOGGLE_PRESET" and action.stringTarget then
-                    local target = tonumber(action.stringTarget)
-                    if target then
-                        if shiftType == "DELETE" then
-                            if target == oldIndex then
+                    local idx = tonumber(action.stringTarget)
+                    if idx then
+                        if idx == deletedIndex then
+                            if insertedIndex then
+                                action.stringTarget = tostring(insertedIndex)
+                            else
                                 action.stringTarget = nil
-                                action.effect = nil -- Clear the action if its target is gone
-                            elseif target > oldIndex then
-                                action.stringTarget = tostring(target - 1)
+                            end
+                        elseif not insertedIndex then
+                            if idx > deletedIndex then
+                                action.stringTarget = tostring(idx - 1)
+                            end
+                        else
+                            if deletedIndex < insertedIndex then
+                                if idx > deletedIndex and idx <= insertedIndex then
+                                    action.stringTarget = tostring(idx - 1)
+                                end
+                            elseif deletedIndex > insertedIndex then
+                                if idx >= insertedIndex and idx < deletedIndex then
+                                    action.stringTarget = tostring(idx + 1)
+                                end
                             end
                         end
                     end
@@ -291,141 +502,244 @@ function VS:CreateAutomationSettingsContents(parentFrame)
             end
         end
 
-        -- 2. Trigger Zones, Fishing, LFG
-        if db.automation then
-            if shiftType == "DELETE" then
-                if db.automation.fishingPresetIndex == oldIndex then
-                    db.automation.fishingPresetIndex = nil
-                elseif db.automation.fishingPresetIndex and db.automation.fishingPresetIndex > oldIndex then
-                    db.automation.fishingPresetIndex = db.automation.fishingPresetIndex - 1
+        local function ShiftMap(map)
+            if not map then return end
+            if not insertedIndex then
+                map[deletedIndex] = nil
+                local newMap = {}
+                for k, v in pairs(map) do
+                    if k > deletedIndex then
+                        newMap[k - 1] = v
+                    elseif k < deletedIndex then
+                        newMap[k] = v
+                    end
                 end
-
-                if db.automation.lfgPresetIndex == oldIndex then
-                    db.automation.lfgPresetIndex = nil
-                elseif db.automation.lfgPresetIndex and db.automation.lfgPresetIndex > oldIndex then
-                    db.automation.lfgPresetIndex = db.automation.lfgPresetIndex - 1
-                end
-
-                if db.automation.triggers then
-                    for zone, presetIndex in pairs(db.automation.triggers) do
-                        if presetIndex == oldIndex then
-                            db.automation.triggers[zone] = nil
-                        elseif presetIndex > oldIndex then
-                            db.automation.triggers[zone] = presetIndex - 1
+                wipe(map)
+                for k, v in pairs(newMap) do map[k] = v end
+            else
+                local movedItem = map[deletedIndex]
+                map[deletedIndex] = nil
+                local newMap = {}
+                for k, v in pairs(map) do
+                    if deletedIndex < insertedIndex then
+                        if k > deletedIndex and k <= insertedIndex then
+                            newMap[k - 1] = v
+                        else
+                            newMap[k] = v
+                        end
+                    elseif deletedIndex > insertedIndex then
+                        if k >= insertedIndex and k < deletedIndex then
+                            newMap[k + 1] = v
+                        else
+                            newMap[k] = v
                         end
                     end
                 end
+                if movedItem ~= nil then
+                    newMap[insertedIndex] = movedItem
+                end
+                wipe(map)
+                for k, v in pairs(newMap) do map[k] = v end
             end
         end
 
-        -- 3. Session manual states
-        if VS.session then
-            local active = VS.session.activeManualPresets
-            if active then
-                if shiftType == "DELETE" then
-                    active[oldIndex] = nil
-                    -- Shift up all subsequent indexes
-                    for i = oldIndex + 1, #db.automation.presets + 1 do
-                        active[i-1] = active[i]
-                        active[i] = nil
-                    end
-                end
+        local sess = VS.session
+        if sess then
+            if sess.activeRegistry then
+                ShiftMap(sess.activeRegistry["manual"])
+            end
+            ShiftMap(sess.manualActivationTimes)
+        end
+        if db.automation then
+            ShiftMap(db.automation.activeManualPresets)
+        end
+    end
+
+    ---------------------------------------------------------------------------
+    -- Interaction Logic
+    ---------------------------------------------------------------------------
+
+    --- Updates the slider widgets (Master, SFX, etc.) to match the working state.
+    local function RefreshSliderUI()
+        for _, slider in ipairs(presetSliders) do
+            slider:Show()
+            if slider.RefreshValue then
+                slider:RefreshValue()
             end
         end
     end
 
-    presetDropdown:SetupMenu(function(dropdown, rootDescription)
-        rootDescription:CreateTitle("Choose Profile")
-        
-        rootDescription:CreateButton(" + Create New Profile", function()
-            currentSelectedIndex = nil
-            LoadWorkingState(nil, nil)
-            UpdateFormFromWorkingState()
-            presetDropdown:SetText("New Preset")
+    --- Synchronizes all UI form elements (name, priority, zones) with the working state.
+    local function UpdateFormFromWorkingState()
+        if not inputName:HasFocus() then
+            inputName:SetText(VS.PresetWorkingState.name)
+            inputName:SetCursorPosition(0)
+        end
+        if not inputPriority:HasFocus() then
+            inputPriority:SetText(tostring(VS.PresetWorkingState.priority))
+            inputPriority:SetCursorPosition(0)
+        end
+        if not inputListOrder:HasFocus() then
+            inputListOrder:SetText(tostring(VS.PresetWorkingState.index or (#db.automation.presets + 1)))
+            inputListOrder:SetCursorPosition(0)
+        end
+        showDropdownCheck:SetChecked(VS.PresetWorkingState.showInDropdown)
+
+        if not inputZones:HasFocus() then
+            local zStr = table.concat(VS.PresetWorkingState.zones, "; ")
+            inputZones:SetText(zStr)
+        end
+
+        RefreshSliderUI()
+
+        if currentSelectedIndex then
+            btnSave:Enable()
+            btnCopy:Enable()
+            btnDelete:Enable()
+            if currentSelectedIndex > 1 then btnMoveUp:Enable() else btnMoveUp:Disable() end
+            if currentSelectedIndex < #db.automation.presets then btnMoveDown:Enable() else btnMoveDown:Disable() end
+        else
+            btnSave:Enable()
+            btnCopy:Disable()
+            btnDelete:Disable()
+            btnMoveUp:Disable()
+            btnMoveDown:Disable()
+        end
+    end
+
+    --- Deep-copies a DB preset into the working state for editing.
+    -- @param preset table? The source preset (nil for a new preset).
+    -- @param index number? The DB index (nil for a new preset).
+    local function LoadWorkingState(preset, index)
+        VS.PresetWorkingState.name = preset and preset.name or "New Preset"
+        VS.PresetWorkingState.priority = preset and (preset.priority or 10) or 10
+        VS.PresetWorkingState.showInDropdown = preset and (preset.showInDropdown ~= false) or (preset == nil)
+        VS.PresetWorkingState.index = index
+
+        VS.PresetWorkingState.zones = {}
+        VS.PresetWorkingState.volumes = {}
+        VS.PresetWorkingState.ignored = {}
+        VS.PresetWorkingState.mutes = {}
+        VS.PresetWorkingState.modes = {}
+
+        if preset then
+            for _, z in ipairs(preset.zones or {}) do table.insert(VS.PresetWorkingState.zones, z) end
+            for k,v in pairs(preset.volumes or {}) do VS.PresetWorkingState.volumes[k] = v end
+            for k,v in pairs(preset.ignored or {}) do VS.PresetWorkingState.ignored[k] = v end
+            for k,v in pairs(preset.mutes or {}) do VS.PresetWorkingState.mutes[k] = v end
+            for k,v in pairs(preset.modes or {}) do VS.PresetWorkingState.modes[k] = v end
+        end
+
+        -- Fill in any missing channels with the current CVar values so the sliders don't default to 100% incorrectly
+        for channelKey, _ in pairs(VolumeSlidersMMDB.channels) do
+            if VS.PresetWorkingState.volumes[channelKey] == nil then
+                VS.PresetWorkingState.volumes[channelKey] = tonumber(GetCVar(channelKey)) or 1
+            end
+        end
+    end
+
+    local function SelectNewProfile()
+        currentSelectedIndex = nil
+        LoadWorkingState(nil, nil)
+        presetDropdown:SetDefaultText("Create New Preset")
+        UpdateFormFromWorkingState()
+    end
+
+    local function GenerateDropdownMenu(dropdown, rootDescription)
+        rootDescription:CreateButton("Create New Preset", function()
+            SelectNewProfile()
+            -- Force text update after dropdown closes
+            dropdown:SetDefaultText("Create New Preset")
         end)
 
-        if db.automation.presets and #db.automation.presets > 0 then
-            rootDescription:CreateDivider()
-            for i, preset in ipairs(db.automation.presets) do
-                rootDescription:CreateButton((tostring(i)..": "..(preset.name or "Unnamed")), function()
-                    currentSelectedIndex = i
-                    LoadWorkingState(preset, i)
-                    UpdateFormFromWorkingState()
-                    presetDropdown:SetText(preset.name)
-                end)
+        for i, preset in ipairs(db.automation.presets) do
+            rootDescription:CreateButton(preset.name .. " (Priority: " .. (preset.priority or 0) .. ")", function()
+                currentSelectedIndex = i
+                -- Deep copy preset so edits aren't live until saved
+                LoadWorkingState(preset, i)
+                
+                presetDropdown:SetDefaultText(preset.name)
+                UpdateFormFromWorkingState()
+            end)
+        end
+    end
+
+    local function RefreshDropdown()
+        if currentSelectedIndex and db.automation.presets[currentSelectedIndex] then
+            presetDropdown:SetDefaultText(db.automation.presets[currentSelectedIndex].name)
+        else
+            -- Ensure New Profile is selected if none is active or list is empty
+            SelectNewProfile()
+        end
+
+        presetDropdown:SetupMenu(GenerateDropdownMenu)
+        presetDropdown:GenerateMenu()
+
+        if VS.RefreshAutomationProfiles then
+            VS:RefreshAutomationProfiles()
+        end
+    end
+
+    VS.RefreshPresetSettings = function()
+        RefreshDropdown()
+
+        -- If we have an active profile selected, ensure the working state matches it so the UI populates
+        if currentSelectedIndex and db.automation.presets[currentSelectedIndex] then
+            LoadWorkingState(db.automation.presets[currentSelectedIndex], currentSelectedIndex)
+        end
+
+        UpdateFormFromWorkingState()
+    end
+
+    -- Split string by semicolon and trim whitespace
+    local function ParseZones(str)
+        local rawParts = {strsplit(";", str)}
+        local result = {}
+        local seen = {}
+        for _, part in ipairs(rawParts) do
+            local clean = part:match("^%s*(.-)%s*$")
+            if clean and clean ~= "" and not seen[clean] then
+                seen[clean] = true
+                table.insert(result, clean)
             end
         end
-    end)
+        return result
+    end
 
-    ---------------------------------------------------------------------------
-    -- Buttons (Save, Copy, Delete, Move)
-    ---------------------------------------------------------------------------
-    local btnSave = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
-    btnSave:SetSize(80, 22)
-    btnSave:SetPoint("TOPLEFT", showCheck, "BOTTOMLEFT", 0, -20)
-    btnSave:SetText("Save")
-
-    local btnCopy = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
-    btnCopy:SetSize(80, 22)
-    btnCopy:SetPoint("LEFT", btnSave, "RIGHT", 5, 0)
-    btnCopy:SetText("Copy")
-
-    local btnDelete = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
-    btnDelete:SetSize(80, 22)
-    btnDelete:SetPoint("LEFT", btnCopy, "RIGHT", 5, 0)
-    btnDelete:SetText("Delete")
-
-    local btnMoveUp = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
-    btnMoveUp:SetSize(40, 22)
-    btnMoveUp:SetPoint("LEFT", btnDelete, "RIGHT", 20, 0)
-    btnMoveUp:SetText("ʌ")
-
-    local btnMoveDown = CreateFrame("Button", nil, contentFrame, "UIPanelButtonTemplate")
-    btnMoveDown:SetSize(40, 22)
-    btnMoveDown:SetPoint("LEFT", btnMoveUp, "RIGHT", 5, 0)
-    btnMoveDown:SetText("v")
-
-    nameEditBox:SetScript("OnTextChanged", function(self, userInput)
-        if userInput then
-            VS.PresetWorkingState.name = self:GetText()
-            btnSave:Enable()
-        end
-    end)
-
+    --- COMMITS the current working state to the saved variables database.
     btnSave:SetScript("OnClick", function()
-        -- No preset selected, hide the editor and return early.
-        if VS.PresetWorkingState.name == "" then return end
+        VS.PresetWorkingState.name = inputName:GetText()
+        if VS.PresetWorkingState.name == "" then VS.PresetWorkingState.name = "Unnamed Preset" end
+        VS.PresetWorkingState.priority = tonumber(inputPriority:GetText()) or 10
+        VS.PresetWorkingState.zones = ParseZones(inputZones:GetText())
+        VS.PresetWorkingState.showInDropdown = showDropdownCheck:GetChecked()
 
+        local desiredIndex = tonumber(inputListOrder:GetText()) or (#db.automation.presets + 1)
+
+        -- Serialize to DB
         local newObj = {
             name = VS.PresetWorkingState.name,
-            showInDropdown = VS.PresetWorkingState.showInDropdown,
+            priority = VS.PresetWorkingState.priority,
+            zones = VS.PresetWorkingState.zones,
             volumes = {},
             ignored = {},
+            mutes = {},
             modes = {},
-            mutes = {}
+            showInDropdown = VS.PresetWorkingState.showInDropdown
         }
-        for _, channel in ipairs(channels) do
-            newObj.volumes[channel] = VS.PresetWorkingState.volumes[channel] or 1
-            if VS.PresetWorkingState.ignored[channel] then
-                newObj.ignored[channel] = true
-            end
-            newObj.modes[channel] = VS.PresetWorkingState.modes[channel] or "absolute"
-            if VS.PresetWorkingState.mutes[channel] then
-                newObj.mutes[channel] = true
-            end
-        end
+        for k,v in pairs(VS.PresetWorkingState.volumes) do newObj.volumes[k] = v end
+        for k,v in pairs(VS.PresetWorkingState.ignored) do newObj.ignored[k] = v end
+        for k,v in pairs(VS.PresetWorkingState.mutes or {}) do newObj.mutes[k] = v end
+        for k,v in pairs(VS.PresetWorkingState.modes or {}) do newObj.modes[k] = v end
 
-        local desiredIndex = currentSelectedIndex or (#db.automation.presets + 1)
-        
-        -- If updating an existing preset, we need to handle reference shifting
         if currentSelectedIndex then
             ShiftAutomationIndexes(currentSelectedIndex, desiredIndex)
-            table_remove(db.automation.presets, currentSelectedIndex)
+            table.remove(db.automation.presets, currentSelectedIndex)
         end
 
         -- Insert into array at the new desired position and shift boundaries
-        desiredIndex = math_max(1, math_min(desiredIndex, #db.automation.presets + 1))
-        table_insert(db.automation.presets, desiredIndex, newObj)
+        desiredIndex = math.max(1, math.min(desiredIndex, #db.automation.presets + 1))
+        table.insert(db.automation.presets, desiredIndex, newObj)
         currentSelectedIndex = desiredIndex
         VS.PresetWorkingState.index = currentSelectedIndex
 
@@ -454,7 +768,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         OnAccept = function()
             if currentSelectedIndex and db.automation.presets[currentSelectedIndex] then
                 ShiftAutomationIndexes(currentSelectedIndex, nil)
-                table_remove(db.automation.presets, currentSelectedIndex)
+                table.remove(db.automation.presets, currentSelectedIndex)
                 currentSelectedIndex = nil
                 LoadWorkingState(nil, nil)
                 RefreshDropdown()
@@ -470,17 +784,25 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         timeout = 0,
         whileDead = true,
         hideOnEscape = true,
-        preferredIndex = 3
+        preferredIndex = 3,  -- Avoid UI taint
     }
 
     btnDelete:SetScript("OnClick", function()
-        if currentSelectedIndex then
+        if currentSelectedIndex and db.automation.presets[currentSelectedIndex] then
             StaticPopup_Show("VolumeSlidersDeletePresetConfirm")
         end
     end)
 
     local function SwapPresets(idxA, idxB)
-        if not db.automation.presets[idxA] or not db.automation.presets[idxB] then return end
+        -- Swap pointers for automation
+        local keys = {"fishingPresetIndex", "lfgPresetIndex"}
+        for _, key in ipairs(keys) do
+            if db.automation[key] == idxA then
+                db.automation[key] = idxB
+            elseif db.automation[key] == idxB then
+                db.automation[key] = idxA
+            end
+        end
 
         local function SwapMap(map)
             if not map then return end
