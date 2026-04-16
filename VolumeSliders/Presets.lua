@@ -108,7 +108,9 @@ local function RefreshUI()
     if VS.VolumeSlidersObject then
         VS.VolumeSlidersObject.text = VS:GetVolumeText()
     end
-    VS:UpdateMiniMapVolumeIcon()
+    if VS.UpdateMiniMapVolumeIcon then
+        VS:UpdateMiniMapVolumeIcon()
+    end
 end
 
 --- Registers an active preset in the session stack and triggers evaluation.
