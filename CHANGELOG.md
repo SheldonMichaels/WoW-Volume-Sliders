@@ -1,4 +1,10 @@
-# Changelog (v3.2.2)
+# Changelog (v3.2.3)
+
+## v3.2.3 — 2026-04-16
+
+### Added
+- **GitHub Feedback Button**: Added a prominent button on the main settings page to encourage bug reporting and feature requests via GitHub.
+- **Copy Link Mechanism**: Clicking the button opens a standard Blizzard dialog with the Issues URL pre-selected for easy copying (`Ctrl+C`).
 
 ## v3.2.2 — 2026-04-11
 
