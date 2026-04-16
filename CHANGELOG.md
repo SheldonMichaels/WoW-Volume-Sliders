@@ -5,7 +5,6 @@
 ### Added
 - **GitHub Feedback Button**: Added a prominent button on the main settings page to encourage bug reporting and feature requests via GitHub.
 - **Copy Link Mechanism**: Clicking the button opens a standard Blizzard dialog with the Issues URL pre-selected for easy copying (`Ctrl+C`).
-- **UI Polish**: Increased the header font size on the main settings page for improved visibility and professional aesthetic.
 
 ## v3.2.2 — 2026-04-11
 
