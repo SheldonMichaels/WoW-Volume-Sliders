@@ -443,8 +443,10 @@ function VS:VolumeSliders_ToggleMute()
     local soundEnabled = GetCVar("Sound_EnableAllSound")
     if soundEnabled == "1" then
         SetCVar("Sound_EnableAllSound", 0)
+        VS:SyncBaseline("Sound_EnableAllSound", "0")
     else
         SetCVar("Sound_EnableAllSound", 1)
+        VS:SyncBaseline("Sound_EnableAllSound", "1")
     end
     VS:UpdateMiniMapVolumeIcon()
 

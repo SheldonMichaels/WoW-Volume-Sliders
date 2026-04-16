@@ -29,7 +29,7 @@ describe("Registry-based Preset Logic (Unified State Stack)", function()
         _G.setCvarSpy = spy.new(function(name, val) _G.cvarStorage[name] = tostring(val) end)
         _G.SetCVar = _G.setCvarSpy
 
-        local addonName, addonTable = "VolumeSliders", {}
+        local addonName, addonTable = CreateAddonContext()
         loadfile("VolumeSliders/Core.lua")(addonName, addonTable)
         loadfile("VolumeSliders/Presets.lua")(addonName, addonTable)
         

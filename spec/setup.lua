@@ -486,6 +486,7 @@ function CreateAddonContext()
         UpdateAppearance = function() end,
         Reposition = function() end,
         UpdateMiniMapButtonVisibility = function() end,
+        UpdateMiniMapVolumeIcon = function() end,
     }
     return "VolumeSliders", addonTable
 end
