@@ -401,12 +401,13 @@ function VS:SyncBaseline(channel, value, isVoiceMuteToggle)
     end
 
     if isMuteCVar then
-        sess.baselineMutes[targetChannel] = value
+        local strValue = tostring(value)
+        sess.baselineMutes[targetChannel] = strValue
         local db = VolumeSlidersMMDB
         if db then
             db.automation = db.automation or {}
             db.automation.persistedBaseline = db.automation.persistedBaseline or {}
-            db.automation.persistedBaseline[targetChannel .. "_Mute"] = value
+            db.automation.persistedBaseline[targetChannel .. "_Mute"] = strValue
         end
     else
         sess.baselineVolumes[targetChannel] = tonumber(value) or 1
@@ -443,8 +444,10 @@ function VS:VolumeSliders_ToggleMute()
     local soundEnabled = GetCVar("Sound_EnableAllSound")
     if soundEnabled == "1" then
         SetCVar("Sound_EnableAllSound", 0)
+        VS:SyncBaseline("Sound_EnableAllSound", "0")
     else
         SetCVar("Sound_EnableAllSound", 1)
+        VS:SyncBaseline("Sound_EnableAllSound", "1")
     end
     VS:UpdateMiniMapVolumeIcon()
 
