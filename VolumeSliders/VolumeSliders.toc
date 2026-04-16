@@ -33,7 +33,12 @@ LFGQueue.lua
 Appearance.lua
 
 # -- Settings & Configuration --
-Settings.lua
+Settings_Automation.lua
+Settings_Sliders.lua
+Settings_Window.lua
+Settings_MouseActions.lua
+Settings_Minimap.lua
+Settings_Main.lua
 
 # -- Main UI Construction --
 PopupFrame.lua

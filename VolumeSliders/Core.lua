@@ -521,6 +521,24 @@ function VS:SetAtlasRotated90CW(tex, atlasName)
     return true
 end
 
+-------------------------------------------------------------------------------
+-- UI Helpers
+-------------------------------------------------------------------------------
+
+--- Shared helper to attach a simple tooltip to a frame.
+--- @param frame Frame The widget receiving the tooltip.
+--- @param text string The tooltip content.
+function VS:AddTooltip(frame, text)
+    frame:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(text, nil, nil, nil, nil, true)
+        GameTooltip:Show()
+    end)
+    frame:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+end
+
 -----------------------------------------
 -- Mouse Action Processors
 -----------------------------------------
