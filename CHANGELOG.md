@@ -1,4 +1,11 @@
-# Changelog (v3.3.0)
+# Changelog (v3.3.1)
+
+## v3.3.1 — 2026-04-16
+
+### Fixed
+- **Preset Mute Desync**: Fixed a bug where applying presets would incorrectly mute the Master channel if it had been manually toggled via the minimap right-click action.
+- **Minimap Icon Refresh**: The minimap speaker icon now accurately updates its texture immediately after a preset change or manual mute to reflect the current sound state.
+- **Internal Stability**: Hardened the baseline synchronization engine to prevent type-mismatch loops and improved safety during early game load phases.
 
 ## v3.3.0 — 2026-04-16
 
