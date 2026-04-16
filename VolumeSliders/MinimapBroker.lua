@@ -121,6 +121,8 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
         elseif button == "RightButton" then
             VS:VolumeSliders_ToggleMute()
         end
+
+        VS:RefreshMinimapTooltip()
     end,
 
     --- Tooltip: dynamic instructions based on configured Mouse Actions.
@@ -221,6 +223,32 @@ function VS:UpdateMiniMapVolumeIcon()
             VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker-mute")
         else
             VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker")
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
+-- Tooltip Refresh Helper
+--
+-- Rebuilds the active minimap tooltip if it's currently showing, allowing
+-- real-time updates of volume percentages and preset states after actions.
+-------------------------------------------------------------------------------
+function VS:RefreshMinimapTooltip()
+    -- Case 1: Minimalist button using standard GameTooltip
+    if VS.minimalistButton and GameTooltip:IsShown() and GameTooltip:GetOwner() == VS.minimalistButton then
+        GameTooltip:ClearLines()
+        VS.VolumeSlidersObject.OnTooltipShow(GameTooltip)
+        GameTooltip:Show()
+        return
+    end
+
+    -- Case 2: Standard LibDBIcon button using its private LibDBIconTooltip frame
+    if _G.LibDBIconTooltip and _G.LibDBIconTooltip:IsShown() then
+        local owner = _G.LibDBIconTooltip:GetOwner()
+        if owner and owner.dataObject == VS.VolumeSlidersObject then
+            _G.LibDBIconTooltip:ClearLines()
+            VS.VolumeSlidersObject.OnTooltipShow(_G.LibDBIconTooltip)
+            _G.LibDBIconTooltip:Show()
         end
     end
 end
@@ -383,6 +411,8 @@ function VS:CreateMinimalistButton()
             elseif button == "RightButton" then
                 VS:VolumeSliders_ToggleMute()
             end
+
+            VS:RefreshMinimapTooltip()
         end
     end)
 
