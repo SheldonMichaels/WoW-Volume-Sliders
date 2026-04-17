@@ -111,6 +111,9 @@ local function RefreshUI()
     if VS.UpdateMiniMapVolumeIcon then
         VS:UpdateMiniMapVolumeIcon()
     end
+    if VS.RefreshPopupDropdown then
+        VS.RefreshPopupDropdown()
+    end
 end
 
 --- Registers an active preset in the session stack and triggers evaluation.
@@ -416,6 +419,61 @@ function VS.Presets:GetActiveTriggersString()
         return table.concat(matchedNames, ", ")
     end
     return "None"
+end
+
+--- Returns the text to be displayed on the preset dropdown button.
+-- Dynamically switches to "X Presets Active" if the combined text is too long.
+function VS.Presets:GetActivePresetsButtonText()
+    local sess = VS.session
+    local matchedNames = {}
+    
+    for _, presets in pairs(sess.activeRegistry) do
+        for _, preset in pairs(presets) do
+            if preset and preset.name then
+                table.insert(matchedNames, preset.name)
+            end
+        end
+    end
+
+    local count = #matchedNames
+    if count == 0 then
+        return "Presets"
+    elseif count == 1 then
+        return matchedNames[1]
+    end
+    -- Combine names first
+    local combined = table.concat(matchedNames, ", ")
+    
+    -- Measure if we have the UI element to test against
+    if VS.presetDropdown and VS.presetDropdown.Text then
+        local dropdownWidth = VS.presetDropdown:GetWidth()
+        if dropdownWidth > 0 then
+            -- We leave some padding (e.g. 26px) for the button visuals
+            local maxWidth = dropdownWidth - 26
+            
+            -- Use an unconstrained font string to measure the true width of the text
+            -- If we measure against the main Text, GetStringWidth() will just return the bounded width in WoW.
+            if not VS.presetMeasureString then
+                VS.presetMeasureString = VS.presetDropdown:CreateFontString(nil, "BACKGROUND", "GameFontHighlight")
+                VS.presetMeasureString:Hide() -- Keep it hidden, we only use it for math
+            end
+            
+            VS.presetMeasureString:SetText(combined)
+            if VS.presetMeasureString:GetStringWidth() > maxWidth then
+                return string.format("%d Presets Active", count)
+            end
+            
+            -- If we successfully measured and it fits, return it and skip the fallback limit
+            return combined
+        end
+    end
+
+    -- Fallback/Safety: If it's just too many characters and we can't measure yet
+    if #combined > 32 then
+        return string.format("%d Presets Active", count)
+    end
+
+    return combined
 end
 
 --- Toggles an automation state (like "fishing" or "lfg") on or off.

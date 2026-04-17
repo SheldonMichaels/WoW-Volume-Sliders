@@ -479,11 +479,20 @@ function VS:UpdateAppearance()
         if VS.presetDropdown then
             VS.presetDropdown:SetShown(db.toggles.showPresetsDropdown ~= false)
             VS.presetDropdown:ClearAllPoints()
+            local topAnchor = VS.contentFrame
+            local topPoint = "TOP"
+            local topOffset = -VS.CONTENT_PADDING_TOP
+
             if db.toggles.showHelpText ~= false and VS.instructionText then
-                VS.presetDropdown:SetPoint("TOP", VS.instructionText, "BOTTOM", 0, -10)
-            else
-                VS.presetDropdown:SetPoint("TOP", VS.contentFrame, "TOP", 0, -VS.CONTENT_PADDING_TOP)
+                topAnchor = VS.instructionText
+                topPoint = "BOTTOM"
+                topOffset = -10
             end
+
+            local relPoint = (topPoint == "BOTTOM") and "BOTTOM" or "TOP"
+            VS.presetDropdown:SetPoint("TOPLEFT", topAnchor, relPoint .. "LEFT", VS.CONTENT_PADDING_X, topOffset)
+            VS.presetDropdown:SetPoint("TOPRIGHT", topAnchor, relPoint .. "RIGHT", -VS.CONTENT_PADDING_X, topOffset)
+
             if db.toggles.showPresetsDropdown ~= false then
                 headerHeight = headerHeight + 35
             end

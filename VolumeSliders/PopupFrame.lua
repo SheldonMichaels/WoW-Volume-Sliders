@@ -360,8 +360,8 @@ function VS:CreateOptionsFrame()
     -- Presets Quick-Apply Dropdown
     ---------------------------------------------------------------------------
     VS.presetDropdown = CreateFrame("DropdownButton", "VolumeSlidersPresetDropdown", VS.contentFrame)
-    VS.presetDropdown:SetPoint("TOP", VS.instructionText, "BOTTOM", 0, -10)
-    VS.presetDropdown:SetSize(140, 26)
+    -- Positioning is handled dynamically in Appearance.lua:UpdateAppearance
+    VS.presetDropdown:SetHeight(26)
 
     local pDropdown = VS.presetDropdown
 
@@ -381,8 +381,8 @@ function VS:CreateOptionsFrame()
 
     -- Display Text
     local pText = pDropdown:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-    pText:SetPoint("CENTER", 0, 0)
-    pText:SetWidth(120)
+    pText:SetPoint("LEFT", 13, 0)
+    pText:SetPoint("RIGHT", -13, 0)
     pText:SetJustifyH("CENTER")
     pText:SetWordWrap(false)
     pDropdown.Text = pText
@@ -445,7 +445,6 @@ function VS:CreateOptionsFrame()
                     hasPresets = true
                     rootDescription:CreateButton(preset.name, function()
                         SelectPreset(preset)
-                        dropdown:SetText("Presets")
                     end)
                 end
             end
@@ -458,13 +457,13 @@ function VS:CreateOptionsFrame()
     end
 
     VS.presetDropdown:SetupMenu(GeneratePresetMenu)
-    VS.presetDropdown:SetText("Presets")
+    VS.presetDropdown:SetText(VS.Presets:GetActivePresetsButtonText())
 
     -- Expose refresh function to be called after settings are updated
     VS.RefreshPopupDropdown = function()
         if VS.presetDropdown then
             VS.presetDropdown:GenerateMenu()
-            VS.presetDropdown:SetText("Presets")
+            VS.presetDropdown:SetText(VS.Presets:GetActivePresetsButtonText())
         end
     end
 
@@ -1145,6 +1144,9 @@ function VS:CreateOptionsFrame()
     ---------------------------------------------------------------------------
     VS.container:SetScript("OnSizeChanged", function(self, width, height)
         VS:FlagLayoutDirty()
+        if VS.presetDropdown and VS.Presets and VS.Presets.GetActivePresetsButtonText then
+            VS.presetDropdown:SetText(VS.Presets:GetActivePresetsButtonText())
+        end
     end)
 
     -- Register combat lockdown event and start hidden.
@@ -1153,6 +1155,10 @@ function VS:CreateOptionsFrame()
 
     -- Apply current visual settings immediately after construction
     VS:UpdateAppearance()
+    
+    if VS.RefreshPopupDropdown then
+        VS.RefreshPopupDropdown()
+    end
 
     return VS.container
 end

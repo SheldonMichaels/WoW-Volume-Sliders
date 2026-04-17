@@ -38,6 +38,9 @@ describe("PopupFrame behavioral tests", function()
         addonTable.LDB = { RegisterCallback = function() end }
         addonTable.LDBIcon = { Register = function() end }
 
+        local presetsChunk = loadfile("VolumeSliders/Presets.lua")
+        presetsChunk(addonName, addonTable)
+
         local popupChunk = assert(loadfile("VolumeSliders/PopupFrame.lua"))
         popupChunk(addonName, addonTable)
 
@@ -96,5 +99,39 @@ describe("PopupFrame behavioral tests", function()
 
         onSizeChanged(VS.container, 500, 500)
         assert.spy(flagSpy).was_called()
+    end)
+
+    it("should update preset dropdown label on selection", function()
+        -- 1. Setup a mock preset
+        _G.VolumeSlidersMMDB.automation.presets = {
+            { name = "Test Preset", volumes = { ["Sound_MasterVolume"] = 0.5 } }
+        }
+        VS.session.activeRegistry.manual = {}
+        
+        -- 2. Mock GetActivePresetsButtonText
+        local originalGetText = VS.Presets.GetActivePresetsButtonText
+        VS.Presets.GetActivePresetsButtonText = function()
+            if VS.session.activeRegistry.manual and VS.session.activeRegistry.manual[1] then
+                return "Test Preset"
+            end
+            return "Presets"
+        end
+        
+        -- 3. Spy on the FontString:SetText
+        local setTextSpy = spy.on(VS.presetDropdown.Text, "SetText")
+        
+        -- 4. Trigger refresh (imitates window opening)
+        VS.RefreshPopupDropdown()
+        assert.spy(setTextSpy).was_called_with(VS.presetDropdown.Text, "Presets")
+
+        -- 5. Select the preset (simulated)
+        VS.session.activeRegistry.manual[1] = _G.VolumeSlidersMMDB.automation.presets[1]
+        VS.RefreshPopupDropdown()
+        
+        assert.spy(setTextSpy).was_called_with(VS.presetDropdown.Text, "Test Preset")
+        
+        -- Cleanup
+        VS.Presets.GetActivePresetsButtonText = originalGetText
+        setTextSpy:revert()
     end)
 end)

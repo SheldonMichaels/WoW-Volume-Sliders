@@ -105,7 +105,7 @@ describe("Window Resize Persistence", function()
             SLIDER_PADDING_X = 0,
             RESIZE_HANDLE_THICKNESS = 6,
             sliders = {},
-            session = { layoutDirty = false }
+            session = { activeRegistry = {}, layoutDirty = false }
         }
         
         -- Mock sub-functions called by CreateOptionsFrame
@@ -118,6 +118,7 @@ describe("Window Resize Persistence", function()
         addonTable.HandlePTT_OnMouseDown = function() end
         addonTable.InitializeSettings = function() end
 
+        loadfile("VolumeSliders/Presets.lua")(addonName, addonTable)
         local chunk = loadfile("VolumeSliders/PopupFrame.lua")
         chunk(addonName, addonTable)
         VS = addonTable
