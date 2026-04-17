@@ -45,6 +45,8 @@ describe("Dynamic Layout tests", function()
         -- Mocking shared dependencies for PopupFrame.lua
         addonTable.LDB = { RegisterCallback = function() end }
         addonTable.LDBIcon = { Register = function() end }
+
+        loadfile("VolumeSliders/Presets.lua")(addonName, addonTable)
         assert(loadfile("VolumeSliders/PopupFrame.lua"))(addonName, addonTable)
 
         VS = addonTable
