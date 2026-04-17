@@ -312,14 +312,6 @@ local function Migrate_V3_to_V4(db)
     db.schemaVersion = 4
 end
 
--------------------------------------------------------------------------------
--- V4 -> V5 Schema Migration Engine
---
--- Tears down the deprecated snapshot-based `manualToggleState` payload system in
--- favor of the stateless, timestamp-based stack model.
---
--- @param db table The VolumeSlidersMMDB global table.
--------------------------------------------------------------------------------
 local function Migrate_V4_to_V5(db)
     if db.schemaVersion and db.schemaVersion >= 5 then return end
 
@@ -333,6 +325,24 @@ local function Migrate_V4_to_V5(db)
     db.automation.activeManualPresets = db.automation.activeManualPresets or {}
 
     db.schemaVersion = 5
+end
+
+-------------------------------------------------------------------------------
+-- V5 -> V6 Schema Migration Engine
+--
+-- Enables per-device volume tracking by default for existing users.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V5_to_V6(db)
+    if db.schemaVersion and db.schemaVersion >= 6 then return end
+
+    db.automation = db.automation or {}
+    if db.automation.enableDeviceVolumes == nil then
+        db.automation.enableDeviceVolumes = true
+    end
+
+    db.schemaVersion = 6
 end
 
 -------------------------------------------------------------------------------
@@ -353,6 +363,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     Migrate_V2_to_V3(db)
     Migrate_V3_to_V4(db)
     Migrate_V4_to_V5(db)
+    Migrate_V5_to_V6(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"

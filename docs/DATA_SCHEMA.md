@@ -15,7 +15,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
 
 ```json
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -183,6 +183,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     "enableTriggers": "boolean",       // Master toggle for zone-triggered preset automation
     "enableFishingVolume": "boolean",  // Enables fishing splash boost automation
     "enableLfgVolume": "boolean",      // Enables LFG queue pop boost automation
+    "enableDeviceVolumes": "boolean",  // Enables per-hardware-device master volume tracking
     "fishingPresetIndex": "number",    // Index in `presets` array for the fishing automation profile
     "lfgPresetIndex": "number",        // Index in `presets` array for the LFG automation profile
     
@@ -252,3 +253,7 @@ Initializes the `automation.persistedBaseline` and `automation.lastAppliedState`
 ## Migration Contract (`Init.lua:Migrate_V4_to_V5`)
 
 Tears down the deprecated snapshot-based `manualToggleState` payload system in favor of the stateless, timestamp-based unified stack model. The `db.automation.manualToggleState` table is destroyed unconditionally. A new tracking map, `db.automation.activeManualPresets`, is initialized to persist session-to-session manual preset activation and stack order.
+
+## Migration Contract (`Init.lua:Migrate_V5_to_V6`)
+
+Adds the `automation.enableDeviceVolumes` flag to support per-hardware-output-device master volume tracking. For existing users upgrading to V6, this is set to `true` by default to preserve the legacy behavior of the addon, but can now be disabled via the Automation settings panel.

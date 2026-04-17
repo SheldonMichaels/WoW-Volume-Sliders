@@ -812,19 +812,26 @@ function VS:CreateOptionsFrame()
                     local db = VolumeSlidersMMDB
                     db.hardware.deviceVolumes = db.hardware.deviceVolumes or {}
 
-                    -- Save the current master volume under the active device's name before swapping.
-                    -- Ensure numeric storage for consistent retrieval later.
-                    local oldIndex = tonumber(GetCVar("Sound_OutputDriverIndex")) or 0
-                    local oldName = Sound_GameSystem_GetOutputDriverNameByIndex(oldIndex) or "System Default"
                     local currentMaster = tonumber(GetCVar("Sound_MasterVolume")) or 1
-                    db.hardware.deviceVolumes[oldName] = currentMaster
+
+                    if db.automation.enableDeviceVolumes then
+                        -- Save the current master volume under the active device's name before swapping.
+                        -- Ensure numeric storage for consistent retrieval later.
+                        local oldIndex = tonumber(GetCVar("Sound_OutputDriverIndex")) or 0
+                        local oldName = Sound_GameSystem_GetOutputDriverNameByIndex(oldIndex) or "System Default"
+                        db.hardware.deviceVolumes[oldName] = currentMaster
+                    end
 
                     -- Apply the selected output device and restart the sound system
+                    VS.session.isHardwareColdBoot = true
                     SetCVar("Sound_OutputDriverIndex", i)
                     Sound_GameSystem_RestartSoundSystem()
 
                     -- Decide the target volume for the newly selected device.
-                    local targetVol = tonumber(db.hardware.deviceVolumes[name]) or currentMaster
+                    local targetVol = currentMaster
+                    if db.automation.enableDeviceVolumes then
+                        targetVol = tonumber(db.hardware.deviceVolumes[name]) or currentMaster
+                    end
 
                     ---------------------------------------------------------
                     -- Visual Disable: dim the Master slider during recovery
@@ -875,19 +882,21 @@ function VS:CreateOptionsFrame()
 
                     -- Helper: apply the saved volume and sync the UI.
                     local function ApplyTargetVolume()
+                        VS.session.isSettingInternal = true
                         SetCVar("Sound_MasterVolume", targetVol)
 
                         if masterSlider then
                              masterSlider.isRefreshing = true
                              masterSlider:SetValue(1 - targetVol)
-                             if not masterSlider.isSwitching then
-                                 masterSlider.valueText:SetText(math_floor(targetVol * 100 + 0.5) .. "%")
-                             end
+                             -- Force the text update even if isSwitching is true to ensure
+                             -- the UI doesn't get stuck at 100% if the engine wins a race.
+                             masterSlider.valueText:SetText(math_floor(targetVol * 100 + 0.5) .. "%")
                              masterSlider.isRefreshing = false
                         end
                         if VS.VolumeSlidersObject then
                             VS.VolumeSlidersObject.text = (math_floor(targetVol * 100 + 0.5)) .. "%"
                         end
+                        VS.session.isSettingInternal = false
                     end
 
                     -- Shared cleanup: re-enable the slider and tear down listeners.
@@ -896,6 +905,7 @@ function VS:CreateOptionsFrame()
                         if recoveryComplete then return end
                         recoveryComplete = true
 
+                        VS.session.isHardwareColdBoot = false
                         ApplyTargetVolume()
                         EnableMasterSlider()
 

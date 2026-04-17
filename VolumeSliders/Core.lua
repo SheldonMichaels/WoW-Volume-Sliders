@@ -79,6 +79,8 @@ VS.session = {
     activeRegistry = {},
     -- Semaphore to prevent recursive infinite loops in CVAR_UPDATE handler.
     isSettingInternal = false,
+    -- Hardware restart flag to gate CVAR_UPDATE during device switches.
+    isHardwareColdBoot = false,
 
     -- PERFORMANCE CACHE:
     -- Tracks changes to the set of active presets to avoid redundant string work.
@@ -209,7 +211,7 @@ VS.DEFAULT_FOOTER_ORDER = {
 --- @field voice table
 
 VS.DEFAULT_DB = {
-    schemaVersion = 5,
+    schemaVersion = 6,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -303,6 +305,7 @@ VS.DEFAULT_DB = {
         enableTriggers = true,
         enableFishingVolume = true,
         enableLfgVolume = true,
+        enableDeviceVolumes = true,
         fishingPresetIndex = 0,
         lfgPresetIndex = 0,
     },

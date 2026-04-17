@@ -402,7 +402,7 @@ end
 
 presetFrame:SetScript("OnEvent", function(self, event, name, value)
     if event == "CVAR_UPDATE" then
-        if not VS.session.isSettingInternal then
+        if not VS.session.isSettingInternal and not VS.session.isHardwareColdBoot then
             VS:SyncBaseline(name, tonumber(value) or 1)
         end
     else

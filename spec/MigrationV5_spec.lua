@@ -73,7 +73,7 @@ describe("Schema V4 to V5 Migration", function()
         -- Logic is executed during PLAYER_LOGIN
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(5, db.schemaVersion)
+        assert.is_true(db.schemaVersion >= 5)
         assert.is_nil(db.automation.manualToggleState)
         assert.is_table(db.automation.activeManualPresets)
     end)

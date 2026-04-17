@@ -51,7 +51,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     VS:AddTooltip(enableCheck, "Automatically adjust volume levels when entering zones designated in your presets. Original volumes are restored when leaving the area.")
 
     local fishingCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
-    fishingCheck:SetPoint("TOPLEFT", enableCheck, "TOPRIGHT", 100, 0)
+    fishingCheck:SetPoint("TOPLEFT", enableCheck, "TOPRIGHT", 180, 0)
     fishingCheck.text:SetFontObject("GameFontNormal")
     fishingCheck.text:SetText("Fishing Splash Boost")
     fishingCheck:SetChecked(db.automation.enableFishingVolume == true)
@@ -66,7 +66,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     VS:AddTooltip(fishingCheck, "Temporarily overrides volumes while fishing so you can clearly hear the bobber splash. Disabled during combat.")
 
     local lfgCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
-    lfgCheck:SetPoint("TOPLEFT", fishingCheck, "TOPRIGHT", 130, 0)
+    lfgCheck:SetPoint("TOPLEFT", enableCheck, "BOTTOMLEFT", 0, -5)
     lfgCheck.text:SetFontObject("GameFontNormal")
     lfgCheck.text:SetText("LFG Queue Pop Boost")
     lfgCheck:SetChecked(db.automation.enableLfgVolume == true)
@@ -80,10 +80,22 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     end)
     VS:AddTooltip(lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.")
 
+    local deviceVolumesCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
+    deviceVolumesCheck:SetPoint("TOPLEFT", fishingCheck, "BOTTOMLEFT", 0, -5)
+    deviceVolumesCheck.text:SetFontObject("GameFontNormal")
+    deviceVolumesCheck.text:SetText("Per-Device Volumes")
+    deviceVolumesCheck:SetChecked(db.automation.enableDeviceVolumes == true)
+
+    deviceVolumesCheck:SetScript("OnClick", function(self)
+        db.automation.enableDeviceVolumes = self:GetChecked()
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+    VS:AddTooltip(deviceVolumesCheck, "Track and restore master volume levels independently for each hardware output device.")
+
     local separator1 = contentFrame:CreateTexture(nil, "ARTWORK")
     separator1:SetHeight(1)
     separator1:SetPoint("LEFT", enableCheck, "LEFT", -10, 0)
-    separator1:SetPoint("TOP", enableCheck, "BOTTOM", 0, -10)
+    separator1:SetPoint("TOP", lfgCheck, "BOTTOM", 0, -10)
     separator1:SetWidth(540)
     separator1:SetColorTexture(1, 1, 1, 0.2)
 
@@ -111,8 +123,8 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         return dropdown, fontString
     end
 
-    local fishingDropdown, fishingLabel = CreatePresetSelector("Fishing Profile", "fishingPresetIndex", fishingCheck, 0, -15, "Select a preset profile to apply while fishing.")
-    local lfgDropdown, lfgLabel = CreatePresetSelector("LFG Profile", "lfgPresetIndex", lfgCheck, 0, -15, "Select a preset profile to apply when a group queue pops.")
+    local fishingDropdown, fishingLabel = CreatePresetSelector("Fishing Profile", "fishingPresetIndex", separator1, 10, -30, "Select a preset profile to apply while fishing.")
+    local lfgDropdown, lfgLabel = CreatePresetSelector("LFG Profile", "lfgPresetIndex", separator1, 190, -30, "Select a preset profile to apply when a group queue pops.")
 
     --- Populates the dropdown menu with "None" and all user-defined presets.
     --- @param dropdown any The dropdown frame
