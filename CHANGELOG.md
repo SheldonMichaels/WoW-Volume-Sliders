@@ -8,6 +8,7 @@
 
 ### Technical
 - **Maintenance Guardrails**: Integrated comprehensive regression testing into the development lifecycle to ensure high code quality and data integrity for all future updates.
+- **Comprehensive Documentation**: Standardized the entire codebase with `LDoc`-style docstrings, providing explicit parameter and return type contracts for all core UI and automation modules.
 - **Linting Excellence**: Achieved 0 Luacheck warnings across the entire repository.
 
 ## v3.5.0 — 2026-04-17

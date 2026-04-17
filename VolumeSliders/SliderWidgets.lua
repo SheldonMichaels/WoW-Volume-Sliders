@@ -277,27 +277,26 @@ local function CreateSliderBase(parent, name, label, tooltipText)
 end
 
 -------------------------------------------------------------------------------
--- CreateVerticalSlider
---
--- Builds a CVar-based vertical volume slider using the shared base factory.
--- Adds CVar-specific value binding, mute checkbox, and refresh methods.
---
--- The slider uses INVERTED values: the Slider widget's value range is
--- [0, 1] where 0 corresponds to 100% volume (thumb at top) and 1
--- corresponds to 0% volume (thumb at bottom).  This is because WoW's
--- vertical Slider widget places value 0 at the top and max at the bottom,
--- but users expect "up = louder".
---
--- @param parent    Frame    Parent frame to attach child elements to.
--- @param name      string   Global frame name for the slider.
--- @param label     string   Display text (e.g., "Master").
--- @param cvar      string   Sound CVar to bind (e.g., "Sound_MasterVolume").
--- @param muteCvar  string   Enable/disable CVar for muting (e.g., "Sound_EnableAllSound").
--- @param minVal      number   Minimum slider value (typically 0).
--- @param maxVal      number   Maximum slider value (typically 1).
--- @param step        number   Slider step increment (typically 0.01 = 1%).
--- @param tooltipText string   Optional text for hovering over the volume title
--- @return Slider            The created slider widget (with extra fields attached).
+--- Builds a CVar-based vertical volume slider using the shared base factory.
+---
+--- Adds CVar-specific value binding, mute checkbox, and refresh methods.
+---
+--- The slider uses INVERTED values: the Slider widget's value range is
+--- [0, 1] where 0 corresponds to 100% volume (thumb at top) and 1
+--- corresponds to 0% volume (thumb at bottom). This is because WoW's
+--- vertical Slider widget places value 0 at the top and max at the bottom,
+--- but users expect "up = louder".
+---
+--- @param parent Frame Parent frame to attach child elements to.
+--- @param name string Global frame name for the slider.
+--- @param label string Display text (e.g., "Master").
+--- @param cvar string Sound CVar to bind (e.g., "Sound_MasterVolume").
+--- @param muteCvar string Enable/disable CVar for muting (e.g., "Sound_EnableAllSound").
+--- @param minVal number Minimum slider value (typically 0).
+--- @param maxVal number Maximum slider value (typically 1).
+--- @param step number Slider step increment (typically 0.01 = 1%).
+--- @param tooltipText string? Optional text for hovering over the volume title.
+--- @return Slider The created slider widget (with extra fields attached).
 -------------------------------------------------------------------------------
 function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, maxVal, step, tooltipText)
     local slider = CreateSliderBase(parent, name, label, tooltipText)
@@ -398,23 +397,20 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
     return slider
 end
 
--------------------------------------------------------------------------------
--- CreateVoiceSlider
---
--- Builds a Voice Chat API-based vertical slider using the shared base factory.
--- Uses custom getter/setter functions and a 0–100 scale, with optional manual
--- mute save/restore behavior.
---
--- @param parent           Frame     Parent frame.
--- @param name             string    Global frame name.
--- @param label            string    Display text (e.g., "Voice").
--- @param getterFunc       function  Returns current value (0–100 scale).
--- @param setterFunc       function  Sets value (0–100 scale).
--- @param displayInverted  boolean   If true, displayed percentage is inverted.
--- @param tooltipText      string    Optional tooltip shown on the title label.
--- @param muteKey          string    Optional key for manual mute save/restore in SavedVariables.
--- @return Slider
--------------------------------------------------------------------------------
+--- Builds a Voice Chat API-based vertical slider using the shared base factory.
+---
+--- Uses custom getter/setter functions and a 0–100 scale, with optional manual
+--- mute save/restore behavior.
+---
+--- @param parent Frame Parent frame.
+--- @param name string Global frame name.
+--- @param label string Display text (e.g., "Voice").
+--- @param getterFunc function Returns current value (0–100 scale).
+--- @param setterFunc function Sets value (0–100 scale).
+--- @param displayInverted boolean If true, displayed percentage is inverted.
+--- @param tooltipText string? Optional tooltip shown on the title label.
+--- @param muteKey string? Optional key for manual mute save/restore in SavedVariables.
+--- @return Slider The created voice slider widget.
 function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displayInverted, tooltipText, muteKey)
     local slider = CreateSliderBase(parent, name, label, tooltipText)
     local db = VolumeSlidersMMDB
