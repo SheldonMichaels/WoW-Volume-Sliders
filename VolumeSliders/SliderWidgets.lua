@@ -318,6 +318,13 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
     slider:SetScript("OnValueChanged", function(self, value)
         if self.isRefreshing then return end
 
+        -----------------------------------------------------------------------
+        -- Manual Interaction Priority
+        -- We cancel any active hardware recovery tickers immediately to ensure
+        -- the user's manual adjustment is not overridden by a 2s ticker loop.
+        -----------------------------------------------------------------------
+        if VS.CancelHardwareRecovery then VS:CancelHardwareRecovery() end
+
         -- Un-invert the slider value to get the actual volume level.
         local invertedValue = 1 - value
         invertedValue = math_max(0, math_min(1, invertedValue))
@@ -359,6 +366,8 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
     muteCheck:SetChecked(not isEnabled)
 
     muteCheck:SetScript("OnClick", function(self)
+        if VS.CancelHardwareRecovery then VS:CancelHardwareRecovery() end
+
         local isMuted = self:GetChecked()
         if isMuted then
             SetCVar(muteCvar, 0) -- Disable (mute) the sound channel
@@ -436,6 +445,8 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
         end
 
         muteCheck:SetScript("OnClick", function(self)
+            if VS.CancelHardwareRecovery then VS:CancelHardwareRecovery() end
+
             local isMuted = self:GetChecked()
             db.voice["MuteState_"..muteKey] = isMuted
 
@@ -487,6 +498,8 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
         self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
 
         if self.isRefreshing then return end
+
+        if VS.CancelHardwareRecovery then VS:CancelHardwareRecovery() end
 
         local rawValue = val
         if displayInverted then

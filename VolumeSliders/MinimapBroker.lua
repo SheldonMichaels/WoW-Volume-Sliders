@@ -565,7 +565,7 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("CVAR_UPDATE")
 eventFrame:SetScript("OnEvent", function(self, event, cvarName, value)
-    if cvarName == "Sound_MasterVolume" then
+    if not VS.session.isHardwareColdBoot and cvarName == "Sound_MasterVolume" then
         -- Update the broker display text.
         VS.VolumeSlidersObject.text = VS:GetVolumeText()
 

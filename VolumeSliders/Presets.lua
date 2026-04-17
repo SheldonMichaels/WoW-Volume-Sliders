@@ -402,8 +402,20 @@ end
 
 presetFrame:SetScript("OnEvent", function(self, event, name, value)
     if event == "CVAR_UPDATE" then
-        if not VS.session.isSettingInternal then
+        if name == "Sound_OutputDriverName" then
+            -- Global Resistance: Hardware switch detected from Blizzard UI or elsewhere.
+            VS:StartHardwareRecovery()
+        elseif not VS.session.isSettingInternal and not VS.session.isHardwareColdBoot then
             VS:SyncBaseline(name, tonumber(value) or 1)
+        end
+    elseif event == "SOUND_DEVICE_UPDATE" then
+        -- [RESILIENCE] Hardware switch/unplug detected from game engine.
+        -- Only trigger recovery if the output driver has actually changed to avoid
+        -- self-triggering loops on systems where SetCVar fires this event.
+        local currentDriver = GetCVar("Sound_OutputDriverName")
+        if currentDriver ~= VS.session.lastOutputDriver then
+            VS.session.lastOutputDriver = currentDriver
+            VS:StartHardwareRecovery()
         end
     else
         OnPresetEvent()
@@ -568,6 +580,7 @@ function VS.Presets:RefreshEventState()
         presetFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
         presetFrame:RegisterEvent("ZONE_CHANGED_INDOORS")
         presetFrame:RegisterEvent("CVAR_UPDATE")
+        presetFrame:RegisterEvent("SOUND_DEVICE_UPDATE")
     else
         -- Zone triggers disabled, unregister non-critical events
         presetFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
@@ -576,6 +589,7 @@ function VS.Presets:RefreshEventState()
         presetFrame:UnregisterEvent("ZONE_CHANGED_INDOORS")
         -- We ALWAYS keep CVAR_UPDATE if we want baseline sync from Blizzard UI
         presetFrame:RegisterEvent("CVAR_UPDATE")
+        presetFrame:RegisterEvent("SOUND_DEVICE_UPDATE")
     end
 
     -- Evaluate immediately

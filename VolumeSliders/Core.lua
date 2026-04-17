@@ -79,6 +79,8 @@ VS.session = {
     activeRegistry = {},
     -- Semaphore to prevent recursive infinite loops in CVAR_UPDATE handler.
     isSettingInternal = false,
+    -- Hardware restart flag to gate CVAR_UPDATE during device switches.
+    isHardwareColdBoot = false,
 
     -- PERFORMANCE CACHE:
     -- Tracks changes to the set of active presets to avoid redundant string work.
@@ -86,6 +88,10 @@ VS.session = {
     cachedPresetNames = nil,
     cachedCombinedString = nil,
 
+    -- HARDWARE RECOVERY HANDLES:
+    -- Trackers and Timers for the sound system restart gate.
+    recoveryTicker = nil,
+    recoverySafetyTimer = nil,
 }
 
 -------------------------------------------------------------------------------
@@ -209,7 +215,7 @@ VS.DEFAULT_FOOTER_ORDER = {
 --- @field voice table
 
 VS.DEFAULT_DB = {
-    schemaVersion = 5,
+    schemaVersion = 6,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -303,6 +309,7 @@ VS.DEFAULT_DB = {
         enableTriggers = true,
         enableFishingVolume = true,
         enableLfgVolume = true,
+        enableDeviceVolumes = true,
         fishingPresetIndex = 0,
         lfgPresetIndex = 0,
     },
@@ -443,6 +450,107 @@ function VS:SyncBaseline(channel, value, isVoiceMuteToggle)
         VS.Presets:EvaluateAllPresets()
     end
 end
+
+--- Safely cancels any active hardware recovery tickers and clears gating flags.
+-- Use this when a user initiates a manual volume adjustment to give them
+-- immediate priority over the automated resilience system.
+function VS:CancelHardwareRecovery()
+    local sess = self.session
+    if sess.recoveryTicker then
+        sess.recoveryTicker:Cancel()
+        sess.recoveryTicker = nil
+    end
+    if sess.recoverySafetyTimer then
+        sess.recoverySafetyTimer:Cancel()
+        sess.recoverySafetyTimer = nil
+    end
+    sess.isHardwareColdBoot = false
+
+    -- [UI] Ensure the Master slider is unlocked
+    if self.SetMasterSliderLocked then
+        self:SetMasterSliderLocked(false)
+    end
+end
+
+--- Centralized hardware recovery logic for sound system restarts.
+-- This function handles the "Cold Boot" gate and ensures the volume is correctly
+-- restored after a hardware output change (manual or engine-initiated).
+-- @param targetVolume number? Optional. The volume to restore (0.0-1.0).
+-- @param optionalDeviceName string? Optional. The name of the device being switched to.
+function VS:StartHardwareRecovery(targetVolume, optionalDeviceName)
+    local sess = self.session
+    local db = VolumeSlidersMMDB
+
+    -- [ENFORCEMENT LOOP PROTECTION]
+    -- On some systems, SetCVar calls can trigger a SOUND_DEVICE_UPDATE event.
+    -- If we are already in the middle of a recovery ticker, we MUST NOT cancel
+    -- and restart it, otherwise we enter an infinite loop where the tick count
+    -- never reaches the end and the slider stays locked forever.
+    if sess.recoveryTicker then return end
+
+    -- [RESILIENCE] Shared cleanup: tear down any pending safety nets before starting.
+    if sess.recoverySafetyTimer then sess.recoverySafetyTimer:Cancel(); sess.recoverySafetyTimer = nil end
+
+    -- [GATING] Enable the hardware cold boot flag to ignore engine-initiated CVAR_UPDATEs.
+    sess.isHardwareColdBoot = true
+
+    -- [UI] Lock the Master slider and show the "Switching..." indicator.
+    if self.SetMasterSliderLocked then
+        self:SetMasterSliderLocked(true)
+    end
+
+    -- Determine target volume if not provided (handles external switches via Blizzard UI).
+    local target = targetVolume
+    if not target then
+        local currentDevice = optionalDeviceName or GetCVar("Sound_OutputDriverName")
+        if db.automation.enableDeviceVolumes and db.hardware.deviceVolumes[currentDevice] then
+            target = db.hardware.deviceVolumes[currentDevice]
+        else
+            target = sess.baselineVolumes["Sound_MasterVolume"] or self:GetMasterVolume()
+        end
+    end
+
+    -- Persistent UI and CVar application tracker.
+    local function Apply()
+        sess.isSettingInternal = true
+        SetCVar("Sound_MasterVolume", target)
+
+        -- Force UI Sync
+        if self.sliders and self.sliders["Sound_MasterVolume"] then
+            local slider = self.sliders["Sound_MasterVolume"]
+            slider.isRefreshing = true
+            slider:SetValue(1 - target)
+            -- Force the text update even if isSwitching is true to ensure
+            -- the UI doesn't get stuck at 100% if the engine wins a race.
+            slider.valueText:SetText(math_floor(target * 100 + 0.5) .. "%")
+            slider.isRefreshing = false
+        end
+        if self.VolumeSlidersObject then
+            self.VolumeSlidersObject.text = (math_floor(target * 100 + 0.5)) .. "%"
+        end
+        if self.UpdateMiniMapVolumeIcon then
+            self:UpdateMiniMapVolumeIcon()
+        end
+        sess.isSettingInternal = false
+    end
+
+    -- [ENFORCEMENT] Aggressively re-apply volume over 2 seconds to overcome engine resets.
+    local count = 0
+    sess.recoveryTicker = C_Timer.NewTicker(0.5, function()
+        count = count + 1
+        Apply()
+        if count >= 4 then
+            self:CancelHardwareRecovery()
+            Apply() -- Final sync
+        end
+    end)
+
+    -- [SAFETY] Fallback timer to ensure the gate is ALWAYS cleared even if error occurs.
+    sess.recoverySafetyTimer = C_Timer.NewTimer(5.0, function()
+        self:CancelHardwareRecovery()
+    end)
+end
+
 
 --- Toggle the master mute state by flipping the Sound_EnableAllSound CVar.
 -- Also updates the minimap icon texture and the Master slider's mute checkbox.

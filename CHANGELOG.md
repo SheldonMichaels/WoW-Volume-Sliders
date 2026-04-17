@@ -1,4 +1,13 @@
-# Changelog (v3.6.0)
+# Changelog (v3.6.1)
+
+## v3.6.1 — 2026-04-17
+
+### Added
+- **Per-Device Volume Toggle**: Added a user-configurable toggle in Settings > Automation to enable or disable the addon's automatic "memory" for volume levels per audio device. This allows users to opt-out of device-specific tracking in favor of a single unified master volume.
+
+### Fixed
+- **Hardware Switch Volume Glitch**: Optimized the gating logic to ensure the volume window and minimap icon reflect the correct restored levels immediately after a device swap.
+- **Incorrect Baseline Volume**: Baseline volume levels could be incorrectly set to 100% during a hardware switch.
 
 ## v3.6.0 — 2026-04-17
 
