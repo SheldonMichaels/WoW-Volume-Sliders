@@ -838,127 +838,55 @@ function VS:CreateOptionsFrame()
                     ---------------------------------------------------------
                     local masterSlider = VS.sliders and VS.sliders["Sound_MasterVolume"]
 
-                    local function DisableMasterSlider()
-                        if not masterSlider then return end
-                        masterSlider.isSwitching = true
-                        masterSlider:EnableMouse(false)
-                        masterSlider.upBtn:EnableMouse(false)
-                        masterSlider.downBtn:EnableMouse(false)
-                        -- Dim the visual elements
-                        masterSlider.thumb:SetDesaturated(true)
-                        masterSlider.thumb:SetAlpha(0.4)
-                        masterSlider.trackTop:SetAlpha(0.3)
-                        masterSlider.trackMiddle:SetAlpha(0.3)
-                        masterSlider.trackBottom:SetAlpha(0.3)
-                        masterSlider.upTex:SetDesaturated(true)
-                        masterSlider.upTex:SetAlpha(0.4)
-                        masterSlider.downTex:SetDesaturated(true)
-                        masterSlider.downTex:SetAlpha(0.4)
-                        -- Show switching indicator
-                        masterSlider.valueText:SetText("|cff888888Switching...|r")
+                    --- UI locking for the Master slider during hardware restarts.
+                    -- Defined locally here but attached to VS for global access by Core.lua.
+                    function VS:SetMasterSliderLocked(isLocked)
+                        local slider = self.sliders and self.sliders["Sound_MasterVolume"]
+                        if not slider then return end
+
+                        if isLocked then
+                            slider.isSwitching = true
+                            slider:EnableMouse(false)
+                            slider.upBtn:EnableMouse(false)
+                            slider.downBtn:EnableMouse(false)
+                            -- Dim the visual elements
+                            slider.thumb:SetDesaturated(true)
+                            slider.thumb:SetAlpha(0.4)
+                            slider.trackTop:SetAlpha(0.3)
+                            slider.trackMiddle:SetAlpha(0.3)
+                            slider.trackBottom:SetAlpha(0.3)
+                            slider.upTex:SetDesaturated(true)
+                            slider.upTex:SetAlpha(0.4)
+                            slider.downTex:SetDesaturated(true)
+                            slider.downTex:SetAlpha(0.4)
+                            -- Show switching indicator
+                            slider.valueText:SetText("|cff888888Switching...|r")
+                        else
+                            slider.isSwitching = false
+                            slider:EnableMouse(true)
+                            slider.upBtn:EnableMouse(true)
+                            slider.downBtn:EnableMouse(true)
+                            -- Restore visuals (UpdateAppearance will fix styles)
+                            slider.thumb:SetDesaturated(false)
+                            slider.thumb:SetAlpha(1)
+                            slider.trackTop:SetAlpha(1)
+                            slider.trackMiddle:SetAlpha(1)
+                            slider.trackBottom:SetAlpha(1)
+                            slider.upTex:SetDesaturated(false)
+                            slider.upTex:SetAlpha(1)
+                            slider.downTex:SetDesaturated(false)
+                            slider.downTex:SetAlpha(1)
+                            -- Apply the correct appearance style (knob/arrow style)
+                            self:UpdateAppearance()
+                        end
                     end
 
-                    local function EnableMasterSlider()
-                        if not masterSlider then return end
-                        masterSlider.isSwitching = false
-                        masterSlider:EnableMouse(true)
-                        masterSlider.upBtn:EnableMouse(true)
-                        masterSlider.downBtn:EnableMouse(true)
-                        -- Restore visuals (UpdateAppearance will fix styles)
-                        masterSlider.thumb:SetDesaturated(false)
-                        masterSlider.thumb:SetAlpha(1)
-                        masterSlider.trackTop:SetAlpha(1)
-                        masterSlider.trackMiddle:SetAlpha(1)
-                        masterSlider.trackBottom:SetAlpha(1)
-                        masterSlider.upTex:SetDesaturated(false)
-                        masterSlider.upTex:SetAlpha(1)
-                        masterSlider.downTex:SetDesaturated(false)
-                        masterSlider.downTex:SetAlpha(1)
-                        -- Apply the correct appearance style (knob/arrow style)
-                        VS:UpdateAppearance()
-                    end
+                    -- Lock the UI visually
+                    VS:SetMasterSliderLocked(true)
 
-                    DisableMasterSlider()
-
-                    -- Helper: apply the saved volume and sync the UI.
-                    local function ApplyTargetVolume()
-                        VS.session.isSettingInternal = true
-                        SetCVar("Sound_MasterVolume", targetVol)
-
-                        if masterSlider then
-                             masterSlider.isRefreshing = true
-                             masterSlider:SetValue(1 - targetVol)
-                             -- Force the text update even if isSwitching is true to ensure
-                             -- the UI doesn't get stuck at 100% if the engine wins a race.
-                             masterSlider.valueText:SetText(math_floor(targetVol * 100 + 0.5) .. "%")
-                             masterSlider.isRefreshing = false
-                        end
-                        if VS.VolumeSlidersObject then
-                            VS.VolumeSlidersObject.text = (math_floor(targetVol * 100 + 0.5)) .. "%"
-                        end
-                        VS.session.isSettingInternal = false
-                    end
-
-                    -- Shared cleanup: re-enable the slider and tear down listeners.
-                    local recoveryComplete = false
-                    local function FinishRecovery()
-                        if recoveryComplete then return end
-                        recoveryComplete = true
-
-                        VS.session.isHardwareColdBoot = false
-                        ApplyTargetVolume()
-                        EnableMasterSlider()
-
-                        if dropdown.restartListener then
-                            dropdown.restartListener.isRestartingAudio = false
-                            dropdown.restartListener:UnregisterEvent("CVAR_UPDATE")
-                        end
-                        if dropdown.retryTicker then dropdown.retryTicker:Cancel() end
-                        if dropdown.fallbackTimer then dropdown.fallbackTimer:Cancel() end
-                    end
-
-                    -- Cancel any prior restart recovery state
-                    if dropdown.restartListener then
-                        dropdown.restartListener:UnregisterAllEvents()
-                    else
-                        dropdown.restartListener = CreateFrame("Frame")
-                    end
-                    if dropdown.fallbackTimer then dropdown.fallbackTimer:Cancel() end
-                    if dropdown.retryTicker then dropdown.retryTicker:Cancel() end
-
-                    -- Event listener: catch the engine's forced CVar reset.
-                    -- When caught, apply the volume immediately but keep the
-                    -- slider visually disabled until the timer expires.
-                    dropdown.restartListener.isRestartingAudio = true
-                    dropdown.restartListener:RegisterEvent("CVAR_UPDATE")
-                    dropdown.restartListener:SetScript("OnEvent", function(self, event, cvarName, value)
-                        if self.isRestartingAudio and cvarName == "Sound_MasterVolume" then
-                            -- The engine just reset the volume. Slam our saved volume back.
-                            ApplyTargetVolume()
-
-                            -- Don't fully clean up yet â€” keep the visual disable
-                            -- active until the timer expires for a smooth experience.
-                            self.isRestartingAudio = false
-                            self:UnregisterEvent("CVAR_UPDATE")
-                        end
-                    end)
-
-                    -- Repeating timer: re-apply the volume over 2 seconds and
-                    -- then re-enable the Master slider on the final tick.
-                    local retryCount = 0
-                    dropdown.retryTicker = C_Timer.NewTicker(0.5, function(ticker)
-                        retryCount = retryCount + 1
-                        ApplyTargetVolume()
-                        if retryCount >= 4 then
-                            ticker:Cancel()
-                            FinishRecovery()
-                        end
-                    end)
-
-                    -- Safety net: clean up everything after 5 seconds
-                    dropdown.fallbackTimer = C_Timer.NewTimer(5.0, function()
-                        FinishRecovery()
-                    end)
+                    -- Centralized Resistance: Hand over recovery and gating to Core.lua.
+                    -- This handles the 2.5s gate and identifies target volume for the new device.
+                    VS:StartHardwareRecovery(targetVol, name)
 
                     dropdown.text:SetText(name)
                     list:Hide()
