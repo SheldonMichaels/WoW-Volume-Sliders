@@ -1,13 +1,18 @@
-# Changelog (v3.6.1-beta1)
+# Changelog (v3.6.1-beta2)
+
+## v3.6.1-beta2 — 2026-04-17
+
+### Added
+- **Global Hardware Resilience**: Refactored the internal hardware switching engine to be globally aware. The addon now monitors sound system restarts triggered from any source (including the Blizzard Options menu) and protects the volume baseline with superior reliability.
+- **Documentation Restoration**: Completed a comprehensive review and restoration of all internal docstrings and technical commentary to ensure maintainability.
+
+### Fixed
+- **Hardware Switch Volume Glitch (Issue #31)**: Optimized the gating logic to ensure the volume window and minimap icon reflect the correct restored levels immediately after a device swap.
 
 ## v3.6.1-beta1 — 2026-04-17
 
 ### Added
 - **Per-Device Volume Toggle**: Added a user-configurable toggle in Settings > Automation to enable or disable the addon's automatic "memory" for volume levels per audio device. This allows users to opt-out of device-specific tracking in favor of a single unified master volume.
-
-### Fixed
-- **Hardware Switch Volume Glitch (Issue #31)**: Resolved a race condition where switching audio output devices while "Per-Device Volume" was disabled caused the master volume to reset to 100% in the addon UI and corrupted the user's volume baseline.
-- **Improved UI Sync**: The volume window and minimap icon now accurately reflect restored volume levels immediately after a hardware switch, even during rapid transitions.
 
 ## v3.6.0 — 2026-04-17
 
