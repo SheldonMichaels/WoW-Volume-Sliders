@@ -1,4 +1,15 @@
-# Changelog (v3.5.0)
+# Changelog (v3.6.0)
+
+## v3.6.0 — 2026-04-17
+
+### Added
+- **100% Test Coverage**: Expanded the automated Busted unit testing suite with 35+ new test cases, covering 100% of the settings configuration modules and complex UI interactions.
+- **Robust Mock Environment**: Hardened the headless testing setup to accurately simulate modern Blizzard UI components like ScrollBox, DropdownButton, and EditBox.
+
+### Technical
+- **Maintenance Guardrails**: Integrated comprehensive regression testing into the development lifecycle to ensure high code quality and data integrity for all future updates.
+- **Comprehensive Documentation**: Standardized the entire codebase with `LDoc`-style docstrings, providing explicit parameter and return type contracts for all core UI and automation modules.
+- **Linting Excellence**: Achieved 0 Luacheck warnings across the entire repository.
 
 ## v3.5.0 — 2026-04-17
 

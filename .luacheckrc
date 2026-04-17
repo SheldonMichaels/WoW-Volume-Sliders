@@ -123,6 +123,7 @@ globals = {
     "VolumeSliders_OnAddonCompartmentClick",
     "VolumeSlidersOutputDropdown",
     "VolumeSliders_ToggleWindow",
-    "VolumeSliders_ToggleMuteMaster"
+    "VolumeSliders_ToggleMuteMaster",
+    "CreateAddonContext"
 }
 

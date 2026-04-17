@@ -69,7 +69,7 @@ describe("Schema V4 to V5 Migration", function()
 
     it("should destroy legacy manualToggleState and initialize activeManualPresets", function()
         local db = _G.VolumeSlidersMMDB
-        
+
         -- Logic is executed during PLAYER_LOGIN
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 

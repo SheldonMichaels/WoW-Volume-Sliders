@@ -26,7 +26,7 @@ describe("Login Restoration Regression", function()
             voice = {},
             hardware = {}
         }
-        
+
         _G.GetCVar = function() return "1.0" end
         _G.SetCVar = spy.new(function() end)
         _G.GetTime = function() return 2000 end
@@ -34,7 +34,7 @@ describe("Login Restoration Regression", function()
         _G.GetRealZoneText = function() return "Elwynn Forest" end
         _G.GetSubZoneText = function() return "Goldshire" end
         _G.GetMinimapZoneText = function() return "Lion's Pride Inn" end
-        
+
         _G.C_VoiceChat = {
             GetOutputVolume = function() return 100 end,
             GetMasterVolumeScale = function() return 1 end,
@@ -44,12 +44,12 @@ describe("Login Restoration Regression", function()
 
         -- Load modules
         local addonName, addonTable = "VolumeSliders", {}
-        
+
         -- Load Core (for constants)
         loadfile("VolumeSliders/Core.lua")(addonName, addonTable)
         -- Load Presets (the engine)
         loadfile("VolumeSliders/Presets.lua")(addonName, addonTable)
-        
+
         VS = addonTable
         VS.InitializeSettings = function() end
         VS.UpdateMiniMapButtonVisibility = function() end
@@ -93,7 +93,7 @@ describe("Login Restoration Regression", function()
         assert.is_table(restoredPreset)
         assert.are.equal("Test Preset", restoredPreset.name)
         assert.are.equal(0.5, restoredPreset.volumes["Sound_MasterVolume"])
-        
+
         -- Verify that SetCVar was eventually called with the preset volume (0.5)
         assert.spy(_G.SetCVar).was_called_with("Sound_MasterVolume", 0.5)
     end)

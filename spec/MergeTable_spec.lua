@@ -7,7 +7,7 @@ local function MergeTable(target, source)
     for k, v in pairs(source) do
         if type(v) == "table" then
             -- If the source value is an array, we treat it as an atomic list.
-            -- We do not deep-merge arrays to prevent re-inserting deleted items 
+            -- We do not deep-merge arrays to prevent re-inserting deleted items
             -- or re-shuffling user-defined orders.
             if v[1] ~= nil then
                 if target[k] == nil then
@@ -84,7 +84,7 @@ describe("MergeTable Array-Aware Logic", function()
         assert.are.equal(0.5, target.appearance.bgColor.a) -- Source fills in
         assert.are.equal("Gold", target.appearance.titleColor) -- Source fills in
     end)
-    
+
     it("should handle empty tables in source correctly (treat as dictionaries)", function()
         -- Empty tables are treated as dictionaries because v[1] is nil.
         -- This is fine because there's nothing to merge into them anyway.
@@ -98,7 +98,7 @@ describe("MergeTable Array-Aware Logic", function()
                 sliderOrder = {} -- empty default (theoretically)
             }
         }
-        
+
         MergeTable(target, source)
         assert.are.equal(1, #target.layout.sliderOrder)
         assert.are.equal("Master", target.layout.sliderOrder[1])

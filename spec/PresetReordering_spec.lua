@@ -4,13 +4,11 @@
 -------------------------------------------------------------------------------
 
 describe("Preset Reordering Synchronization", function()
-    local VS
     local db
     local ShiftAutomationIndexes
     local SwapPresets
 
     before_each(function()
-        VS = {}
         db = {
             automation = {
                 fishingPresetIndex = 2,
@@ -27,7 +25,7 @@ describe("Preset Reordering Synchronization", function()
 
         -- Mock the functions from Settings.lua
         -- We'll use the logic we just implemented
-        
+
         ShiftAutomationIndexes = function(deletedIndex, insertedIndex)
             local keys = {"fishingPresetIndex", "lfgPresetIndex"}
             for _, key in ipairs(keys) do
@@ -104,7 +102,7 @@ describe("Preset Reordering Synchronization", function()
         -- Fishing is at 2 (now 3), LFG is at 3 (now 4)
         ShiftAutomationIndexes(4, 2)
         assert.are.equal(4, db.automation.lfgPresetIndex)
-        -- No, let's re-read the code. 
+        -- No, let's re-read the code.
         -- fishing was 2. lfg was 3.
         -- We move 4 to 2.
         -- ShiftAutomationIndexes(4, 2): deletedIndex=4, insertedIndex=2.
@@ -112,7 +110,7 @@ describe("Preset Reordering Synchronization", function()
         -- idx=3: idx >= 2 and idx < 4? Yes. 3 becomes 4. (LFG)
         -- idx=4: idx == 4? Yes. Assigned to insertedIndex (2).
     end)
-    
+
     it("should verify correct values after Move Backward", function()
         -- Start: Fish at 2, LFG at 3. Move 4 to 2.
         ShiftAutomationIndexes(4, 2)

@@ -78,7 +78,7 @@ describe("Preset Shifting Logic", function()
         assert.are.equal(4, db.automation.fishingPresetIndex)
         assert.are.equal(2, db.automation.lfgPresetIndex)
     end)
-    
+
     it("should stay put if deletion occurs ABOVE the indexes", function()
         -- Delete index 6. 3 and 5 are unchanged.
         ShiftAutomationIndexes(6, nil)

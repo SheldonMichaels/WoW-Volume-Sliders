@@ -25,14 +25,13 @@ local tinsert    = tinsert
 local GetCVar    = GetCVar
 local SetCVar    = SetCVar
 
--------------------------------------------------------------------------------
--- CreateOptionsFrame
---
--- Lazily creates the main popup panel containing all sliders, the
--- bottom-row controls, and handles open/close behavior.
---
--- Uses Blizzard's SettingsFrameTemplate for the outer chrome.
--------------------------------------------------------------------------------
+--- Lazily creates the main popup panel containing all sliders and bottom-row controls.
+---
+--- This frame utilizes Blizzard's SettingsFrameTemplate for its outer visual style,
+--- including the title bar, close button, and background shadows. It also initializes
+--- the drag-and-drop and resizing handles.
+---
+--- @return Frame|nil The created VolumeSlidersFrame container, or nil if creation failed.
 function VS:CreateOptionsFrame()
     if VS.container then return VS.container end
 
@@ -459,7 +458,8 @@ function VS:CreateOptionsFrame()
     VS.presetDropdown:SetupMenu(GeneratePresetMenu)
     VS.presetDropdown:SetText(VS.Presets:GetActivePresetsButtonText())
 
-    -- Expose refresh function to be called after settings are updated
+    --- Triggers a manual refresh of the presets dropdown menu and its button label.
+    --- Useful when settings or active presets change externally.
     VS.RefreshPopupDropdown = function()
         if VS.presetDropdown then
             VS.presetDropdown:GenerateMenu()
@@ -1163,13 +1163,11 @@ function VS:CreateOptionsFrame()
     return VS.container
 end
 
--------------------------------------------------------------------------------
--- Reposition
---
--- Anchors the popup panel relative to the broker/minimap frame that was
--- clicked.  If the icon is in the top half of the screen, the panel opens
--- below it; if in the bottom half, it opens above.
--------------------------------------------------------------------------------
+--- Anchors the popup panel and determines its open direction.
+---
+--- If the window is unlocked, it restores the last known custom position.
+--- If locked, it anchors to the Minimap/LDB icon, opening either above or below
+--- based on the icon's screen quadrant.
 function VS:Reposition()
     if not VS.container then return end
     VS.container:ClearAllPoints()

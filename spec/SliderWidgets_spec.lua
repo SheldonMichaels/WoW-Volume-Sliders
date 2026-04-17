@@ -11,7 +11,7 @@ describe("SliderWidgets Factory Module", function()
         f1("VolumeSliders", VS)
         local f2 = assert(loadfile("VolumeSliders/SliderWidgets.lua"))
         f2("VolumeSliders", VS)
-        
+
         -- Create a dummy parent
         _G.UIParent = _G.CreateFrame("Frame")
     end)
@@ -29,7 +29,7 @@ describe("SliderWidgets Factory Module", function()
         assert.is_table(slider.downBtn)
         assert.is_table(slider.muteCheck)
     end)
-    
+
     it("should hook slider OnMouseWheel for volume stepping", function()
         local slider = VS:CreateVerticalSlider(_G.UIParent, "WheelSlider", "Wheel", "TestCVar", "TestMute", 0, 1, 0.05)
         local onWheel = slider:GetScript("OnMouseWheel")
