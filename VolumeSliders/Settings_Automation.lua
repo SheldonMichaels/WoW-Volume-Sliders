@@ -608,8 +608,9 @@ function VS:CreateAutomationSettingsContents(parentFrame)
     end
 
     --- Deep-copies a DB preset into the working state for editing.
-    -- @param preset table? The source preset (nil for a new preset).
-    -- @param index number? The DB index (nil for a new preset).
+    --- This isolates live changes from the database until the user confirms them.
+    --- @param preset table? The source preset (nil for a new preset).
+    --- @param index number? The DB index (nil for a new preset).
     local function LoadWorkingState(preset, index)
         VS.PresetWorkingState.name = preset and preset.name or "New Preset"
         VS.PresetWorkingState.priority = preset and (preset.priority or 10) or 10
@@ -638,6 +639,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
     end
 
+    --- Switches the working state to a completely fresh profile.
     local function SelectNewProfile()
         currentSelectedIndex = nil
         LoadWorkingState(nil, nil)
@@ -645,6 +647,9 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         UpdateFormFromWorkingState()
     end
 
+    --- Populates the active preset dropdown menu and adds a 'Create New Preset' option.
+    --- @param dropdown any The dropdown frame logic
+    --- @param rootDescription any The root menu description object
     local function GenerateDropdownMenu(dropdown, rootDescription)
         rootDescription:CreateButton("Create New Preset", function()
             SelectNewProfile()
@@ -664,6 +669,8 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
     end
 
+    --- Triggers a full UI refresh of the dropdown component, resolving the selected
+    --- profile and pushing the selected item to the display text.
     local function RefreshDropdown()
         if currentSelectedIndex and db.automation.presets[currentSelectedIndex] then
             presetDropdown:SetDefaultText(db.automation.presets[currentSelectedIndex].name)
@@ -691,7 +698,9 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         UpdateFormFromWorkingState()
     end
 
-    -- Split string by semicolon and trim whitespace
+    --- Utility: Parses a semicolon-delimited string of zone names, removing duplicate values and whitespace.
+    --- @param str string The raw zone input text.
+    --- @return table An array of trimmed zone name strings.
     local function ParseZones(str)
         local rawParts = {strsplit(";", str)}
         local result = {}

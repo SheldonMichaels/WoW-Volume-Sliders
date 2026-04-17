@@ -61,6 +61,9 @@ local activeStates = {}
 --- Sort function for presets based on priority.
 --- Lower numbers equal higher priority. Sorting descending (>) pushes
 --- highest priority to the end of the array so they are applied last and win.
+--- @param a table The first preset object.
+--- @param b table The second preset object.
+--- @return boolean True if a has lower priority value than b.
 local function SortPresetsByPriority(a, b)
     local pA = a.priority or 0
     local pB = b.priority or 0
@@ -68,6 +71,9 @@ local function SortPresetsByPriority(a, b)
 end
 
 --- Get current volume for a channel (Standard CVar or Voice API).
+--- Abstract away the difference between standard string-based CVars and Voice API.
+--- @param channel string The CVar or Voice API channel string identifier.
+--- @return number The current channel volume/ducking level/sensitivity.
 local function GetCurrentVolume(channel)
     if channel == "Voice_ChatVolume" then
         return (C_VoiceChat.GetOutputVolume() or 100) / 100
@@ -82,6 +88,9 @@ local function GetCurrentVolume(channel)
 end
 
 --- Set volume for a channel (Standard CVar or Voice API).
+--- Applies the calculated value back to the World of Warcraft engine.
+--- @param channel string The CVar or Voice API channel string identifier.
+--- @param volume number The volume/ducking level/sensitivity to set.
 local function SetCurrentVolume(channel, volume)
     if channel == "Voice_ChatVolume" then
         C_VoiceChat.SetOutputVolume(volume * 100)
