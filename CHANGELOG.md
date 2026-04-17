@@ -5,12 +5,10 @@
 ### Added
 - **Per-Device Volume Toggle**: Added a user-configurable toggle in Settings > Automation to enable or disable the addon's automatic "memory" for volume levels per audio device. This allows users to opt-out of device-specific tracking in favor of a single unified master volume.
 - **Global Hardware Resilience**: Refactored the internal hardware switching engine to be globally aware. The addon now monitors sound system restarts triggered from any source (including the Blizzard Options menu) and protects the volume baseline with superior reliability.
-- **Automation UI Optimization**: Overhauled the Automation settings panel with a responsive 2x2 grid layout, improving organization and density.
-- **Documentation Restoration**: Completed a comprehensive review and restoration of all internal docstrings and technical commentary to ensure maintainability.
 
 ### Fixed
-- **Infinite Recovery Loop (Issue #31)**: Resolved a critical "fight back" bug where changing the Master volume would result in the slider snapping back.
 - **Hardware Switch Volume Glitch**: Optimized the gating logic to ensure the volume window and minimap icon reflect the correct restored levels immediately after a device swap.
+- **Incorrect Baseline Volume**: Baseline volume levels could be incorrectly set to 100% during a hardware switch.
 
 ## v3.6.0 — 2026-04-17
 
