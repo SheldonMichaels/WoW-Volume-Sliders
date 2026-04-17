@@ -60,7 +60,7 @@ describe("V1 to V2 Database Migration", function()
             },
             enableFishingMaster = true,
             mouseActions = { preset = 1, sliders = {} },
-            minimapScrollBindings = { 
+            minimapScrollBindings = {
                 ["Shift"] = "Sound_MasterVolume",
                 ["None"] = "Sound_MusicVolume",
                 ["Ctrl"] = "Disabled"
@@ -100,7 +100,7 @@ describe("V1 to V2 Database Migration", function()
         -- Load Init.lua to prime the migration event
         local f2 = assert(loadfile("VolumeSliders/Init.lua"))
         f2("VolumeSliders", VS)
-        
+
         -- Restore original
         _G.CreateFrame = realCreateFrame
     end)
@@ -161,7 +161,7 @@ describe("V1 to V2 Database Migration", function()
         assert.are.equal(45, db.minimap.minimapPos)
         assert.is_true(db.minimap.minimalistMinimap)
         assert.is_nil(db.minimapPos) -- Root key must be gone
-        
+
         -- Assert Migrated Scroll Actions
         assert.is_table(db.minimap.mouseActions)
         local shiftScrollFound = false

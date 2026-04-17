@@ -23,7 +23,7 @@ describe("Window Resize Persistence", function()
         }
 
         local dragStopScripts = {}
-        
+
         -- Create a resilient mock generator
         local function CreateMockFrame(name)
             local f
@@ -50,7 +50,7 @@ describe("Window Resize Persistence", function()
                 CreateTexture = function() return CreateMockFrame("Texture") end,
                 CreateFontString = function() return CreateMockFrame("FontString") end,
             }
-            
+
             setmetatable(f, {
                 __index = function(t, k)
                     -- Return a dummy function for any missing method
@@ -77,7 +77,7 @@ describe("Window Resize Persistence", function()
         _G.Settings = { OpenToCategory = function() end }
         _G.PlaySound = function() end
         _G.SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 1 }
-        _G.C_VoiceChat = { 
+        _G.C_VoiceChat = {
             GetOutputVolume = function() return 100 end,
             SetOutputVolume = function() end,
             GetMasterVolumeScale = function() return 1 end,
@@ -107,7 +107,7 @@ describe("Window Resize Persistence", function()
             sliders = {},
             session = { activeRegistry = {}, layoutDirty = false }
         }
-        
+
         -- Mock sub-functions called by CreateOptionsFrame
         addonTable.UpdateAppearance = function() end
         addonTable.CreateVerticalSlider = function() return CreateMockFrame("Slider") end
@@ -133,11 +133,11 @@ describe("Window Resize Persistence", function()
 
     it("saves updated size back to appearance namespace on resize handle stop", function()
         VS:CreateOptionsFrame()
-        
+
         -- Simulate a resize
         mockContainer.width = 800
         mockContainer.height = 900
-        
+
         -- Trigger one of the resize handles' OnMouseUp or OnDragStop
         -- In our mock, they all get pushed to VS.dragStopScripts
         if #VS.dragStopScripts > 0 then
@@ -145,7 +145,7 @@ describe("Window Resize Persistence", function()
             -- Edge handles are at the end of CreateOptionsFrame.
             VS.dragStopScripts[#VS.dragStopScripts]()
         end
-        
+
         assert.are.equal(800, _G.VolumeSlidersMMDB.appearance.windowWidth)
         assert.are.equal(900, _G.VolumeSlidersMMDB.appearance.windowHeight)
     end)

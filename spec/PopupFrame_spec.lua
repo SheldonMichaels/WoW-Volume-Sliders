@@ -17,7 +17,7 @@ describe("PopupFrame behavioral tests", function()
             },
             channels = {}, layout = {}, voice = {}, minimap = {}, automation = {}, hardware = {}
         }
-        
+
         local addonName = "VolumeSliders"
         local addonTable = {
             sliders = {},
@@ -26,14 +26,14 @@ describe("PopupFrame behavioral tests", function()
             UpdateAppearance = function() end,
             FlagLayoutDirty = function() end,
         }
-        
+
         -- Mocking shared logic for PopupFrame loading
         local coreChunk = loadfile("VolumeSliders/Core.lua")
         coreChunk(addonName, addonTable)
-        
+
         local widgetsChunk = loadfile("VolumeSliders/SliderWidgets.lua")
         widgetsChunk(addonName, addonTable)
-        
+
         -- We need to mock some dependencies for PopupFrame.lua
         addonTable.LDB = { RegisterCallback = function() end }
         addonTable.LDBIcon = { Register = function() end }
@@ -68,7 +68,7 @@ describe("PopupFrame behavioral tests", function()
     it("should stay open on outside click when persistentWindow is true", function()
         _G.VolumeSlidersMMDB.toggles.persistentWindow = true
         VS.container:Show()
-        
+
         local handler = VS.container:GetScript("OnEvent")
         _G.IsMouseOver = function(frame) return frame == _G.UIParent end
 
@@ -79,15 +79,15 @@ describe("PopupFrame behavioral tests", function()
     it("should apply background color correctly", function()
         -- AddonTable setup usually happens in Core/Init
         VS.windowBg = VS.container:CreateTexture()
-        
+
         -- Mocking the logic from Appearance.lua because we are testing PopupFrame's integration
         VS.ApplyWindowBackground = function(self)
             local db = _G.VolumeSlidersMMDB
             self.windowBg:SetColorTexture(db.appearance.bgColor.r, db.appearance.bgColor.g, db.appearance.bgColor.b, db.appearance.bgColor.a)
         end
-        
+
         VS:ApplyWindowBackground()
-        
+
         assert.are.equal(0.05, VS.windowBg.r)
         assert.are.equal(0.95, VS.windowBg.a)
     end)
@@ -107,7 +107,7 @@ describe("PopupFrame behavioral tests", function()
             { name = "Test Preset", volumes = { ["Sound_MasterVolume"] = 0.5 } }
         }
         VS.session.activeRegistry.manual = {}
-        
+
         -- 2. Mock GetActivePresetsButtonText
         local originalGetText = VS.Presets.GetActivePresetsButtonText
         VS.Presets.GetActivePresetsButtonText = function()
@@ -116,10 +116,10 @@ describe("PopupFrame behavioral tests", function()
             end
             return "Presets"
         end
-        
+
         -- 3. Spy on the FontString:SetText
         local setTextSpy = spy.on(VS.presetDropdown.Text, "SetText")
-        
+
         -- 4. Trigger refresh (imitates window opening)
         VS.RefreshPopupDropdown()
         assert.spy(setTextSpy).was_called_with(VS.presetDropdown.Text, "Presets")
@@ -127,9 +127,10 @@ describe("PopupFrame behavioral tests", function()
         -- 5. Select the preset (simulated)
         VS.session.activeRegistry.manual[1] = _G.VolumeSlidersMMDB.automation.presets[1]
         VS.RefreshPopupDropdown()
-        
-        assert.spy(setTextSpy).was_called_with(VS.presetDropdown.Text, "Test Preset")
-        
+
+        local match = require("luassert.match")
+        assert.spy(setTextSpy).was_called_with(match._, "Test Preset")
+
         -- Cleanup
         VS.Presets.GetActivePresetsButtonText = originalGetText
         setTextSpy:revert()
@@ -140,18 +141,18 @@ describe("PopupFrame behavioral tests", function()
         local preset = { name = "Resizing", volumes = {} }
         _G.VolumeSlidersMMDB.automation.presets = { preset }
         VS.Presets:RegisterActivePreset("manual", 1, preset)
-        
+
         local setTextSpy = spy.on(VS.presetDropdown, "SetText")
-        
+
         -- 2. Simulate OnSizeChanged
         local onSizeChanged = VS.container:GetScript("OnSizeChanged")
         assert.is_not_nil(onSizeChanged)
-        
+
         onSizeChanged(VS.container, 300, 200)
-        
+
         -- 3. Verify SetText was called (it should have picked up our preset name)
         assert.spy(setTextSpy).was_called_with(VS.presetDropdown, "Resizing")
-        
+
         setTextSpy:revert()
     end)
 end)

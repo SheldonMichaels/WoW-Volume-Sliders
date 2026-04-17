@@ -32,11 +32,11 @@ _G.Minimap = {
     GetEffectiveScale = function() return 1.0 end,
     GetRight = function() return 100 end,
     GetBottom = function() return 100 end,
-    ZoomIn = { 
+    ZoomIn = {
         IsMouseOver = function() return false end,
         HookScript = function() end,
     },
-    ZoomOut = { 
+    ZoomOut = {
         IsMouseOver = function() return false end,
         HookScript = function() end,
     },
@@ -64,7 +64,11 @@ local function createMockFrame(frameType, name, parent, template)
         level = 1,
         scripts = {},
         points = {},
-        
+    }
+    if name then _G[name] = f end
+
+    table.merge = function(t1, t2) for k, v in pairs(t2) do t1[k] = v end end
+    table.merge(f, {
         Hide = function(self) self.shown = false end,
         Show = function(self) self.shown = true end,
         SetShown = function(self, state) self.shown = state end,
@@ -72,13 +76,13 @@ local function createMockFrame(frameType, name, parent, template)
         GetName = function(self) return self.name end,
         SetParent = function(self, p) self.parent = p end,
         GetParent = function(self) return self.parent end,
-        
+
         SetSize = function(self, w, h) self.width = w; self.height = h end,
         SetWidth = function(self, w) self.width = w end,
         SetHeight = function(self, h) self.height = h end,
         GetWidth = function(self) return self.width end,
         GetHeight = function(self) return self.height end,
-        
+
         SetPoint = function(self, point, relFrame, relPoint, x, y)
             table.insert(self.points, {point=point, relFrame=relFrame, relPoint=relPoint, x=x, y=y})
         end,
@@ -86,15 +90,15 @@ local function createMockFrame(frameType, name, parent, template)
         GetCenter = function(self) return 0, 0 end,
         GetLeft = function(self) return 0 end,
         GetBottom = function(self) return 0 end,
-        
+
         SetScript = function(self, event, handler) self.scripts[event] = handler end,
-        HookScript = function(self, event, handler) 
+        HookScript = function(self, event, handler)
             local old = self.scripts[event]
             self.scripts[event] = function(...) if old then old(...) end handler(...) end
         end,
         GetScript = function(self, event) return self.scripts[event] end,
         HasScript = function(self, event) return self.scripts[event] ~= nil end,
-        
+
         SetFrameLevel = function(self, lvl) self.level = lvl end,
         GetFrameLevel = function(self) return self.level end,
         SetFrameStrata = function(self, strata) end,
@@ -103,13 +107,13 @@ local function createMockFrame(frameType, name, parent, template)
         RegisterForDrag = function(self, btn) end,
         SetMovable = function(self, movable) self.movable = movable end,
         SetResizable = function(self, resizable) self.resizable = resizable end,
-        SetResizeBounds = function(self, minW, minH, maxW, maxH) 
+        SetResizeBounds = function(self, minW, minH, maxW, maxH)
             self.minW, self.minH = minW, minH
             self.maxW, self.maxH = maxW, maxH
         end,
         StartMoving = function(self) self.isMoving = true end,
         StartSizing = function(self, anchor) self.isResizing = anchor end,
-        StopMovingOrSizing = function(self) 
+        StopMovingOrSizing = function(self)
             self.isMoving = false
             self.isResizing = nil
         end,
@@ -117,21 +121,22 @@ local function createMockFrame(frameType, name, parent, template)
         UnregisterEvent = function(self, ev) end,
         UnregisterAllEvents = function(self) end,
         RegisterForClicks = function(self, ...) end,
-        
+
         -- Special elements
         CreateTexture = function() return createMockFrame("Texture") end,
         CreateFontString = function() return createMockFrame("FontString") end,
         GetFontString = function() return nil end,
         SetNormalFontObject = function() end,
         SetHighlightFontObject = function() end,
-        
+
         -- Textures/FontStrings
         SetAtlas = function() end,
         SetNormalAtlas = function() end,
         SetPushedAtlas = function() end,
+        SetDisabledAtlas = function() end,
         SetHighlightTexture = function() end,
         SetGradient = function() end,
-        SetColorTexture = function(self, r, g, b, a) 
+        SetColorTexture = function(self, r, g, b, a)
             self.r, self.g, self.b, self.a = r, g, b, a
         end,
         SetTexture = function() end,
@@ -149,10 +154,13 @@ local function createMockFrame(frameType, name, parent, template)
         GetStringHeight = function() return 12 end,
         SetJustifyH = function() end,
         SetJustifyV = function() end,
+        SetFontObject = function() end,
         SetWordWrap = function() end,
         SetMaxLines = function() end,
         SetSpacing = function() end,
-        
+        SetScrollChild = function(self, child) self.scrollChild = child end,
+        GetScrollChild = function(self) return self.scrollChild end,
+
         -- Sliders/Checkboxes
         SetValue = function() end,
         GetValue = function() return 0 end,
@@ -161,15 +169,19 @@ local function createMockFrame(frameType, name, parent, template)
         SetObeyStepOnDrag = function() end,
         SetChecked = function(self, state) self.checked = state end,
         GetChecked = function(self) return self.checked end,
-        SetText = function() end,
         SetScale = function() end,
         SetAutoFocus = function() end,
         SetNumeric = function() end,
         SetMaxLetters = function() end,
+        SetMaxBytes = function() end,
+        SetMultiLine = function() end,
         SetCursorPosition = function() end,
         ClearFocus = function() end,
+        HasFocus = function() return false end,
         SetupMenu = function() end,
         GenerateMenu = function() end,
+        Init = function(self, view) self.view = view end,
+        SetDataProvider = function(self, provider) self.provider = provider end,
         Enable = function() end,
         Disable = function() end,
         IsEnabled = function() return true end,
@@ -182,10 +194,12 @@ local function createMockFrame(frameType, name, parent, template)
         SetThumbTexture = function() end,
         GetThumbTexture = function(self) return self.thumb end,
         SetHitRectInsets = function() end,
-    }
+        SetDefaultText = function(self, text) self.defaultText = text end,
+        GetDefaultText = function(self) return self.defaultText end,
+    })
 
     -- Add common sub-components only for top-level frames to avoid infinite recursion
-    if not name or not name:find("Sub") then
+    if not name or (type(name) == "string" and not name:find("Sub")) then
         f.NineSlice = { Text = createMockFrame("FontString", "SubText") }
         f.ClosePanelButton = createMockFrame("Button", "SubClose")
         f.Bg = createMockFrame("Frame", "SubBg")
@@ -203,7 +217,7 @@ local function createMockFrame(frameType, name, parent, template)
         f.downBtn = createMockFrame("Button", "SubDownBtn")
         f.text = createMockFrame("FontString", "SubText2")
     end
-    
+
     return f
 end
 
@@ -309,7 +323,7 @@ _G.hooksecurefunc = function(name, func) end
 _G.UISpecialFrames = {}
 _G.tinsert = table.insert
 _G.wipe = function(t) for k in pairs(t) do t[k] = nil end end
-_G.Mixin = function(t, ...) 
+_G.Mixin = function(t, ...)
     for _, mixin in ipairs({...}) do
         for k, v in pairs(mixin) do t[k] = v end
     end
@@ -427,13 +441,15 @@ _G.C_VoiceChat = {
 }
 
 _G.Settings = {
-    RegisterCanvasLayoutCategory = function(frame, name) return {}, {} end,
+    RegisterCanvasLayoutCategory = function(frame, name) return { ID = name }, {} end,
+    RegisterCanvasLayoutSubcategory = function(category, frame, name) return { ID = name }, {} end,
     RegisterAddOnCategory = function(category) end,
+
     OpenToCategory = function(categoryID) end,
 }
 
 _G.ScrollUtil = {
-    AddLinearDragBehavior = function(scrollBox) 
+    AddLinearDragBehavior = function(scrollBox)
         return {
             SetReorderable = function() end,
             SetDragRelativeToCursor = function() end,
@@ -445,7 +461,7 @@ _G.ScrollUtil = {
     end,
 }
 
-_G.CreateDataProvider = function() return { Insert = function() end, EnumerateEntireRange = function() return {} end } end
+_G.CreateDataProvider = function() return { Insert = function() end, EnumerateEntireRange = function() return {} end, Flush = function() end } end
 _G.CreateScrollBoxListLinearView = function() return { SetElementInitializer = function() end, SetPadding = function() end } end
 
 _G.DragIntersectionArea = { Inside = 1, Above = 2, Below = 3 }
@@ -479,7 +495,7 @@ _G.LibStub = setmetatable({
 
 -- Setup mock `...` args for the addon entrypoint loading style
 -- e.g. local addonName, addonTable = ...
-function CreateAddonContext()
+_G.CreateAddonContext = function()
     local addonTable = {
         sliders = {},
         RefreshTextInputs = function() end,
