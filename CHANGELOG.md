@@ -1,13 +1,11 @@
-# Changelog (v3.6.1-beta2)
+# Changelog (v3.6.1-beta3)
 
-## v3.6.1-beta2 — 2026-04-17
-
-### Added
-- **Global Hardware Resilience**: Refactored the internal hardware switching engine to be globally aware. The addon now monitors sound system restarts triggered from any source (including the Blizzard Options menu) and protects the volume baseline with superior reliability.
-- **Documentation Restoration**: Completed a comprehensive review and restoration of all internal docstrings and technical commentary to ensure maintainability.
+## v3.6.1-beta3 — 2026-04-17
 
 ### Fixed
-- **Hardware Switch Volume Glitch (Issue #31)**: Optimized the gating logic to ensure the volume window and minimap icon reflect the correct restored levels immediately after a device swap.
+- **Infinite Recovery Loop (Regression Check)**: Resolved a critical "fight back" bug where changing the Master volume would result in the slider snapping back to its original state. This fix ensures that user interaction correctly overrides the automated hardware persistence system and prevents infinite event loops.
+
+## v3.6.1-beta2 — 2026-04-17
 
 ## v3.6.1-beta1 — 2026-04-17
 

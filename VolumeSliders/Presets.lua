@@ -409,8 +409,14 @@ presetFrame:SetScript("OnEvent", function(self, event, name, value)
             VS:SyncBaseline(name, tonumber(value) or 1)
         end
     elseif event == "SOUND_DEVICE_UPDATE" then
-        -- Global Resistance: Hardware switch/unplug detected from game engine.
-        VS:StartHardwareRecovery()
+        -- [RESILIENCE] Hardware switch/unplug detected from game engine.
+        -- Only trigger recovery if the output driver has actually changed to avoid
+        -- self-triggering loops on systems where SetCVar fires this event.
+        local currentDriver = GetCVar("Sound_OutputDriverName")
+        if currentDriver ~= VS.session.lastOutputDriver then
+            VS.session.lastOutputDriver = currentDriver
+            VS:StartHardwareRecovery()
+        end
     else
         OnPresetEvent()
     end

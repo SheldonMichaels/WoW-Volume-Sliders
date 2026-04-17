@@ -433,7 +433,11 @@ initFrame:SetScript("OnEvent", function(self, event)
         end
     end
     
+    -- Capture initial hardware state for re-entrancy-safe recovery gating.
+    VS.session.lastOutputDriver = GetCVar("Sound_OutputDriverName")
+    
     db.automation.persistedBaseline = db.automation.persistedBaseline or {}
+
     for _, channel in ipairs(VS.DEFAULT_CVAR_ORDER) do
         db.automation.persistedBaseline[channel] = VS.session.baselineVolumes[channel]
         local muteCvar = VS.CHANNEL_MUTE_CVAR[channel]

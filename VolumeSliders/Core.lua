@@ -451,6 +451,27 @@ function VS:SyncBaseline(channel, value, isVoiceMuteToggle)
     end
 end
 
+--- Safely cancels any active hardware recovery tickers and clears gating flags.
+-- Use this when a user initiates a manual volume adjustment to give them
+-- immediate priority over the automated resilience system.
+function VS:CancelHardwareRecovery()
+    local sess = self.session
+    if sess.recoveryTicker then
+        sess.recoveryTicker:Cancel()
+        sess.recoveryTicker = nil
+    end
+    if sess.recoverySafetyTimer then
+        sess.recoverySafetyTimer:Cancel()
+        sess.recoverySafetyTimer = nil
+    end
+    sess.isHardwareColdBoot = false
+
+    -- [UI] Ensure the Master slider is unlocked
+    if self.SetMasterSliderLocked then
+        self:SetMasterSliderLocked(false)
+    end
+end
+
 --- Centralized hardware recovery logic for sound system restarts.
 -- This function handles the "Cold Boot" gate and ensures the volume is correctly
 -- restored after a hardware output change (manual or engine-initiated).
@@ -460,9 +481,14 @@ function VS:StartHardwareRecovery(targetVolume, optionalDeviceName)
     local sess = self.session
     local db = VolumeSlidersMMDB
 
-    -- [RESILIENCE] Cancel any existing recovery timers if a new switch starts.
-    if sess.recoveryTicker then sess.recoveryTicker:Cancel(); sess.recoveryTicker = nil end
-    -- Shared cleanup: re-enable the slider and tear down any pending safety nets if a new switch occurs.
+    -- [ENFORCEMENT LOOP PROTECTION]
+    -- On some systems, SetCVar calls can trigger a SOUND_DEVICE_UPDATE event.
+    -- If we are already in the middle of a recovery ticker, we MUST NOT cancel
+    -- and restart it, otherwise we enter an infinite loop where the tick count
+    -- never reaches the end and the slider stays locked forever.
+    if sess.recoveryTicker then return end
+
+    -- [RESILIENCE] Shared cleanup: tear down any pending safety nets before starting.
     if sess.recoverySafetyTimer then sess.recoverySafetyTimer:Cancel(); sess.recoverySafetyTimer = nil end
 
     -- [GATING] Enable the hardware cold boot flag to ignore engine-initiated CVAR_UPDATEs.
@@ -514,27 +540,17 @@ function VS:StartHardwareRecovery(targetVolume, optionalDeviceName)
         count = count + 1
         Apply()
         if count >= 4 then
-            sess.isHardwareColdBoot = false
-            sess.recoveryTicker = nil -- Ticker auto-cancels on its own or we do it here
-            
-            -- [UI] Unlock the Master slider
-            if self.SetMasterSliderLocked then
-                self:SetMasterSliderLocked(false)
-            end
-            
+            self:CancelHardwareRecovery()
             Apply() -- Final sync
         end
     end)
 
     -- [SAFETY] Fallback timer to ensure the gate is ALWAYS cleared even if error occurs.
     sess.recoverySafetyTimer = C_Timer.NewTimer(5.0, function()
-        sess.isHardwareColdBoot = false
-        if self.SetMasterSliderLocked then
-            self:SetMasterSliderLocked(false)
-        end
-        sess.recoverySafetyTimer = nil
+        self:CancelHardwareRecovery()
     end)
 end
+
 
 --- Toggle the master mute state by flipping the Sound_EnableAllSound CVar.
 -- Also updates the minimap icon texture and the Master slider's mute checkbox.
