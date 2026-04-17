@@ -125,6 +125,9 @@ function VS.Presets:RegisterActivePreset(registryType, id, presetObj)
     sess.activeRegistry[registryType] = sess.activeRegistry[registryType] or {}
     sess.activeRegistry[registryType][id] = presetObj
     
+    -- Invalidate the label cache
+    sess.presetRegistryVersion = (sess.presetRegistryVersion or 0) + 1
+    
     self:EvaluateAllPresets()
 end
 
@@ -426,13 +429,26 @@ end
 function VS.Presets:GetActivePresetsButtonText()
     local sess = VS.session
     local matchedNames = {}
+    local currentVersion = sess.presetRegistryVersion or 0
     
-    for _, presets in pairs(sess.activeRegistry) do
-        for _, preset in pairs(presets) do
-            if preset and preset.name then
-                table.insert(matchedNames, preset.name)
+    -- Cache lookup: If the registry hasn't changed, reuse the previous results
+    if sess.lastLabelVersion == currentVersion and sess.cachedCombinedString then
+        matchedNames = sess.cachedPresetNames or {}
+    else
+        for _, presets in pairs(sess.activeRegistry) do
+            for _, preset in pairs(presets) do
+                if preset and preset.name then
+                    table.insert(matchedNames, preset.name)
+                end
             end
         end
+        
+        -- Sort names for deterministic label output
+        table.sort(matchedNames)
+        
+        sess.cachedPresetNames = matchedNames
+        sess.cachedCombinedString = table.concat(matchedNames, ", ")
+        sess.lastLabelVersion = currentVersion
     end
 
     local count = #matchedNames
@@ -441,8 +457,8 @@ function VS.Presets:GetActivePresetsButtonText()
     elseif count == 1 then
         return matchedNames[1]
     end
-    -- Combine names first
-    local combined = table.concat(matchedNames, ", ")
+    -- Use cached string
+    local combined = sess.cachedCombinedString
     
     -- Measure if we have the UI element to test against
     if VS.presetDropdown and VS.presetDropdown.Text then

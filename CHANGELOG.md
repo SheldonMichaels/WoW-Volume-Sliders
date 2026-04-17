@@ -1,4 +1,17 @@
-# Changelog (v3.4.0)
+# Changelog (v3.5.0)
+
+## v3.5.0 — 2026-04-17
+
+### Added
+- **Preset Button Redesign**: The presets dropdown has been expanded to the full width of the window, providing a larger, more accessible click target.
+- **Dynamic Labeling Engine**: The button now intelligently displays the names of active presets. If multiple presets are active and space is limited, it gracefully transitions to a count (e.g., "2 Presets Active").
+- **Real-Time Responsive Reflow**: The button label now recalculates in real-time as the window is resized, ensuring the text is always as informative as possible for the current window width.
+
+### Fixed
+- **Pixel-Perfect Truncation**: Resolved an issue where WoW's internal font rendering could report incorrect widths for truncated strings, ensuring that labels only shorten when they truly exceed the available space.
+
+### Optimization
+- **Label Rendering Cache**: Implemented an advanced caching system that eliminates redundant string building during window resizing, ensuring zero performance impact while dragging the window handle.
 
 ## v3.4.0 — 2026-04-16
 

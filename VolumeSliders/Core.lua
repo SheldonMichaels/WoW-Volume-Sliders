@@ -80,6 +80,12 @@ VS.session = {
     -- Semaphore to prevent recursive infinite loops in CVAR_UPDATE handler.
     isSettingInternal = false,
 
+    -- PERFORMANCE CACHE:
+    -- Tracks changes to the set of active presets to avoid redundant string work.
+    presetRegistryVersion = 0,
+    cachedPresetNames = nil,
+    cachedCombinedString = nil,
+
 }
 
 -------------------------------------------------------------------------------

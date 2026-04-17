@@ -134,4 +134,24 @@ describe("PopupFrame behavioral tests", function()
         VS.Presets.GetActivePresetsButtonText = originalGetText
         setTextSpy:revert()
     end)
+
+    it("recalculates the preset label on window resize (OnSizeChanged)", function()
+        -- 1. Setup mocks
+        local preset = { name = "Resizing", volumes = {} }
+        _G.VolumeSlidersMMDB.automation.presets = { preset }
+        VS.Presets:RegisterActivePreset("manual", 1, preset)
+        
+        local setTextSpy = spy.on(VS.presetDropdown, "SetText")
+        
+        -- 2. Simulate OnSizeChanged
+        local onSizeChanged = VS.container:GetScript("OnSizeChanged")
+        assert.is_not_nil(onSizeChanged)
+        
+        onSizeChanged(VS.container, 300, 200)
+        
+        -- 3. Verify SetText was called (it should have picked up our preset name)
+        assert.spy(setTextSpy).was_called_with(VS.presetDropdown, "Resizing")
+        
+        setTextSpy:revert()
+    end)
 end)
