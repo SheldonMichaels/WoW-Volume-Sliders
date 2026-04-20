@@ -260,7 +260,7 @@ VS.DEFAULT_DB = {
         showHelpText = true,
         showMinimapTooltip = true,
         showVoiceMode = true,
-        showEmoteSounds = true,
+        showEmoteSounds = false,
         persistentWindow = false,
         isLocked = false,
     },

@@ -23,7 +23,7 @@ describe("Schema V6 to V7 Migration", function()
             CHANNEL_MUTE_CVAR = { ["Sound_MasterVolume"] = "Sound_EnableAllSound" },
             DEFAULT_DB = {
                 schemaVersion = 7,
-                toggles = { showEmoteSounds = true },
+                toggles = { showEmoteSounds = false },
                 layout = { 
                     footerOrder = { "showZoneTriggers", "showFishingSplash", "showLfgPop", "showBackground", "showCharacter", "showEmoteSounds", "showOutput", "showVoiceMode" }
                 }
@@ -86,7 +86,7 @@ describe("Schema V6 to V7 Migration", function()
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
         assert.are.equal(7, db.schemaVersion)
-        assert.is_true(db.toggles.showEmoteSounds)
+        assert.is_false(db.toggles.showEmoteSounds)
         
         -- Check if it was injected at index 6 (before showOutput)
         assert.are.equal("showEmoteSounds", db.layout.footerOrder[6])
