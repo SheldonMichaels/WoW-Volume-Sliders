@@ -185,9 +185,9 @@ VS.DEFAULT_FOOTER_ORDER = {
     "showLfgPop",
     "showCharacter",
     "showBackground",
+    "showEmoteSounds",
     "showOutput",
     "showVoiceMode",
-    "showEmoteSounds",
 }
 
 -------------------------------------------------------------------------------
