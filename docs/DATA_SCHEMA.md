@@ -3,7 +3,7 @@
 **Database:** `VolumeSlidersMMDB`
 **Scope:** Global / Account-wide
 **Format:** Serialized Lua Table (Pseudo-JSON representation below)
-**Last Audited:** 2026-04-20 (V7 Emote Toggle)
+**Last Audited:** 2026-03-30 (V2 Namespace Migration)
 
 This document defines the exact shape of the saved variables used by Volume Sliders. It acts as the single source of truth for the data layer, distinguishing between user-configurable options, transient session states, and deprecated keys.
 

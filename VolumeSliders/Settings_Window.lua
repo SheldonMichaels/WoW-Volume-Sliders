@@ -43,7 +43,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
 
     local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
+    bg:SetColorTexture(0, 0, 0, 1)
 
     local categoryFrame = CreateFrame("Frame", "VolumeSlidersWindowSettingsContentFrame", scrollFrame)
     categoryFrame:SetSize(600, 650)
