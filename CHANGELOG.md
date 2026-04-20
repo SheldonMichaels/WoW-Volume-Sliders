@@ -1,4 +1,16 @@
-# Changelog (v3.6.1)
+# Changelog (v3.7.0)
+
+## v3.7.0 — 2026-04-20
+
+### Added
+- **Emote Sounds Toggle**: Added a new "Emote Sounds" checkbox to the main popup footer, allowing users to quickly toggle character emote audio (like /laugh or /cry) without opening Blizzard's settings. 
+  - *Note*: This is disabled by default. You can enable it via the "Window Settings" configuration panel.
+- **Enriched Automation Tooltips**: Overhauled the tooltips for Zone Triggers, Fishing Boost, and LFG Pop Boost in both the main popup and settings window. Tooltips now explicitly clarify that these automations affect the **Sound Effects (SFX)** channel.
+
+### Technical
+- **Database Schema V7**: Upgraded the internal data persistence layer to Schema V7. 
+- **Automated Migration**: Implemented a seamless migration path that injects the new Emote toggle into existing user layouts while preserving custom footer ordering.
+- **Hardened Testing**: Expanded the unit testing suite to validate structural integrity across the new schema version.
 
 ## v3.6.1 — 2026-04-17
 

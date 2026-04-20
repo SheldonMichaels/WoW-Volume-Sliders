@@ -3,7 +3,7 @@
 **Database:** `VolumeSlidersMMDB`
 **Scope:** Global / Account-wide
 **Format:** Serialized Lua Table (Pseudo-JSON representation below)
-**Last Audited:** 2026-03-30 (V2 Namespace Migration)
+**Last Audited:** 2026-04-20 (V7 Emote Toggle)
 
 This document defines the exact shape of the saved variables used by Volume Sliders. It acts as the single source of truth for the data layer, distinguishing between user-configurable options, transient session states, and deprecated keys.
 
@@ -255,10 +255,10 @@ Initializes the `automation.persistedBaseline` and `automation.lastAppliedState`
 
 Tears down the deprecated snapshot-based `manualToggleState` payload system in favor of the stateless, timestamp-based unified stack model. The `db.automation.manualToggleState` table is destroyed unconditionally. A new tracking map, `db.automation.activeManualPresets`, is initialized to persist session-to-session manual preset activation and stack order.
 
-## Migration Contract (Init.lua:Migrate_V5_to_V6)
+## Migration Contract (`Init.lua:Migrate_V5_to_V6`)
 
 Adds the `automation.enableDeviceVolumes` flag to support per-hardware-output-device master volume tracking. For existing users upgrading to V6, this is set to `true` by default to preserve the legacy behavior of the addon, but can now be disabled via the Automation settings panel.
 
-## Migration Contract (Init.lua:Migrate_V6_to_V7)
+## Migration Contract (`Init.lua:Migrate_V6_to_V7`)
 
-Adds the `showEmoteSounds` toggle to the `toggles` namespace and injects it into the `footerOrder` array for existing users. This ensures the new Emote Sounds checkbox is visible in the main popup footer by default upon upgrade.
+Adds the `showEmoteSounds` toggle to the `toggles` namespace and injects it into the `footerOrder` array for existing users. By default, this toggle is set to `false`, meaning it remains hidden from the main popup footer until manually enabled via the settings window.
