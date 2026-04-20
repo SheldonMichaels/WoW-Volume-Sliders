@@ -6,6 +6,7 @@
 - **Emote Sounds Toggle**: Added a new "Emote Sounds" checkbox to the main popup footer, allowing users to quickly toggle character emote audio (like /laugh or /cry) without opening Blizzard's settings. 
   - *Note*: This is disabled by default. You can enable it via the "Window Settings" configuration panel.
 - **Enriched Automation Tooltips**: Overhauled the tooltips for Zone Triggers, Fishing Boost, and LFG Pop Boost in both the main popup and settings window. Tooltips now explicitly clarify that these automations affect the **Sound Effects (SFX)** channel.
+- **Settings Page Visuals**: Changed the background of all configuration pages from semi-transparent grey to **solid black** for improved contrast and a more premium aesthetic.
 
 ### Technical
 - **Database Schema V7**: Upgraded the internal data persistence layer to Schema V7. 
