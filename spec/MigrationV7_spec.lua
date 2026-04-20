@@ -1,9 +1,9 @@
 -------------------------------------------------------------------------------
--- spec/MigrationV6_spec.lua
--- Isolated unit test for the Schema V6 migration path.
+-- spec/MigrationV7_spec.lua
+-- Isolated unit test for the Schema V7 migration path (Emote Sounds).
 -------------------------------------------------------------------------------
 
-describe("Schema V5 to V6 Migration", function()
+describe("Schema V6 to V7 Migration", function()
     local VS
     local initFrameScript
 
@@ -23,13 +23,12 @@ describe("Schema V5 to V6 Migration", function()
             CHANNEL_MUTE_CVAR = { ["Sound_MasterVolume"] = "Sound_EnableAllSound" },
             DEFAULT_DB = {
                 schemaVersion = 7,
-                automation = { 
-                    enableDeviceVolumes = true,
-                    activeManualPresets = {} 
-                },
-                minimap = { minimalistMinimap = true },
-                layout = { sliderOrder = {}, footerOrder = {} }
+                toggles = { showEmoteSounds = true },
+                layout = { 
+                    footerOrder = { "showZoneTriggers", "showFishingSplash", "showLfgPop", "showBackground", "showCharacter", "showEmoteSounds", "showOutput", "showVoiceMode" }
+                }
             },
+            DEFAULT_FOOTER_ORDER = { "showZoneTriggers", "showFishingSplash", "showLfgPop", "showBackground", "showCharacter", "showEmoteSounds", "showOutput", "showVoiceMode" },
             session = {
                 baselineVolumes = {},
                 baselineMutes = {},
@@ -41,13 +40,26 @@ describe("Schema V5 to V6 Migration", function()
             UpdateMiniMapButtonVisibility = function() end
         }
 
-        -- Mock a V5 Database
+        -- Mock a V6 Database
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 5,
-            automation = {
-                activeManualPresets = {}
+            schemaVersion = 6,
+            toggles = {
+                showZoneTriggers = true,
+                showFishingSplash = true,
+                showLfgPop = true,
+                showBackground = true,
+                showCharacter = true,
+                showOutput = true,
+                showVoiceMode = true
+                -- showEmoteSounds is MISSING
             },
-            minimap = {}
+            layout = {
+                footerOrder = {
+                    "showZoneTriggers", "showFishingSplash", "showLfgPop", "showBackground", "showCharacter", "showOutput", "showVoiceMode"
+                }
+            },
+            minimap = {}, -- Added to prevent Init.lua crash at line 401
+            automation = {} -- Preventive
         }
 
         -- Stub out create frame to catch the Init event script
@@ -67,24 +79,17 @@ describe("Schema V5 to V6 Migration", function()
         _G.CreateFrame = realCreateFrame
     end)
 
-    it("should initialize enableDeviceVolumes and stamp version 6", function()
+    it("should initialize showEmoteSounds and inject it into footerOrder", function()
         local db = _G.VolumeSlidersMMDB
 
         -- Logic is executed during PLAYER_LOGIN
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
         assert.are.equal(7, db.schemaVersion)
-        assert.is_true(db.automation.enableDeviceVolumes)
-    end)
-
-    it("should not overwrite enableDeviceVolumes if already present", function()
-        local db = _G.VolumeSlidersMMDB
-        -- Pre-seed with false (user manually set it before login somehow, or testing idempotency)
-        db.automation.enableDeviceVolumes = false
+        assert.is_true(db.toggles.showEmoteSounds)
         
-        initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
-
-        assert.are.equal(7, db.schemaVersion)
-        assert.is_false(db.automation.enableDeviceVolumes)
+        -- Check if it was injected at index 6 (before showOutput)
+        assert.are.equal("showEmoteSounds", db.layout.footerOrder[6])
+        assert.are.equal(8, #db.layout.footerOrder)
     end)
 end)

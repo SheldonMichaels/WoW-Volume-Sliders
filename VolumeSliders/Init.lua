@@ -346,6 +346,35 @@ local function Migrate_V5_to_V6(db)
 end
 
 -------------------------------------------------------------------------------
+-- V6 -> V7 Schema Migration Engine
+--
+-- Injects the "showEmoteSounds" toggle into the footerOrder array for existing
+-- users. The dictionary-level default is handled by MergeTable.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V6_to_V7(db)
+    if db.schemaVersion and db.schemaVersion >= 7 then return end
+
+    db.layout = db.layout or {}
+    db.layout.footerOrder = db.layout.footerOrder or {}
+
+    -- Inject "showEmoteSounds" if missing
+    local found = false
+    for _, key in ipairs(db.layout.footerOrder) do
+        if key == "showEmoteSounds" then
+            found = true
+            break
+        end
+    end
+    if not found then
+        table.insert(db.layout.footerOrder, 6, "showEmoteSounds")
+    end
+
+    db.schemaVersion = 7
+end
+
+-------------------------------------------------------------------------------
 -- Main Event Handler (PLAYER_LOGIN)
 --
 -- Orchestrates the addon bootstrap sequence:
@@ -364,6 +393,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     Migrate_V3_to_V4(db)
     Migrate_V4_to_V5(db)
     Migrate_V5_to_V6(db)
+    Migrate_V6_to_V7(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"

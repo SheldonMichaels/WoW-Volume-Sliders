@@ -431,6 +431,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
         ["showLfgPop"] = { name = "LFG Pop Boost", namespace = "toggles", tooltip = "Show or hide the LFG Pop Boost toggle." },
         ["showBackground"] = { name = "SBG Checkbox", namespace = "toggles", tooltip = "Show or hide the 'Sound in Background' toggle." },
         ["showCharacter"] = { name = "Char Checkbox", namespace = "toggles", tooltip = "Show or hide the 'Sound at Character' toggle." },
+        ["showEmoteSounds"] = { name = "Emote Sounds", namespace = "toggles", tooltip = "Show or hide the 'Emote Sounds' toggle." },
         ["showOutput"] = { name = "Output Selector", namespace = "toggles", tooltip = "Show or hide the 'Output:' dropdown." },
         ["showVoiceMode"] = { name = "Voice Mode", namespace = "toggles", tooltip = "Show or hide the Voice Chat Mode toggle." },
     }

@@ -285,6 +285,7 @@ function VS:UpdateFooterLayout()
         ["showLfgPop"]        = { frame = VS.lfgCheck,               label = VS.lfgCheck and VS.lfgCheck.labelText },
         ["showCharacter"]     = { frame = VS.characterCheckbox,      label = VS.characterCheckbox and VS.characterCheckbox.labelText },
         ["showBackground"]    = { frame = VS.backgroundCheckbox,     label = VS.backgroundCheckbox and VS.backgroundCheckbox.labelText },
+        ["showEmoteSounds"]   = { frame = VS.emoteSoundsCheckbox,    label = VS.emoteSoundsCheckbox and VS.emoteSoundsCheckbox.labelText },
         ["showOutput"]        = { frame = VS.outputDropdown },
         ["showVoiceMode"]     = { frame = VS.voiceModeBtn },
     }

@@ -48,7 +48,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    VS:AddTooltip(enableCheck, "Automatically adjust volume levels when entering zones designated in your presets. Original volumes are restored when leaving the area.")
+    VS:AddTooltip(enableCheck, "Automatically adjust volume levels when entering zones designated in your presets.\n\nPresets can override any audio channel.")
 
     local fishingCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
     fishingCheck:SetPoint("TOPLEFT", enableCheck, "TOPRIGHT", 180, 0)
@@ -63,7 +63,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    VS:AddTooltip(fishingCheck, "Temporarily overrides volumes while fishing so you can clearly hear the bobber splash. Disabled during combat.")
+    VS:AddTooltip(fishingCheck, "Temporarily overrides volumes while fishing so you can hear the splash.\n\nThe bobber splash plays through Sound Effects (SFX).")
 
     local lfgCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
     lfgCheck:SetPoint("TOPLEFT", enableCheck, "BOTTOMLEFT", 0, -5)
@@ -78,7 +78,7 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    VS:AddTooltip(lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.")
+    VS:AddTooltip(lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.\n\nThe queue pop plays through Sound Effects (SFX).")
 
     local deviceVolumesCheck = CreateFrame("CheckButton", nil, contentFrame, "UICheckButtonTemplate")
     deviceVolumesCheck:SetPoint("TOPLEFT", fishingCheck, "BOTTOMLEFT", 0, -5)
