@@ -38,7 +38,7 @@ function VS:CreateSlidersSettingsContents(parentFrame)
 
     local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
+    bg:SetColorTexture(0, 0, 0, 1)
 
     local categoryFrame = CreateFrame("Frame", "VolumeSlidersSlidersSettingsContentFrame", scrollFrame)
     categoryFrame:SetSize(600, 450)
@@ -292,7 +292,8 @@ function VS:CreateSlidersSettingsContents(parentFrame)
 
         checkbox:SetScript("OnClick", function(self)
             db[data.namespace][data.var] = self:GetChecked()
-            VS:UpdateAppearance()
+            -- Visibility change: Must flag dirty so total window height is recalculated
+            VS:FlagLayoutDirty()
         end)
 
         -- Add tooltip support

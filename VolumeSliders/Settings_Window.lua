@@ -43,10 +43,10 @@ function VS:CreateWindowSettingsContents(parentFrame)
 
     local bg = scrollFrame:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
-    bg:SetColorTexture(0.02, 0.02, 0.02, 0.5)
+    bg:SetColorTexture(0, 0, 0, 1)
 
     local categoryFrame = CreateFrame("Frame", "VolumeSlidersWindowSettingsContentFrame", scrollFrame)
-    categoryFrame:SetSize(600, 650)
+    categoryFrame:SetSize(600, 850)
     scrollFrame:SetScrollChild(categoryFrame)
 
     -- Initial dummy resize, overwritten at end of function for dynamic columns
@@ -69,7 +69,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     -- Deduped: Now using shared VS:AddTooltip(frame, text)
 
     local windowBehaviorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    windowBehaviorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 245, -20)
+    windowBehaviorLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 15, -20)
     windowBehaviorLabel:SetText("Window Behavior")
 
     local persistentCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
@@ -84,7 +84,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     local persistentDivider = categoryFrame:CreateTexture(nil, "ARTWORK")
     persistentDivider:SetHeight(1)
     persistentDivider:SetPoint("TOPLEFT", persistentCheck, "BOTTOMLEFT", -20, -15)
-    persistentDivider:SetWidth(400)
+    persistentDivider:SetWidth(560)
     persistentDivider:SetColorTexture(1, 1, 1, 0.2)
 
     ---------------------------------------------------------------------------
@@ -175,14 +175,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     end)
     VS:AddTooltip(opacitySlider, "Adjust the background opacity of the slider window.\n0% = fully transparent, 100% = fully opaque")
 
-    ---------------------------------------------------------------------------
-    -- Vertical Divider
-    ---------------------------------------------------------------------------
-    local dividerV = categoryFrame:CreateTexture(nil, "ARTWORK")
-    dividerV:SetWidth(1)
-    dividerV:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 220, -10)
-    dividerV:SetPoint("BOTTOMLEFT", categoryFrame, "TOPLEFT", 220, -600)
-    dividerV:SetColorTexture(1, 1, 1, 0.2)
+
 
     ---------------------------------------------------------------------------
     -- Visibility Checkboxes (Window Header Elements)
@@ -190,7 +183,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     local dividerBgH = categoryFrame:CreateTexture(nil, "ARTWORK")
     dividerBgH:SetHeight(1)
     dividerBgH:SetPoint("TOPLEFT", bgColorLabel, "BOTTOMLEFT", -25, -45)
-    dividerBgH:SetWidth(400)
+    dividerBgH:SetWidth(560)
     dividerBgH:SetColorTexture(1, 1, 1, 0.2)
 
     local headerElementsLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -203,7 +196,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     helpTextCheck:SetChecked(db.toggles.showHelpText ~= false)
     helpTextCheck:SetScript("OnClick", function(self)
         db.toggles.showHelpText = self:GetChecked()
-        VS:UpdateAppearance()
+        VS:FlagLayoutDirty()
     end)
     VS:AddTooltip(helpTextCheck, "Show or hide the help instructions at the top.")
 
@@ -213,21 +206,30 @@ function VS:CreateWindowSettingsContents(parentFrame)
     presetCheck:SetChecked(db.toggles.showPresetsDropdown ~= false)
     presetCheck:SetScript("OnClick", function(self)
         db.toggles.showPresetsDropdown = self:GetChecked()
-        VS:UpdateAppearance()
+        VS:FlagLayoutDirty()
     end)
     VS:AddTooltip(presetCheck, "Show or hide the quick-apply presets dropdown at the top.")
 
     local dividerH = categoryFrame:CreateTexture(nil, "ARTWORK")
     dividerH:SetHeight(1)
     dividerH:SetPoint("TOPLEFT", headerElementsLabel, "BOTTOMLEFT", -25, -45)
-    dividerH:SetWidth(400)
+    dividerH:SetWidth(560)
     dividerH:SetColorTexture(1, 1, 1, 0.2)
+
+    ---------------------------------------------------------------------------
+    -- Vertical Divider (bottom section column separator)
+    ---------------------------------------------------------------------------
+    local dividerV = categoryFrame:CreateTexture(nil, "ARTWORK")
+    dividerV:SetWidth(1)
+    dividerV:SetPoint("TOPLEFT", dividerH, "BOTTOMLEFT", 275, -5)
+    dividerV:SetPoint("BOTTOMLEFT", dividerH, "BOTTOMLEFT", 275, -520)
+    dividerV:SetColorTexture(1, 1, 1, 0.2)
 
     ---------------------------------------------------------------------------
     -- Channel Visibility
     ---------------------------------------------------------------------------
     local channelLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    channelLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 15, -20)
+    channelLabel:SetPoint("TOPLEFT", dividerH, "BOTTOMLEFT", 25, -20)
     channelLabel:SetText("Channel Visibility")
 
     local channelSubLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -251,7 +253,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     }
 
     local scrollBox = CreateFrame("Frame", nil, categoryFrame, "WowScrollBoxList")
-    scrollBox:SetSize(145, 480)
+    scrollBox:SetSize(230, 480)
     scrollBox:SetPoint("TOPLEFT", channelSubLabel, "BOTTOMLEFT", -5, -8)
 
     local dragBehavior -- Forward declare for access in RowInitializer
@@ -343,7 +345,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
 
     dragBehavior:SetDropEnter(function(factory, candidate)
         local frame = factory("VolumeSlidersDropIndicatorTemplate")
-        frame:SetSize(150, 3)
+        frame:SetSize(230, 3)
         if candidate.area == DragIntersectionArea.Above then
             frame:SetPoint("BOTTOMLEFT", candidate.frame, "TOPLEFT", 0, 1)
             frame:SetPoint("BOTTOMRIGHT", candidate.frame, "TOPRIGHT", 0, 1)
@@ -360,7 +362,8 @@ function VS:CreateWindowSettingsContents(parentFrame)
         for _, cvar in dp:EnumerateEntireRange() do
             table_insert(db.layout.sliderOrder, cvar)
         end
-        VS:UpdateAppearance()
+        -- Structural change: Must flag dirty so geometry/order is recalculated next show
+        VS:FlagLayoutDirty()
     end)
 
     local function RefreshDataProvider()
@@ -380,12 +383,12 @@ function VS:CreateWindowSettingsContents(parentFrame)
     if db.layout.maxFooterCols == nil then db.layout.maxFooterCols = 3 end
 
     local limitFooterCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
-    limitFooterCheck:SetPoint("TOPLEFT", dividerH, "BOTTOMLEFT", 25, -15)
+    limitFooterCheck:SetPoint("TOPLEFT", dividerH, "BOTTOMLEFT", 300, -20)
     limitFooterCheck.text:SetText("Limit Footer Columns")
     limitFooterCheck:SetChecked(db.layout.limitFooterCols)
     limitFooterCheck:SetScript("OnClick", function(self)
         db.layout.limitFooterCols = self:GetChecked()
-        VS:UpdateAppearance()
+        VS:FlagLayoutDirty()
     end)
     VS:AddTooltip(limitFooterCheck, "Restrict the maximum number of items allowed per row in the footer.")
 
@@ -431,12 +434,13 @@ function VS:CreateWindowSettingsContents(parentFrame)
         ["showLfgPop"] = { name = "LFG Pop Boost", namespace = "toggles", tooltip = "Show or hide the LFG Pop Boost toggle." },
         ["showBackground"] = { name = "SBG Checkbox", namespace = "toggles", tooltip = "Show or hide the 'Sound in Background' toggle." },
         ["showCharacter"] = { name = "Char Checkbox", namespace = "toggles", tooltip = "Show or hide the 'Sound at Character' toggle." },
+        ["showEmoteSounds"] = { name = "Emote Sounds", namespace = "toggles", tooltip = "Show or hide the 'Emote Sounds' toggle." },
         ["showOutput"] = { name = "Output Selector", namespace = "toggles", tooltip = "Show or hide the 'Output:' dropdown." },
         ["showVoiceMode"] = { name = "Voice Mode", namespace = "toggles", tooltip = "Show or hide the Voice Chat Mode toggle." },
     }
 
     local footerBox = CreateFrame("Frame", nil, categoryFrame, "WowScrollBoxList")
-    footerBox:SetSize(145, 230)
+    footerBox:SetSize(230, 280)
     footerBox:SetPoint("TOPLEFT", footerSubLabel, "BOTTOMLEFT", -5, -8)
 
     local footerDragBehavior
@@ -528,7 +532,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
 
     footerDragBehavior:SetDropEnter(function(factory, candidate)
         local frame = factory("VolumeSlidersDropIndicatorTemplate")
-        frame:SetSize(150, 3)
+        frame:SetSize(230, 3)
         if candidate.area == DragIntersectionArea.Above then
             frame:SetPoint("BOTTOMLEFT", candidate.frame, "TOPLEFT", 0, 1)
             frame:SetPoint("BOTTOMRIGHT", candidate.frame, "TOPRIGHT", 0, 1)
@@ -545,7 +549,8 @@ function VS:CreateWindowSettingsContents(parentFrame)
         for _, key in dp:EnumerateEntireRange() do
             table_insert(db.layout.footerOrder, key)
         end
-        VS:UpdateAppearance()
+        -- Structural change: Must flag dirty so footer layout is recalculated next show
+        VS:FlagLayoutDirty()
     end)
 
     local function RefreshFooterDataProvider()

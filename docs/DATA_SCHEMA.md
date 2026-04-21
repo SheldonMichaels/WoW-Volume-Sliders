@@ -15,7 +15,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
 
 ```json
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -105,6 +105,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     "showZoneTriggers": "boolean",   // Shows Zone Triggers toggle in footer
     "showFishingSplash": "boolean",  // Shows Fishing Splash Boost toggle in footer
     "showHelpText": "boolean",       // Shows help instructions in header
+    "showEmoteSounds": "boolean",    // Shows Emote Sounds toggle in footer
     "showVoiceMode": "boolean"       // Shows Voice Chat Mode toggle in footer
   },
 
@@ -257,3 +258,7 @@ Tears down the deprecated snapshot-based `manualToggleState` payload system in f
 ## Migration Contract (`Init.lua:Migrate_V5_to_V6`)
 
 Adds the `automation.enableDeviceVolumes` flag to support per-hardware-output-device master volume tracking. For existing users upgrading to V6, this is set to `true` by default to preserve the legacy behavior of the addon, but can now be disabled via the Automation settings panel.
+
+## Migration Contract (`Init.lua:Migrate_V6_to_V7`)
+
+Adds the `showEmoteSounds` toggle to the `toggles` namespace and injects it into the `footerOrder` array for existing users. By default, this toggle is set to `false`, meaning it remains hidden from the main popup footer until manually enabled via the settings window.

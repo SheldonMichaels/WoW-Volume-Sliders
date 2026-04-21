@@ -566,7 +566,7 @@ function VS:CreateOptionsFrame()
     end, function()
         return db.automation.enableTriggers == true
     end)
-    AddTooltip(VS.triggerCheck, "Automatically adjust volume levels when entering zones designated in your presets.")
+    AddTooltip(VS.triggerCheck, "Automatically adjust volume levels when entering zones designated in your presets.\n\nPresets can override any audio channel.")
 
     VS.fishingCheck = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckFishing", "Fishing Boost", function(checked)
         db.automation.enableFishingVolume = checked
@@ -576,7 +576,7 @@ function VS:CreateOptionsFrame()
     end, function()
         return db.automation.enableFishingVolume == true
     end)
-    AddTooltip(VS.fishingCheck, "Temporarily overrides volumes while fishing so you can hear the splash.")
+    AddTooltip(VS.fishingCheck, "Temporarily overrides volumes while fishing so you can hear the splash.\n\nThe bobber splash plays through Sound Effects (SFX).")
 
     VS.lfgCheck = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckLFG", "LFG Pop Boost", function(checked)
         db.automation.enableLfgVolume = checked
@@ -586,7 +586,7 @@ function VS:CreateOptionsFrame()
     end, function()
         return db.automation.enableLfgVolume == true
     end)
-    AddTooltip(VS.lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.")
+    AddTooltip(VS.lfgCheck, "Temporarily overrides volumes when the Dungeon Ready prompt appears.\n\nThe queue pop plays through Sound Effects (SFX).")
 
     -- "Sound at Character" checkbox â€” toggles whether the listener position
     -- is at the player's character or at the camera.
@@ -615,6 +615,17 @@ function VS:CreateOptionsFrame()
     -- Initial anchor, will be refined in the C_Timer block
     VS.backgroundCheckbox:SetPoint("TOPLEFT", VS.characterCheckbox, "BOTTOMLEFT", 0, -2)
     AddTooltip(VS.backgroundCheckbox, "Continue playing audio even when the game is minimized or not the active window.")
+
+    VS.emoteSoundsCheckbox = VS:CreateCheckbox(VS.contentFrame, "VolumeSlidersCheckEmote", "Emote Sounds", function(checked)
+        if checked then
+            SetCVar("Sound_EnableEmoteSounds", 1)
+        else
+            SetCVar("Sound_EnableEmoteSounds", 0)
+        end
+    end, function()
+        return GetCVar("Sound_EnableEmoteSounds") == "1"
+    end)
+    AddTooltip(VS.emoteSoundsCheckbox, "Toggle whether character emote sounds are played (e.g., /laugh, /cry).")
 
     ---------------------------------------------------------------------------
     -- Sound Output Device Dropdown

@@ -1,4 +1,16 @@
-# Changelog (v3.6.1)
+# Changelog (v3.7.0)
+
+## v3.7.0 — 2026-04-21
+
+### Added
+- **WoW Patch 12.0.5 Support**: Updated to maintain compatibility with the latest World of Warcraft patch.
+- **Emote Sounds Toggle**: Added a new "Emote Sounds" checkbox to the main popup footer, allowing users to quickly toggle character emote audio (like /laugh or /cry) without opening Blizzard's settings. 
+  - *Note*: This is disabled by default. You can enable it via the "Window Settings" configuration panel.
+- **Enriched Automation Tooltips**: Overhauled the tooltips for Zone Triggers, Fishing Boost, and LFG Pop Boost in both the main popup and settings window. Tooltips now explicitly clarify that these automations affect the **Sound Effects (SFX)** channel.
+- **Settings Page Visuals**: Changed the background of all configuration pages from semi-transparent grey to **solid black** for less visual noise.
+
+### Fixed
+- **Footer Reordering Persistence**: Fixed a bug where reordering footer elements in the Window Customization settings failed to persist in the main UI until a reload. Direct structural changes now trigger immediate layout recalculations.
 
 ## v3.6.1 — 2026-04-17
 

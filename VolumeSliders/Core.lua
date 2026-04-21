@@ -185,6 +185,7 @@ VS.DEFAULT_FOOTER_ORDER = {
     "showLfgPop",
     "showCharacter",
     "showBackground",
+    "showEmoteSounds",
     "showOutput",
     "showVoiceMode",
 }
@@ -215,7 +216,7 @@ VS.DEFAULT_FOOTER_ORDER = {
 --- @field voice table
 
 VS.DEFAULT_DB = {
-    schemaVersion = 6,
+    schemaVersion = 7,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -259,6 +260,7 @@ VS.DEFAULT_DB = {
         showHelpText = true,
         showMinimapTooltip = true,
         showVoiceMode = true,
+        showEmoteSounds = false,
         persistentWindow = false,
         isLocked = false,
     },
