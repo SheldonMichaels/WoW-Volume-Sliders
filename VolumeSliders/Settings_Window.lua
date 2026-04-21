@@ -196,7 +196,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     helpTextCheck:SetChecked(db.toggles.showHelpText ~= false)
     helpTextCheck:SetScript("OnClick", function(self)
         db.toggles.showHelpText = self:GetChecked()
-        VS:UpdateAppearance()
+        VS:FlagLayoutDirty()
     end)
     VS:AddTooltip(helpTextCheck, "Show or hide the help instructions at the top.")
 
@@ -206,7 +206,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     presetCheck:SetChecked(db.toggles.showPresetsDropdown ~= false)
     presetCheck:SetScript("OnClick", function(self)
         db.toggles.showPresetsDropdown = self:GetChecked()
-        VS:UpdateAppearance()
+        VS:FlagLayoutDirty()
     end)
     VS:AddTooltip(presetCheck, "Show or hide the quick-apply presets dropdown at the top.")
 
@@ -362,7 +362,8 @@ function VS:CreateWindowSettingsContents(parentFrame)
         for _, cvar in dp:EnumerateEntireRange() do
             table_insert(db.layout.sliderOrder, cvar)
         end
-        VS:UpdateAppearance()
+        -- Structural change: Must flag dirty so geometry/order is recalculated next show
+        VS:FlagLayoutDirty()
     end)
 
     local function RefreshDataProvider()
@@ -387,7 +388,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     limitFooterCheck:SetChecked(db.layout.limitFooterCols)
     limitFooterCheck:SetScript("OnClick", function(self)
         db.layout.limitFooterCols = self:GetChecked()
-        VS:UpdateAppearance()
+        VS:FlagLayoutDirty()
     end)
     VS:AddTooltip(limitFooterCheck, "Restrict the maximum number of items allowed per row in the footer.")
 
@@ -548,7 +549,8 @@ function VS:CreateWindowSettingsContents(parentFrame)
         for _, key in dp:EnumerateEntireRange() do
             table_insert(db.layout.footerOrder, key)
         end
-        VS:UpdateAppearance()
+        -- Structural change: Must flag dirty so footer layout is recalculated next show
+        VS:FlagLayoutDirty()
     end)
 
     local function RefreshFooterDataProvider()

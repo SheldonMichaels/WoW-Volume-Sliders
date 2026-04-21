@@ -434,6 +434,8 @@ function VS:UpdateAppearance()
     local lowSelected   = db.appearance.lowColor or 2
 
     -- Dynamically resize the main popup frame if it exists
+    -- Performance: Only recalculate anchors/geometry if the layout is flagged as dirty.
+    -- If adding/removing elements or changing order, you MUST call VS:FlagLayoutDirty().
     if VS.container and VS.session.layoutDirty then
 
         local containerW = VS.container:GetWidth()
@@ -591,7 +593,9 @@ end
 
 -------------------------------------------------------------------------------
 --- Flag the layout as needing a full recalculation.
--- If the container is currently visible, it triggers an immediate update.
+--- If the container is currently visible, it triggers an immediate update.
+--- REQUIRED for structural changes (adding/removing sliders, reordering, visibility toggles).
+--- Failure to call this will cause UpdateAppearance to skip geometry recalculations.
 function VS:FlagLayoutDirty()
     VS.session.layoutDirty = true
     if VS.container and VS.container:IsShown() then

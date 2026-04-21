@@ -2,7 +2,7 @@
 
 Quick-access vertical volume sliders for every WoW sound channel, right from your minimap.
 
-![WoW](https://img.shields.io/badge/WoW-12.0.1-blue)
+![WoW](https://img.shields.io/badge/WoW-12.0.5-blue)
 ![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey)
 
 <p align="center">

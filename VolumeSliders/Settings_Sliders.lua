@@ -292,7 +292,8 @@ function VS:CreateSlidersSettingsContents(parentFrame)
 
         checkbox:SetScript("OnClick", function(self)
             db[data.namespace][data.var] = self:GetChecked()
-            VS:UpdateAppearance()
+            -- Visibility change: Must flag dirty so total window height is recalculated
+            VS:FlagLayoutDirty()
         end)
 
         -- Add tooltip support
