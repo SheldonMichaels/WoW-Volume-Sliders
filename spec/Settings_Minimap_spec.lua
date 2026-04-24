@@ -48,17 +48,18 @@ describe("VolumeSliders Settings Minimap Module", function()
         end)
     end)
 
-    it("Reset Position button should update DB and minimalist button", function()
+    it("Reset Position button restores default minimalist offsets", function()
         local parent = CreateFrame("Frame")
         VS:CreateMinimapSettingsContents(parent)
 
-        -- Mock minimalist button
-        VS.minimalistButton = CreateFrame("Frame")
+        _G.VolumeSlidersMMDB.minimap.minimalistOffsetX = 123
+        _G.VolumeSlidersMMDB.minimap.minimalistOffsetY = 456
 
-        -- Assuming resetBtn script is assigned and it's the first button in ContentFrame (from looking at source)
-        -- Actually, searching for it in the source: resetBtn is at loc 67.
-        -- In a real test we'd need to find the specific button child.
-        -- For now, we'll verify the function exists on VS if we exposed it, but we didn't.
-        -- We can just call RefreshMinimapSettingsUI and check consistency.
+        local resetBtn = _G.VolumeSlidersMinimapResetPositionButton
+        assert.is_not_nil(resetBtn)
+        resetBtn:GetScript("OnClick")(resetBtn)
+
+        assert.are.equal(-35, _G.VolumeSlidersMMDB.minimap.minimalistOffsetX)
+        assert.are.equal(-5, _G.VolumeSlidersMMDB.minimap.minimalistOffsetY)
     end)
 end)

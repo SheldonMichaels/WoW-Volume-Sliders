@@ -62,9 +62,9 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     ---------------------------------------------------------------------------
     -- Minimap Icon Settings
     ---------------------------------------------------------------------------
-    -- Deduped: Now using shared VS:AddTooltip(frame, text)
+    -- Tooltip wiring for this section uses the shared VS:AddTooltip helper.
 
-    local resetBtn = CreateFrame("Button", nil, categoryFrame, "UIPanelButtonTemplate")
+    local resetBtn = CreateFrame("Button", "VolumeSlidersMinimapResetPositionButton", categoryFrame, "UIPanelButtonTemplate")
     resetBtn:SetSize(115, 22)
     resetBtn:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 10, -15)
     resetBtn:SetText("Reset Position")

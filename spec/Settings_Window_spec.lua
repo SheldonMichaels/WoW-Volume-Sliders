@@ -59,12 +59,23 @@ describe("VolumeSliders Settings Window Module", function()
         assert.spy(VS.ApplyWindowBackground).was_called()
     end)
 
-    it("Channel visibility drag-and-drop should be initialized", function()
+    it("footer column controls update DB and flag layout refresh", function()
         local parent = CreateFrame("Frame")
         VS:CreateWindowSettingsContents(parent)
 
-        -- We can't easily test the internal drag behavior in headless,
-        -- but we can check if the ScrollBox was initialized.
-        -- In our mock setup.lua, WowScrollBoxList has an Init method.
+        local limitCheck = _G.VolumeSlidersLimitFooterColsCheck
+        local maxInput = _G.VolumeSlidersMaxFooterColsInput
+
+        assert.is_not_nil(limitCheck)
+        assert.is_not_nil(maxInput)
+
+        limitCheck:SetChecked(true)
+        limitCheck:GetScript("OnClick")(limitCheck)
+        assert.is_true(_G.VolumeSlidersMMDB.layout.limitFooterCols)
+
+        maxInput:SetText("5")
+        maxInput:GetScript("OnTextChanged")(maxInput, true)
+        assert.are.equal(5, _G.VolumeSlidersMMDB.layout.maxFooterCols)
+        assert.spy(VS.FlagLayoutDirty).was_called()
     end)
 end)

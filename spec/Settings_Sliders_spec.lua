@@ -51,9 +51,13 @@ describe("VolumeSliders Settings Sliders Module", function()
         assert.is_not_nil(_G.VolumeSlidersPreviewSlider)
     end)
 
-    it("Dropdown selection should update DB and trigger appearance update", function()
-        -- This is a bit tricky to test because of how SetupMenu works in headless,
-        -- but we can verify the function passed to SetupMenu works if we can extract it.
-        -- For now, we'll verify the existence of the dropdowns.
+    it("builds a non-interactive preview slider and refreshes appearance", function()
+        local parent = CreateFrame("Frame")
+        VS:CreateSlidersSettingsContents(parent)
+
+        assert.spy(VS.UpdateAppearance).was_called()
+        assert.is_nil(_G.VolumeSlidersPreviewSlider.upBtn:GetScript("OnClick"))
+        assert.is_nil(_G.VolumeSlidersPreviewSlider.downBtn:GetScript("OnClick"))
+        assert.is_nil(_G.VolumeSlidersPreviewSlider.muteCheck:GetScript("OnClick"))
     end)
 end)

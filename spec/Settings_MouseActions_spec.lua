@@ -58,11 +58,19 @@ describe("VolumeSliders Settings MouseActions Module", function()
 
         -- Trigger refresh (already called at end of Init)
         VS.RefreshMouseActionsUI()
+        assert.are.equal("ADJUST_5", _G.VolumeSlidersMMDB.layout.mouseActions.sliders[1].effect)
+        assert.are.equal("TOGGLE_WINDOW", _G.VolumeSlidersMMDB.minimap.mouseActions[1].effect)
     end)
 
-    it("SaveGridAction should be triggered by dropdown selection logic", function()
-        -- Even though we can't easily click, we can verify the internal
-        -- behavior if we were able to mock SetupMenu more deeply.
-        -- For now, verifying the module loads and initializes UI is a solid baseline.
+    it("RefreshMouseActionsUI is idempotent for existing bindings", function()
+        local parent = CreateFrame("Frame")
+        VS:CreateMouseActionsSettingsContents(parent)
+
+        VS.RefreshMouseActionsUI()
+        VS.RefreshMouseActionsUI()
+
+        assert.are.equal(1, #_G.VolumeSlidersMMDB.layout.mouseActions.sliders)
+        assert.are.equal(1, #_G.VolumeSlidersMMDB.layout.mouseActions.scrollWheel)
+        assert.are.equal(1, #_G.VolumeSlidersMMDB.minimap.mouseActions)
     end)
 end)

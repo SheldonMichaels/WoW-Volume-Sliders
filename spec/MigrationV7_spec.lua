@@ -24,7 +24,7 @@ describe("Schema V6 to V7 Migration", function()
             DEFAULT_DB = {
                 schemaVersion = 7,
                 toggles = { showEmoteSounds = false },
-                layout = { 
+                layout = {
                     footerOrder = { "showZoneTriggers", "showFishingSplash", "showLfgPop", "showBackground", "showCharacter", "showEmoteSounds", "showOutput", "showVoiceMode" }
                 }
             },
