@@ -7,8 +7,8 @@
 -- DESIGN:
 -- This module uses a hybrid approach:
 -- 1. Event Listeners: Tracks the LFG proposal lifecycle (Show, Done, Failed).
--- 2. Secure Hooks: Hooks PlaySound to apply the volume boost at the exact
---    nanosecond the "Dungeon Ready" sound is requested by the game.
+-- 2. Secure Hooks: Hooks PlaySound(SOUNDKIT.READY_CHECK) and combines it with
+--    GetLFGProposal() so boosts only occur for active LFG proposal pops.
 --
 -- Author: Sheldon Michaels
 -- License: All Rights Reserved (Non-commercial use permitted)
@@ -108,8 +108,8 @@ local function OnEvent(self, event, ...)
     end
 end
 
--- Hook PlaySound so we can guarantee the volume is boosted exactly when
--- the Dungeon Ready sound is requested by the UI, distinguishing it from party /readycheck.
+-- Hook PlaySound so we can react at the same moment READY_CHECK is requested.
+-- We then gate with GetLFGProposal() to avoid boosting non-LFG ready checks.
 hooksecurefunc("PlaySound", function(soundID)
     -- Guard against secret values in Midnight (13.x)
     -- Comparing secret values directly during secure execution paths (like combat)

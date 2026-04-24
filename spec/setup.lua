@@ -178,8 +178,42 @@ local function createMockFrame(frameType, name, parent, template)
         SetCursorPosition = function() end,
         ClearFocus = function() end,
         HasFocus = function() return false end,
-        SetupMenu = function() end,
-        GenerateMenu = function() end,
+        SetupMenu = function(self, generator) self.menuGenerator = generator end,
+        GenerateMenu = function(self)
+            if not self.menuGenerator then return end
+            self.menuButtons = {}
+            local function CreateDescriptionSink(sink)
+                return {
+                    CreateButton = function(_, label, onClick)
+                        local node = { label = label, onClick = onClick, children = {} }
+                        table.insert(sink, node)
+                        return CreateDescriptionSink(node.children)
+                    end,
+                    CreateTitle = function(_, label)
+                        table.insert(sink, { label = label, isTitle = true })
+                    end,
+                    CreateRadio = function(_, label, isSelected, onSelect, value)
+                        table.insert(sink, {
+                            label = label,
+                            isRadio = true,
+                            onClick = function()
+                                if onSelect then
+                                    onSelect(value)
+                                end
+                            end
+                        })
+                    end,
+                }
+            end
+            local rootDescription = CreateDescriptionSink(self.menuButtons)
+            self.menuGenerator(self, rootDescription)
+        end,
+        SelectMenuButton = function(self, idx)
+            local btn = self.menuButtons and self.menuButtons[idx]
+            if btn and btn.onClick then
+                btn.onClick()
+            end
+        end,
         Init = function(self, view) self.view = view end,
         SetDataProvider = function(self, provider) self.provider = provider end,
         Enable = function() end,
@@ -470,6 +504,19 @@ _G.InputUtil = { GetCursorPosition = function() return 0, 0 end }
 
 _G.StaticPopupDialogs = {}
 _G.StaticPopup_Show = function() end
+
+_G.strsplit = function(delimiter, text)
+    local result = {}
+    if text == nil then return unpack(result) end
+    local pattern = "([^" .. delimiter .. "]+)"
+    for part in tostring(text):gmatch(pattern) do
+        table.insert(result, part)
+    end
+    if #result == 0 then
+        return ""
+    end
+    return unpack(result)
+end
 
 -- LibStub Mock
 _G.LibStub = setmetatable({

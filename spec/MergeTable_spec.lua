@@ -1,106 +1,118 @@
 -------------------------------------------------------------------------------
 -- spec/MergeTable_spec.lua
--- Verifies the array-aware deep-merge fix in Init.lua.
+-- Verifies array-aware merge behavior via the real Init.lua bootstrap path.
 -------------------------------------------------------------------------------
 
-local function MergeTable(target, source)
-    for k, v in pairs(source) do
-        if type(v) == "table" then
-            -- If the source value is an array, we treat it as an atomic list.
-            -- We do not deep-merge arrays to prevent re-inserting deleted items
-            -- or re-shuffling user-defined orders.
-            if v[1] ~= nil then
-                if target[k] == nil then
-                    target[k] = v -- Copy the entire default array
-                end
-            else
-                -- Source is a dictionary (namespaces like 'layout' or 'appearance')
-                if type(target[k]) ~= "table" then
-                    target[k] = {}
-                end
-                MergeTable(target[k], v)
+local assert = require("luassert")
+require("spec.setup")
+
+describe("MergeTable bootstrap behavior", function()
+    local VS
+    local initFrameScript
+
+    local function bootstrapWith(db)
+        _G.VolumeSlidersMMDB = db
+        initFrameScript = nil
+
+        VS = {}
+        loadfile("VolumeSliders/Core.lua")("VolumeSliders", VS)
+
+        VS.LDBIcon = { Register = function() end, IsRegistered = function() return false end }
+        VS.LDB = { NewDataObject = function() return {} end }
+        VS.VolumeSlidersObject = {}
+        VS.InitializeSettings = function() end
+        VS.UpdateMiniMapButtonVisibility = function() end
+        VS.HookBrokerScroll = function() end
+        VS.HandlePTT_OnMouseDown = function() end
+        VS.HandlePTT_OnMouseUp = function() end
+        VS.UpdateMiniMapVolumeIcon = function() end
+        VS.Presets = { RefreshEventState = function() end }
+        VS.Fishing = { Initialize = function() end }
+        VS.LFGQueue = { Initialize = function() end }
+
+        local realCreateFrame = _G.CreateFrame
+        _G.CreateFrame = function(frameType, name, parent, template)
+            local f = realCreateFrame(frameType, name, parent, template)
+            local oldSetScript = f.SetScript
+            f.SetScript = function(self, evt, handler)
+                if evt == "OnEvent" then initFrameScript = handler end
+                if oldSetScript then oldSetScript(self, evt, handler) end
             end
-        elseif target[k] == nil then
-            target[k] = v
+            return f
         end
+
+        loadfile("VolumeSliders/Init.lua")("VolumeSliders", VS)
+        _G.CreateFrame = realCreateFrame
+
+        assert.is_function(initFrameScript)
+        initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
     end
-end
 
-describe("MergeTable Array-Aware Logic", function()
-    it("should NOT append default items to a user's shorter array", function()
-        local target = {
+    it("does not append default items to an existing user array", function()
+        bootstrapWith({
+            schemaVersion = 7,
+            appearance = { bgColor = { r = 0.1, g = 0.1, b = 0.1 } },
             layout = {
-                sliderOrder = { "Master" } -- User only wants Master
-            }
-        }
-        local source = {
-            layout = {
-                sliderOrder = { "Master", "SFX", "Music" } -- Default has many
-            }
-        }
+                sliderOrder = { "Sound_MasterVolume" },
+                footerOrder = { "showOutput" },
+                mouseActions = { sliders = {}, scrollWheel = {} },
+            },
+            toggles = {},
+            channels = {},
+            minimap = { minimalistMinimap = true, mouseActions = {}, minimapTooltipOrder = {} },
+            hardware = {},
+            automation = { persistedBaseline = {}, lastAppliedState = {}, presets = {}, activeManualPresets = {} },
+            voice = {},
+        })
 
-        MergeTable(target, source)
-
-        assert.are.equal(1, #target.layout.sliderOrder)
-        assert.are.equal("Master", target.layout.sliderOrder[1])
-        assert.is_nil(target.layout.sliderOrder[2])
+        local sliderOrder = _G.VolumeSlidersMMDB.layout.sliderOrder
+        assert.are.equal(1, #sliderOrder)
+        assert.are.equal("Sound_MasterVolume", sliderOrder[1])
+        assert.is_nil(sliderOrder[2])
     end)
 
-    it("should correctly initialize a whole array if it is missing from the target", function()
-        local target = {
-            layout = {} -- missing sliderOrder
-        }
-        local source = {
+    it("initializes missing arrays from defaults", function()
+        bootstrapWith({
+            schemaVersion = 7,
+            appearance = { bgColor = { r = 0.1, g = 0.1, b = 0.1 } },
             layout = {
-                sliderOrder = { "Master", "SFX" }
-            }
-        }
+                sliderOrder = { "Sound_MasterVolume" },
+                mouseActions = { sliders = {}, scrollWheel = {} },
+            },
+            toggles = {},
+            channels = {},
+            minimap = { minimalistMinimap = true, mouseActions = {}, minimapTooltipOrder = {} },
+            hardware = {},
+            automation = { persistedBaseline = {}, lastAppliedState = {}, presets = {}, activeManualPresets = {} },
+            voice = {},
+        })
 
-        MergeTable(target, source)
-
-        assert.is_table(target.layout.sliderOrder)
-        assert.are.equal(2, #target.layout.sliderOrder)
-        assert.are.equal("Master", target.layout.sliderOrder[1])
-        assert.are.equal("SFX", target.layout.sliderOrder[2])
+        local footerOrder = _G.VolumeSlidersMMDB.layout.footerOrder
+        assert.is_table(footerOrder)
+        assert.is_true(#footerOrder > 0)
     end)
 
-    it("should still deep-merge dictionaries correctly", function()
-        local target = {
-            appearance = {
-                bgColor = { r = 1, g = 1, b = 1 } -- missing Alpha
-            }
-        }
-        local source = {
-            appearance = {
-                bgColor = { r = 0, g = 0, b = 0, a = 0.5 },
-                titleColor = "Gold"
-            }
-        }
-
-        MergeTable(target, source)
-
-        -- Dictionary keys should still merge
-        assert.are.equal(1, target.appearance.bgColor.r) -- Target wins
-        assert.are.equal(0.5, target.appearance.bgColor.a) -- Source fills in
-        assert.are.equal("Gold", target.appearance.titleColor) -- Source fills in
-    end)
-
-    it("should handle empty tables in source correctly (treat as dictionaries)", function()
-        -- Empty tables are treated as dictionaries because v[1] is nil.
-        -- This is fine because there's nothing to merge into them anyway.
-        local target = {
+    it("deep-merges dictionaries without clobbering existing values", function()
+        bootstrapWith({
+            schemaVersion = 7,
+            appearance = { bgColor = { r = 1, g = 1, b = 1 } }, -- missing alpha
             layout = {
-                sliderOrder = { "Master" }
-            }
-        }
-        local source = {
-            layout = {
-                sliderOrder = {} -- empty default (theoretically)
-            }
-        }
+                sliderOrder = { "Sound_MasterVolume" },
+                footerOrder = { "showOutput" },
+                mouseActions = { sliders = {}, scrollWheel = {} },
+            },
+            toggles = {},
+            channels = {},
+            minimap = { minimalistMinimap = true, mouseActions = {}, minimapTooltipOrder = {} },
+            hardware = {},
+            automation = { persistedBaseline = {}, lastAppliedState = {}, presets = {}, activeManualPresets = {} },
+            voice = {},
+        })
 
-        MergeTable(target, source)
-        assert.are.equal(1, #target.layout.sliderOrder)
-        assert.are.equal("Master", target.layout.sliderOrder[1])
+        local bg = _G.VolumeSlidersMMDB.appearance.bgColor
+        assert.are.equal(1, bg.r)
+        assert.are.equal(1, bg.g)
+        assert.are.equal(1, bg.b)
+        assert.are.equal(0.95, bg.a)
     end)
 end)

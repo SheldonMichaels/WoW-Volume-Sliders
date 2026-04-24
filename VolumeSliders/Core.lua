@@ -9,7 +9,7 @@
 -- and exposes constants and utilities they depend on.
 --
 -- Author:  Sheldon Michaels
--- Version: 3.2.3
+-- Version Source: VolumeSliders.toc / CHANGELOG.md
 -- License: All Rights Reserved (Non-commercial use permitted)
 -------------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ _G.BINDING_NAME_VOLUMESLIDERS_MUTE_MASTER = "Toggle Master Mute"
 
 -- VolumeSlidersMMDB is declared as a SavedVariable in the TOC file.
 -- We initialize it as an empty table here so it exists on first load.
--- The true population of V2 schema defaults occurs during PLAYER_LOGIN in Init.lua.
+-- The full namespaced schema defaults are applied during PLAYER_LOGIN in Init.lua.
 VolumeSlidersMMDB = VolumeSlidersMMDB or {}
 
 -------------------------------------------------------------------------------
@@ -95,14 +95,14 @@ VS.session = {
 }
 
 -------------------------------------------------------------------------------
--- Module-Level State
+-- Shared Runtime References
 -------------------------------------------------------------------------------
 
 -- Reference to the broker frame that was most recently clicked (used to
 -- anchor the popup relative to the broker icon's position on screen).
 VS.brokerFrame = nil
 
--- Lookup table mapping CVar name â†’ slider widget.  Populated during
+-- Lookup table mapping CVar name => slider widget. Populated during
 -- CreateOptionsFrame() and used to sync slider positions when CVars change
 -- externally (e.g., via the Blizzard Sound settings panel).
 VS.sliders = {}
@@ -190,8 +190,7 @@ VS.DEFAULT_FOOTER_ORDER = {
     "showVoiceMode",
 }
 
--------------------------------------------------------------------------------
--- V4 Database Schema Defaults
+-- Database Schema Defaults (SchemaVersion 7)
 -------------------------------------------------------------------------------
 --- @class VolumeSlidersAutomation
 --- @field persistedBaseline table<string, number>

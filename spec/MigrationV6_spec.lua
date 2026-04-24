@@ -23,9 +23,9 @@ describe("Schema V5 to V6 Migration", function()
             CHANNEL_MUTE_CVAR = { ["Sound_MasterVolume"] = "Sound_EnableAllSound" },
             DEFAULT_DB = {
                 schemaVersion = 7,
-                automation = { 
+                automation = {
                     enableDeviceVolumes = true,
-                    activeManualPresets = {} 
+                    activeManualPresets = {}
                 },
                 minimap = { minimalistMinimap = true },
                 layout = { sliderOrder = {}, footerOrder = {} }

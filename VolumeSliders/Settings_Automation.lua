@@ -383,6 +383,18 @@ function VS:CreateAutomationSettingsContents(parentFrame)
         end
     end)
 
+    -- Expose key editor controls for integration tests and cross-module refresh hooks.
+    VS.automationPresetDropdown = presetDropdown
+    VS.automationBtnDeletePreset = btnDelete
+    VS.automationBtnCopyPreset = btnCopy
+    VS.automationBtnSavePreset = btnSave
+    VS.automationBtnMoveUpPreset = btnMoveUp
+    VS.automationBtnMoveDownPreset = btnMoveDown
+    VS.automationInputPriority = inputPriority
+    VS.automationInputListOrder = inputListOrder
+    VS.automationInputName = inputName
+    VS.automationInputZones = inputZones
+
     local separatorMid = contentFrame:CreateTexture(nil, "ARTWORK")
     separatorMid:SetHeight(1)
     separatorMid:SetPoint("TOPLEFT", zoneScrollFrame, "BOTTOMLEFT", -15, -35)

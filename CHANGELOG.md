@@ -1,4 +1,17 @@
-# Changelog (v3.7.0)
+# Changelog (v3.8.0)
+
+## v3.8.0 — 2026-04-24
+
+### Added
+- **Contributor & Security Docs**: Added dedicated `CONTRIBUTING.md` and `SECURITY.md` guides, along with new architecture, CI/release, and workflow references for long-term project maintenance.
+
+### Changed
+- **Quality Gate Hardening**: Pull requests now run expanded lint/test validation, and release packaging is gated behind successful validation checks.
+- **Coverage Enforcement**: Added an automated line-coverage threshold in CI to catch regressions before release.
+
+### Fixed
+- **Migration Reliability**: Fixed a V1->V2 migration edge case so footer layout limits persist correctly after schema conversion.
+- **Window Lock State Sync**: Fixed lock button labeling/state consistency so window lock status now tracks correctly across interactions.
 
 ## v3.7.0 — 2026-04-21
 

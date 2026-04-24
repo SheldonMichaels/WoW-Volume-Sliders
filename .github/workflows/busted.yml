@@ -4,14 +4,13 @@ on:
   push:
     branches: [ "master", "dev/*" ]
   pull_request:
-    branches: [ "master" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup Lua
       uses: leafo/gh-actions-lua@v9
@@ -27,6 +26,41 @@ jobs:
         luarocks install busted
         luarocks install luacov
 
-    - name: Run Busted
+    - name: Run Busted with coverage
       run: |
-        busted . --verbose
+        busted . --verbose --coverage
+
+    - name: Build LuaCov report
+      run: |
+        luacov
+
+    - name: Enforce minimum line coverage (80%)
+      run: |
+        python3 - <<'PY'
+        import pathlib
+        import re
+        import sys
+
+        threshold = 80.0
+        report = pathlib.Path("luacov.report.out")
+        if not report.exists():
+            print("luacov.report.out was not generated.")
+            sys.exit(1)
+
+        coverage = None
+        for raw_line in report.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if line.startswith("Total"):
+                match = re.search(r"([0-9]+(?:\.[0-9]+)?)%$", line)
+                if match:
+                    coverage = float(match.group(1))
+
+        if coverage is None:
+            print("Could not parse total line coverage from luacov.report.out.")
+            sys.exit(1)
+
+        print(f"Total line coverage: {coverage:.2f}% (minimum {threshold:.2f}%)")
+        if coverage < threshold:
+            print("Coverage gate failed.")
+            sys.exit(1)
+        PY

@@ -7,7 +7,34 @@ on:
   workflow_dispatch:
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Lua
+        uses: leafo/gh-actions-lua@v9
+        with:
+          luaVersion: "5.1.5"
+          buildCache: false
+
+      - name: Setup Luarocks
+        uses: leafo/gh-actions-luarocks@v4
+
+      - name: Install test and lint dependencies
+        run: |
+          luarocks install busted
+          luarocks install luacheck
+
+      - name: Run Luacheck
+        run: luacheck VolumeSliders spec
+
+      - name: Run Busted
+        run: busted . --verbose
+
   release:
+    needs: validate
     runs-on: ubuntu-latest
     permissions:
       contents: write

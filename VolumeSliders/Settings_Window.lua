@@ -382,7 +382,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     if db.layout.limitFooterCols == nil then db.layout.limitFooterCols = false end
     if db.layout.maxFooterCols == nil then db.layout.maxFooterCols = 3 end
 
-    local limitFooterCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    local limitFooterCheck = CreateFrame("CheckButton", "VolumeSlidersLimitFooterColsCheck", categoryFrame, "UICheckButtonTemplate")
     limitFooterCheck:SetPoint("TOPLEFT", dividerH, "BOTTOMLEFT", 300, -20)
     limitFooterCheck.text:SetText("Limit Footer Columns")
     limitFooterCheck:SetChecked(db.layout.limitFooterCols)
@@ -392,7 +392,7 @@ function VS:CreateWindowSettingsContents(parentFrame)
     end)
     VS:AddTooltip(limitFooterCheck, "Restrict the maximum number of items allowed per row in the footer.")
 
-    local maxFooterInput = CreateFrame("EditBox", nil, categoryFrame, "InputBoxTemplate")
+    local maxFooterInput = CreateFrame("EditBox", "VolumeSlidersMaxFooterColsInput", categoryFrame, "InputBoxTemplate")
     maxFooterInput:SetSize(30, 20)
     maxFooterInput:SetPoint("LEFT", limitFooterCheck.text, "RIGHT", 15, 0)
     maxFooterInput:SetAutoFocus(false)
