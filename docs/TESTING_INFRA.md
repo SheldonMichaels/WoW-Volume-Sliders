@@ -1,27 +1,58 @@
-# Testing Infrastructure (Busted & LuaLS)
+# Testing Infrastructure
 
-This project uses `lua-language-server` for strict static typing and `busted` for headless behavioral unit testing.
+This addon uses a layered testing pipeline:
 
-## Overview
+- `luacheck` for static quality checks.
+- `busted` for behavior-focused unit/integration tests in a mocked WoW environment.
+- `luacov` in CI for coverage enforcement.
 
-- **Static Analysis:** The `.luarc.json` files define the workspace boundaries and configure global annotations to recognize World of Warcraft API signatures. It also whitelists the global Busted testing framework APIs (`describe`, `it`, `assert`, etc.) and manages test-specific diagnostic ignores.
-- **Dynamic Tests:** Busted specs reside in the `spec/` folder and execute against the `VolumeSliders/` target source via the `.busted` config.
+## Local Validation Commands
 
-## The Mock Environment (`spec/setup.lua`)
+- `luacheck VolumeSliders spec`
+- `busted . --verbose`
+- `busted . --verbose --coverage` (requires `luacov`)
+- `luacov` (generates `luacov.report.out`)
 
-Since WoW addons inherently depend on the `_G` table containing native game engine functions (e.g., `CreateFrame`, `GetCVar`, `UIParent`), these dependencies are mocked inside `spec/setup.lua`. This file is automatically injected as a helper via the `.busted` defaults, executing before any test logic is compiled.
+## CI Gates
 
-### Penetrating the Mock Environment
+The default branch and all pull requests are gated by:
 
-When writing new tests natively or via autonomous agents, you **must** understand how `setup.lua` mimics Blizzard's engine behavior:
+- **Luacheck workflow:** lints both addon code and specs.
+- **Busted workflow:** runs tests and enforces a minimum **80% line coverage** threshold using `luacov`.
+- **Release workflow:** runs lint + tests before package/release steps.
 
-1. **Variables and CVars:** 
-   Functions like `GetCVar` and `SetCVar` interact with a local `cvars` state table. If you need to simulate a CVar change or test fallback logic, mutate state directly via `_G.SetCVar("Name", "Value")`.
-2. **UI Frames (`CreateFrame`):**
-   `CreateFrame` intercepts UI method requests and returns a mock UI object containing lightweight table implementations of `SetParent`, `IsShown`, `SetScript`, `SetPoint`, `SetHitRectInsets`, etc., completely circumventing hardware rendering logic.
-3. **Libraries (`LibStub`):**
-   `LibStub` uses a recursive metatable caller to automatically return dummy registries simulating valid `NewLibrary` and `GetLibrary` calls.
-4. **State Restructuring:**
-   Because state variables (like `VolumeSlidersMMDB`) persist in `_G` across different test blocks (`it`), ensure you reset mutable global parameters in a `before_each()` block if isolated test state is required.
+See `docs/CI_AND_RELEASE.md` for workflow details.
 
-**Tip:** Use `setup.lua` as an architectural reference to see exactly which WoW API pieces are currently available to the test runners. If your new volume logic utilizes a new WoW UI component or API call (such as a new `C_VoiceChat` enum), you **must natively mock it in `setup.lua` first.**
+## Test Design Rules
+
+### 1) Behavior over implementation
+
+Tests should validate observable outcomes of production modules, not copied helper logic. Avoid re-implementing internal algorithms inside specs; drive real handlers/functions instead.
+
+### 2) Use regression-style assertions for bugs
+
+When fixing a defect, add a spec that would fail with the old behavior and pass with the new behavior.
+
+### 3) Keep state isolated
+
+Reset `VolumeSlidersMMDB`, session state, and any global hooks in `before_each()` so tests remain deterministic.
+
+## Mock Environment (`spec/setup.lua`)
+
+WoW APIs are mocked in `spec/setup.lua`, which is loaded automatically via `.busted`.
+
+Key mock areas:
+
+- `CreateFrame` and common frame methods
+- CVar and voice API shims (`GetCVar`, `SetCVar`, `C_VoiceChat`, etc.)
+- `LibStub`, DataBroker stubs, and popup helpers
+- Dropdown menu wiring helpers used by settings modules
+
+If new runtime APIs are introduced in production code, add matching mocks before writing assertions.
+
+## Coverage Policy
+
+- CI enforces a minimum of **80% line coverage**.
+- Coverage is currently scoped to core logic modules listed in `.luacov` (migration, presets, automation, and related control logic).
+- UI-heavy rendering modules are still validated by `luacheck` + behavior tests and can be added to coverage scope incrementally.
+- If coverage drops, either improve tests in the same PR or justify/plan follow-up in the PR description.

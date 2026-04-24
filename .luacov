@@ -1,0 +1,15 @@
+return {
+  include = {
+    "^VolumeSliders/Core$",
+    "^VolumeSliders/Init$",
+    "^VolumeSliders/Fishing$",
+    "^VolumeSliders/LFGQueue$",
+    "^VolumeSliders/Presets$",
+    "^VolumeSliders/Settings_Automation$",
+    "^VolumeSliders/Settings_Main$",
+    "^VolumeSliders/Settings_Sliders$",
+  },
+  exclude = {
+    "^VolumeSliders/Libs/",
+  },
+}
