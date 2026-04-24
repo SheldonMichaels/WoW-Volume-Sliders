@@ -24,7 +24,7 @@ describe("V1 to V2 Database Migration", function()
 
             -- Flat layout
             sliderOrder = { "Sound_MasterVolume" },
-            maxFooterCols = 3,
+            maxFooterCols = 7,
 
             -- Flat toggles
             showTitle = true,
@@ -140,7 +140,8 @@ describe("V1 to V2 Database Migration", function()
         -- Assert Layout routing
         assert.is_table(db.layout)
         assert.are.equal("Sound_MasterVolume", db.layout.sliderOrder[1])
-        assert.are.equal(3, db.layout.maxFooterCols)
+        assert.are.equal(7, db.layout.maxFooterCols)
+        assert.is_nil(db.maxFooterCols) -- Root key must be gone
         assert.is_nil(db.sliderOrder) -- Root key must be gone
 
         -- Assert Toggles routing

@@ -11,6 +11,7 @@ describe("PopupFrame behavioral tests", function()
             schemaVersion = 5,
             toggles = {
                 persistentWindow = false,
+                isLocked = false,
             },
             appearance = {
                 bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 }
@@ -74,6 +75,24 @@ describe("PopupFrame behavioral tests", function()
 
         handler(VS.container, "GLOBAL_MOUSE_DOWN")
         assert.is_true(VS.container:IsShown())
+    end)
+
+    it("keeps lock button label synchronized with db.toggles.isLocked", function()
+        local lockBtn = _G.VolumeSlidersFrameLockButton
+        assert.is_not_nil(lockBtn)
+        assert.are.equal("Unlocked", lockBtn:GetText())
+        assert.is_false(_G.VolumeSlidersMMDB.toggles.isLocked)
+
+        local onClick = lockBtn:GetScript("OnClick")
+        assert.is_function(onClick)
+        onClick(lockBtn)
+
+        assert.is_true(_G.VolumeSlidersMMDB.toggles.isLocked)
+        assert.are.equal("Locked", lockBtn:GetText())
+
+        onClick(lockBtn)
+        assert.is_false(_G.VolumeSlidersMMDB.toggles.isLocked)
+        assert.are.equal("Unlocked", lockBtn:GetText())
     end)
 
     it("should apply background color correctly", function()

@@ -128,7 +128,7 @@ local function Migrate_V1_to_V2(db)
 
     -- 4. Layout
     if db.sliderOrder then db.layout.sliderOrder = db.sliderOrder; db.sliderOrder = nil end
-    if db.maxFooterCols ~= nil then db.layout.maxFooterCols = db.maxFooterCols; db.layout.maxFooterCols = nil end
+    if db.maxFooterCols ~= nil then db.layout.maxFooterCols = db.maxFooterCols; db.maxFooterCols = nil end
     if db.limitFooterCols ~= nil then db.layout.limitFooterCols = db.limitFooterCols; db.limitFooterCols = nil end
     if db.customX ~= nil then db.layout.customX = db.customX; db.customX = nil end
     if db.customY ~= nil then db.layout.customY = db.customY; db.customY = nil end
@@ -548,7 +548,7 @@ initFrame:SetScript("OnEvent", function(self, event)
             VS:HandlePTT_OnMouseDown(button)
         end)
 
-        -- We handle the visual closing in GLOBAL_MOUSE_DOWN instead now.
+        -- Popup visibility is controlled by PopupFrame's GLOBAL_MOUSE_DOWN handler.
     end
     VS.minimapButton = minimapButton
 

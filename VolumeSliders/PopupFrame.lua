@@ -91,7 +91,7 @@ function VS:CreateOptionsFrame()
     end
 
     local function UpdateLockIcon()
-        if VolumeSlidersMMDB.isLocked then
+        if db.toggles and db.toggles.isLocked then
             lockBtn:SetText("Locked")
         else
             lockBtn:SetText("Unlocked")
