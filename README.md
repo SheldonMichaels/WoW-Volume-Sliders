@@ -64,6 +64,15 @@ Quick-access vertical volume sliders for every WoW sound channel, right from you
 Have an idea or want to see what's planned?
 Browse the [open issues](https://github.com/SheldonMichaels/WoW-Volume-Sliders/issues) — feature requests and bug reports all live there.
 
+## Development Docs
+
+- [Contributing](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Testing Infrastructure](docs/TESTING_INFRA.md)
+- [CI and Release](docs/CI_AND_RELEASE.md)
+- [Agent Workflow](docs/AGENT_WORKFLOW.md)
+
 ## Libraries
 
 This addon bundles the following libraries (included in `Libs/`):

@@ -3,11 +3,11 @@
 **Database:** `VolumeSlidersMMDB`
 **Scope:** Global / Account-wide
 **Format:** Serialized Lua Table (Pseudo-JSON representation below)
-**Last Audited:** 2026-03-30 (V2 Namespace Migration)
+**Last Audited:** 2026-04-24 (SchemaVersion 7)
 
 This document defines the exact shape of the saved variables used by Volume Sliders. It acts as the single source of truth for the data layer, distinguishing between user-configurable options, transient session states, and deprecated keys.
 
-> **Contract:** Any agent modifying the boundaries of persisted configuration versus transient state MUST update this document. See `AGENTS.md` for enforcement details.
+> **Contract:** Any contributor changing persisted-vs-transient boundaries, migration behavior, or namespace keys MUST update this document in the same PR. See `docs/AGENT_WORKFLOW.md` for workflow requirements.
 
 ## Root Structure
 

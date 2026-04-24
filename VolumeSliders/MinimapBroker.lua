@@ -23,12 +23,10 @@ local GetCVar    = GetCVar
 local SetCVar    = SetCVar
 
 -----------------------------------------
--- Broker Scroll Hook
+-- Voice Chat Push-to-Talk Helpers
 --
--- Third-party LDB display addons (ElvUI data texts, Titan Panel, etc.)
--- create their own frames.  We selectively hook OnMouseWheel on each display
--- frame the moment the user hovers it (via OnTooltipShow) so that scroll-to-
--- adjust-volume works immediately, without requiring a click first.
+-- These handlers temporarily flip Push-to-Talk to Open Mic while the minimap
+-- icon is actively pressed to avoid the click sound side effect.
 -----------------------------------------
 
 local PTT_ACTIVE = false

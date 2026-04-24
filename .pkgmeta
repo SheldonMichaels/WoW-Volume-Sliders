@@ -18,4 +18,3 @@ ignore:
   - spec
   - .luarc.json
   - .busted
-  - .logs

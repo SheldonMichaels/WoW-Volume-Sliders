@@ -63,7 +63,7 @@ local activeStates = {}
 --- highest priority to the end of the array so they are applied last and win.
 --- @param a table The first preset object.
 --- @param b table The second preset object.
---- @return boolean True if a has lower priority value than b.
+--- @return boolean True if a should sort before b (higher numeric priority value).
 local function SortPresetsByPriority(a, b)
     local pA = a.priority or 0
     local pB = b.priority or 0

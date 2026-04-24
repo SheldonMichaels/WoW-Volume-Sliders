@@ -1,6 +1,3 @@
-# Packager output
-.release/
-
 # OS / Editor junk
 .DS_Store
 Thumbs.db
@@ -13,9 +10,6 @@ Thumbs.db
 
 # Internal docs
 local_dev_assets/
-
-# Testing & Logs
-.logs/
 
 # Agents
 GEMINI.md
