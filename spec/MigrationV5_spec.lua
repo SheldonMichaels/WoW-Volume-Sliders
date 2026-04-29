@@ -22,6 +22,16 @@ describe("Schema V4 to V5 Migration", function()
         VS = {
             DEFAULT_CVAR_ORDER = { "Sound_MasterVolume" },
             CHANNEL_MUTE_CVAR = { ["Sound_MasterVolume"] = "Sound_EnableAllSound" },
+            DEFAULT_FOOTER_ORDER = {
+                "showZoneTriggers",
+                "showFishingSplash",
+                "showLfgPop",
+                "showCharacter",
+                "showBackground",
+                "showEmoteSounds",
+                "showOutput",
+                "showVoiceMode",
+            },
             DEFAULT_DB = {
                 schemaVersion = 5,
                 automation = { activeManualPresets = {} },

@@ -115,4 +115,32 @@ describe("MergeTable bootstrap behavior", function()
         assert.are.equal(1, bg.b)
         assert.are.equal(0.95, bg.a)
     end)
+
+    it("repairs sparse schema-7 footerOrder so ipairs sees all canonical keys", function()
+        bootstrapWith({
+            schemaVersion = 7,
+            appearance = { bgColor = { r = 0.1, g = 0.1, b = 0.1 } },
+            layout = {
+                sliderOrder = { "Sound_MasterVolume" },
+                footerOrder = { [6] = "showEmoteSounds" },
+                mouseActions = { sliders = {}, scrollWheel = {} },
+            },
+            toggles = {},
+            channels = {},
+            minimap = { minimalistMinimap = true, mouseActions = {}, minimapTooltipOrder = {} },
+            hardware = {},
+            automation = { persistedBaseline = {}, lastAppliedState = {}, presets = {}, activeManualPresets = {} },
+            voice = {},
+        })
+
+        local fo = _G.VolumeSlidersMMDB.layout.footerOrder
+        assert.are.equal(8, #fo)
+        assert.are.equal("showZoneTriggers", fo[1])
+        assert.are.equal("showEmoteSounds", fo[6])
+        local n = 0
+        for _ in ipairs(fo) do
+            n = n + 1
+        end
+        assert.are.equal(8, n)
+    end)
 end)
