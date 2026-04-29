@@ -1,6 +1,6 @@
-# Changelog (v3.8.1-beta1)
+# Changelog (v3.8.1)
 
-## v3.8.1-beta1 — 2026-04-29
+## v3.8.1 — 2026-04-29
 
 ### Fixed
 - **Footer Elements Missing**: Fixed an issue where footer controls (like Output Selector and automation toggles) could disappear in the main window after upgrading. The addon now automatically repairs invalid footer ordering data on login so the footer and its settings list return without needing to reset your SavedVariables.
