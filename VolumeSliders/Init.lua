@@ -17,8 +17,12 @@ local _, VS = ...
 -- Localized Globals
 -------------------------------------------------------------------------------
 local ipairs    = ipairs
+local pairs     = pairs
 local tonumber  = tonumber
+local type      = type
 local GetCVar   = GetCVar
+local table_insert = table.insert
+local table_sort   = table.sort
 
 -----------------------------------------
 -- Addon Initialization (PLAYER_LOGIN)
@@ -59,6 +63,92 @@ local function MergeTable(target, source)
             target[k] = v
         end
     end
+end
+
+-------------------------------------------------------------------------------
+-- CopyDefaultFooterOrder
+--
+-- Returns a fresh contiguous array copy of `VS.DEFAULT_FOOTER_ORDER`.
+-- Used when migrations or normalization must replace a sparse or invalid list.
+--
+-- @return table
+-------------------------------------------------------------------------------
+local function CopyDefaultFooterOrder()
+    local out = {}
+    for i = 1, #VS.DEFAULT_FOOTER_ORDER do
+        out[i] = VS.DEFAULT_FOOTER_ORDER[i]
+    end
+    return out
+end
+
+-------------------------------------------------------------------------------
+-- NormalizeFooterOrder
+--
+-- Repairs `db.layout.footerOrder` after login: sparse tables, gaps before
+-- later indices, or unknown keys break `ipairs` consumers (`UpdateFooterLayout`,
+-- settings Footer Elements list). This function enforces a contiguous array of
+-- valid canonical keys, preserving a fully valid user order when possible.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function NormalizeFooterOrder(db)
+    if not db or not db.layout then return end
+    local order = db.layout.footerOrder
+    if type(order) ~= "table" then return end
+
+    local valid = {}
+    for _, k in ipairs(VS.DEFAULT_FOOTER_ORDER) do
+        valid[k] = true
+    end
+
+    local ipairsCount = 0
+    for _ in ipairs(order) do
+        ipairsCount = ipairsCount + 1
+    end
+
+    local numericKeys = {}
+    for k, v in pairs(order) do
+        if type(k) == "number" and type(v) == "string" and valid[v] then
+            table_insert(numericKeys, k)
+        end
+    end
+    table_sort(numericKeys)
+    local maxIdx = numericKeys[#numericKeys] or 0
+
+    -- Sparse (e.g. only [6] set) or empty: `ipairs` cannot traverse; canonicalize.
+    if ipairsCount == 0 then
+        db.layout.footerOrder = CopyDefaultFooterOrder()
+        return
+    end
+
+    -- Holes before a later index (e.g. keys 1..4 and 6 set, 5 missing): ipairs truncates.
+    if maxIdx > ipairsCount then
+        db.layout.footerOrder = CopyDefaultFooterOrder()
+        return
+    end
+
+    local compact = {}
+    local seen = {}
+    for _, k in ipairs(order) do
+        if type(k) == "string" and valid[k] and not seen[k] then
+            seen[k] = true
+            table_insert(compact, k)
+        end
+    end
+
+    if #compact == 0 then
+        db.layout.footerOrder = CopyDefaultFooterOrder()
+        return
+    end
+
+    for _, k in ipairs(VS.DEFAULT_FOOTER_ORDER) do
+        if not seen[k] then
+            seen[k] = true
+            table_insert(compact, k)
+        end
+    end
+
+    db.layout.footerOrder = compact
 end
 
 -------------------------------------------------------------------------------
@@ -357,18 +447,34 @@ local function Migrate_V6_to_V7(db)
     if db.schemaVersion and db.schemaVersion >= 7 then return end
 
     db.layout = db.layout or {}
-    db.layout.footerOrder = db.layout.footerOrder or {}
+    if db.layout.footerOrder == nil then
+        db.layout.footerOrder = {}
+    end
+    local fo = db.layout.footerOrder
 
-    -- Inject "showEmoteSounds" if missing
+    -- Inject "showEmoteSounds" if missing. Avoid `table.insert(t, 6, ...)` on empty or short
+    -- lists: Lua leaves a gap so `ipairs` yields no rows (sparse `footerOrder` bug).
+    local contiguous = 0
+    for _ in ipairs(fo) do
+        contiguous = contiguous + 1
+    end
+
     local found = false
-    for _, key in ipairs(db.layout.footerOrder) do
+    for _, key in ipairs(fo) do
         if key == "showEmoteSounds" then
             found = true
             break
         end
     end
+
     if not found then
-        table.insert(db.layout.footerOrder, 6, "showEmoteSounds")
+        if contiguous == 0 then
+            db.layout.footerOrder = CopyDefaultFooterOrder()
+        elseif contiguous >= 5 then
+            table_insert(fo, 6, "showEmoteSounds")
+        else
+            table_insert(fo, "showEmoteSounds")
+        end
     end
 
     db.schemaVersion = 7
@@ -412,6 +518,9 @@ initFrame:SetScript("OnEvent", function(self, event)
 
     -- Merge structural defaults safely
     MergeTable(db, VS.DEFAULT_DB)
+
+    -- Repair sparse/gapped `footerOrder` (V7 migration edge cases and legacy bad data).
+    NormalizeFooterOrder(db)
 
     -- Initialize Unified State Stack Baseline
     -- We capture the user's current volume levels as the "baseline" upon which

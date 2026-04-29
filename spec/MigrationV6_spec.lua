@@ -21,6 +21,16 @@ describe("Schema V5 to V6 Migration", function()
         VS = {
             DEFAULT_CVAR_ORDER = { "Sound_MasterVolume" },
             CHANNEL_MUTE_CVAR = { ["Sound_MasterVolume"] = "Sound_EnableAllSound" },
+            DEFAULT_FOOTER_ORDER = {
+                "showZoneTriggers",
+                "showFishingSplash",
+                "showLfgPop",
+                "showCharacter",
+                "showBackground",
+                "showEmoteSounds",
+                "showOutput",
+                "showVoiceMode",
+            },
             DEFAULT_DB = {
                 schemaVersion = 7,
                 automation = {
