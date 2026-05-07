@@ -495,10 +495,16 @@ local function Migrate_V7_to_V8(db)
     if db.toggles.playSampleSound == nil then
         db.toggles.playSampleSound = false
     end
+    if db.toggles.playSampleSoundMinimap == nil then
+        db.toggles.playSampleSoundMinimap = false
+    end
 
     db.appearance = db.appearance or {}
     if db.appearance.sampleSound == nil then
         db.appearance.sampleSound = 856 -- SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON
+    end
+    if db.appearance.sampleSoundMinimap == nil then
+        db.appearance.sampleSoundMinimap = 856 -- SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON
     end
 
     db.schemaVersion = 8

@@ -42,7 +42,8 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     "valueColor": "string", // Enum (e.g., "Gold")
     "highColor": "string",  // Enum (e.g., "White")
     "lowColor": "string",   // Enum (e.g., "White")
-    "sampleSound": "number|string" // SoundKit ID (e.g., 856), FileData ID, or file path string
+    "sampleSound": "number|string", // SoundKit ID for slider chimes
+    "sampleSoundMinimap": "number|string" // SoundKit ID for minimap chimes
   },
 
   // ---------------------------------------------------------
@@ -85,7 +86,8 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     // General Window State
     "persistentWindow": "boolean", // True if clicking outside doesn't close the menu
     "isLocked": "boolean",         // True if the main window cannot be moved
-    "playSampleSound": "boolean",  // True to play auditory feedback when adjusting volume
+    "playSampleSound": "boolean",  // True for slider chimes
+    "playSampleSoundMinimap": "boolean", // True for minimap chimes
 
     // Widget Components (Parts of a single slider row)
     "showTitle": "boolean",
@@ -267,4 +269,4 @@ Adds the `showEmoteSounds` toggle to the `toggles` namespace and injects it into
 
 ## Migration Contract (`Init.lua:Migrate_V7_to_V8`)
 
-Adds the `playSampleSound` boolean to the `toggles` namespace (default `false`) and the `sampleSound` property to the `appearance` namespace (default `856`, which is `SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON`) to support auditory feedback when sliders are adjusted.
+Adds the `playSampleSound` and `playSampleSoundMinimap` booleans to the `toggles` namespace (default `false`), and the `sampleSound` and `sampleSoundMinimap` properties to the `appearance` namespace (default `856`) to support auditory feedback when sliders or the minimap icon are scrolled.

@@ -10,9 +10,9 @@ Thumbs.db
 
 # Internal docs
 local_dev_assets/
+.logs/
 
 # Agents
 GEMINI.md
 .agent/
 AGENTS.md
-.logs/

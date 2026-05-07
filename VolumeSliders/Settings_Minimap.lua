@@ -137,9 +137,9 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     playSoundCheck:SetPoint("TOPLEFT", showTooltipCheck, "BOTTOMLEFT", 0, -10)
     playSoundCheck.text:SetText("Play Sample Sound")
     playSoundCheck.text:SetFontObject("GameFontNormal")
-    playSoundCheck:SetChecked(db.toggles.playSampleSound == true)
+    playSoundCheck:SetChecked(db.toggles.playSampleSoundMinimap == true)
     playSoundCheck:SetScript("OnClick", function(self)
-        db.toggles.playSampleSound = self:GetChecked()
+        db.toggles.playSampleSoundMinimap = self:GetChecked()
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
     VS:AddTooltip(playSoundCheck, "Play a chime to preview the volume when adjusting a slider.")
@@ -154,17 +154,17 @@ function VS:CreateMinimapSettingsContents(parentFrame)
 
     local function IsSoundSelected(value)
         if value == "Custom" then
-            return not knownSounds[db.appearance.sampleSound]
+            return not knownSounds[db.appearance.sampleSoundMinimap]
         end
-        return db.appearance.sampleSound == value
+        return db.appearance.sampleSoundMinimap == value
     end
 
     local function SetSoundSelected(value)
         if value == "Custom" then
             -- Fallback if no EditBox is available on this page
-            db.appearance.sampleSound = 856
+            db.appearance.sampleSoundMinimap = 856
         else
-            db.appearance.sampleSound = value
+            db.appearance.sampleSoundMinimap = value
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end

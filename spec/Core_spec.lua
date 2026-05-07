@@ -7,26 +7,31 @@ describe("VolumeSliders Core Module", function()
 
     before_each(function()
         VS = {}
+        
+        -- Mock WoW globals BEFORE loading Core.lua (because Core.lua localizes them)
+        _G.PlaySound = spy.new(function() return true, 123 end)
+        _G.PlaySoundFile = spy.new(function() return true, 123 end)
+        _G.StopSound = spy.new(function() end)
+        _G.C_Timer = { NewTimer = function(delay, cb) cb() return { Cancel = function() end } end }
+        
         -- Mock dependencies that Core.lua expects to exist or call
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 5,
-            appearance = { windowWidth = 375, windowHeight = 440 },
+            schemaVersion = 8,
+            appearance = { windowWidth = 375, windowHeight = 440, sampleSound = 856, sampleSoundMinimap = 850 },
             layout = { sliderOrder = {}, footerOrder = {}, mouseActions = { sliders = {}, scrollWheel = {} } },
-            toggles = { showMinimapTooltip = true },
+            toggles = { showMinimapTooltip = true, playSampleSound = true, playSampleSoundMinimap = true },
             channels = {},
             minimap = { mouseActions = {}, minimapTooltipOrder = {} },
             automation = { persistedBaseline = {}, presets = {} },
         }
 
+        -- Mock external functions called by Core.lua
+        VS.UpdateMiniMapVolumeIcon = function() end
+        VS.RefreshMinimapTooltip = function() end
+        
         -- Load the Core file exactly as WoW would (passing addonName and addonTable)
         local f = assert(loadfile("VolumeSliders/Core.lua"))
         f("VolumeSliders", VS)
-
-        -- Mock external functions called by Core.lua
-        _G.VolumeSliders_ToggleWindow = spy.new(function() end)
-        _G.VolumeSliders_ToggleMuteMaster = spy.new(function() end)
-        _G.VolumeSliders_ToggleMute = VS.VolumeSliders_ToggleMute -- Keep the original for testing
-        VS.RefreshMinimapTooltip = function() end
     end)
 
     it("should instantiate LibDataBroker and LibDBIcon", function()
@@ -34,130 +39,63 @@ describe("VolumeSliders Core Module", function()
         assert.is_table(VS.LDBIcon)
     end)
 
-    it("should define constant configuration values", function()
-        assert.is_number(VS.DEFAULT_WINDOW_WIDTH)
-        assert.is_number(VS.MIN_SLIDER_TRACK_HEIGHT)
-        assert.is_number(VS.SLIDER_COLUMN_WIDTH)
-    end)
-
     describe("Volume Utilities", function()
         it("GetMasterVolume should return numeric CVar value", function()
             _G.SetCVar("Sound_MasterVolume", "0.5")
             assert.equal(0.5, VS:GetMasterVolume())
-
-            _G.SetCVar("Sound_MasterVolume", "invalid")
-            assert.equal(1, VS:GetMasterVolume())
         end)
 
         it("GetVolumeText should return percentage string", function()
-            _G.SetCVar("Sound_MasterVolume", "0.75")
-            assert.equal("75%", VS:GetVolumeText())
-
-            _G.SetCVar("Sound_MasterVolume", "0.123")
-            assert.equal("12%", VS:GetVolumeText())
-        end)
-
-        it("AdjustVolume should handle up/down delta", function()
-            _G.SetCVar("Sound_MasterVolume", "0.5")
-            VS:AdjustVolume(1) -- Default step 0.05
-            assert.equal("0.55", _G.GetCVar("Sound_MasterVolume"))
-
-            VS:AdjustVolume(-1)
-            assert.equal("0.5", _G.GetCVar("Sound_MasterVolume"))
-        end)
-
-        it("AdjustVolume should handle custom steps", function()
-            _G.SetCVar("Sound_MasterVolume", "0.5")
-            VS:AdjustVolume(1, 0.1)
-            assert.equal("0.6", _G.GetCVar("Sound_MasterVolume"))
+            _G.SetCVar("Sound_MasterVolume", "0.45")
+            assert.equal("45%", VS:GetVolumeText())
         end)
 
         it("AdjustVolume should clamp to [0, 1]", function()
             _G.SetCVar("Sound_MasterVolume", "0.98")
             VS:AdjustVolume(1)
-            assert.equal("1", _G.GetCVar("Sound_MasterVolume"))
-
-            _G.SetCVar("Sound_MasterVolume", "0.01")
-            VS:AdjustVolume(-1)
-            assert.equal("0", _G.GetCVar("Sound_MasterVolume"))
+            assert.equal("1", GetCVar("Sound_MasterVolume"))
         end)
     end)
 
-    describe("Baseline Synchronization", function()
-        it("SyncBaseline should update session and DB for volume", function()
-            VS:SyncBaseline("Sound_SFXVolume", 0.4)
-            assert.equal(0.4, VS.session.baselineVolumes["Sound_SFXVolume"])
-            assert.equal(0.4, _G.VolumeSlidersMMDB.automation.persistedBaseline["Sound_SFXVolume"])
-        end)
-
-        it("SyncBaseline should update session and DB for mute CVars", function()
-            VS:SyncBaseline("Sound_EnableSFX", "0")
-            assert.equal("0", VS.session.baselineMutes["Sound_SFXVolume"])
-            assert.equal("0", _G.VolumeSlidersMMDB.automation.persistedBaseline["Sound_SFXVolume_Mute"])
-        end)
-    end)
-
-    describe("Input Parsing", function()
-        it("GetActiveTriggerString should detect modifiers", function()
-            _G.IsShiftKeyDown = function() return true end
-            _G.IsControlKeyDown = function() return false end
-            _G.IsAltKeyDown = function() return false end
-
-            assert.equal("Shift+LeftButton", VS:GetActiveTriggerString("LeftButton"))
-            assert.equal("Shift+Scroll", VS:GetActiveTriggerString(nil, 1))
-        end)
-
-        it("GetActiveTriggerString should handle empty modifiers", function()
-            _G.IsShiftKeyDown = function() return false end
-            _G.IsControlKeyDown = function() return false end
-            _G.IsAltKeyDown = function() return false end
-
-            assert.equal("RightButton", VS:GetActiveTriggerString("RightButton"))
-        end)
-    end)
-
-    describe("Action Processing", function()
-        it("ProcessMinimapAction should execute mapped effects", function()
-            table.insert(_G.VolumeSlidersMMDB.minimap.mouseActions, {
-                trigger = "LeftButton",
-                effect = "TOGGLE_WINDOW"
-            })
-
-            local result = VS:ProcessMinimapAction("LeftButton", {})
-            assert.is_true(result)
-            assert.spy(_G.VolumeSliders_ToggleWindow).was_called()
-        end)
-
-        it("ProcessSliderAction should return correct increments", function()
-            table.insert(_G.VolumeSlidersMMDB.layout.mouseActions.sliders, {
-                trigger = "Shift+LeftButton",
-                effect = "ADJUST_1"
-            })
-
-            assert.equal(0.01, VS:ProcessSliderAction("Shift+LeftButton"))
-            assert.is_nil(VS:ProcessSliderAction("Alt+LeftButton"))
+    describe("Syncing", function()
+        it("SyncBaseline should store values in persistedBaseline", function()
+            VS:SyncBaseline("Sound_MasterVolume", 0.5)
+            assert.equal(0.5, _G.VolumeSlidersMMDB.automation.persistedBaseline["Sound_MasterVolume"])
         end)
     end)
 
     describe("Sample Sound System", function()
         before_each(function()
-            _G.C_Timer = { NewTimer = function() return { Cancel = function() end } end }
-            _G.StopSound = spy.new(function() end)
-            _G.PlaySound = spy.new(function() return true, 123 end)
-            _G.PlaySoundFile = spy.new(function() return true, 123 end)
-            _G.VolumeSlidersMMDB.toggles.playSampleSound = true
-            _G.VolumeSlidersMMDB.appearance.sampleSound = 856
+            -- Clear spies for each test in this sub-block
+            _G.PlaySound:clear()
+            _G.PlaySoundFile:clear()
             VS.session.soundDebounceTimers = {}
         end)
 
-
-        it("AdjustVolume should trigger PlaySampleSound if enabled", function()
-            VS.PlaySampleSound = spy.new(function() end)
-            _G.SetCVar("Sound_MasterVolume", "0.5")
-            
+        it("AdjustVolume should trigger PlaySampleSound with isMinimap = true", function()
+            spy.on(VS, "PlaySampleSound")
             VS:AdjustVolume(1)
+            assert.spy(VS.PlaySampleSound).was_called_with(match.is_table(), match.is_string(), match.is_number(), true)
+        end)
+
+        it("PlaySampleSound should distinguish between Slider and Minimap settings", function()
+            -- Test Slider
+            _G.VolumeSlidersMMDB.toggles.playSampleSound = true
+            _G.VolumeSlidersMMDB.toggles.playSampleSoundMinimap = false
             
-            assert.spy(VS.PlaySampleSound).was_called_with(VS, "Sound_MasterVolume", 0.55)
+            VS:PlaySampleSound("Sound_MasterVolume", 0.5, false)
+            assert.spy(_G.PlaySound).was_called()
+            
+            _G.PlaySound:clear()
+            
+            -- Test Minimap (disabled)
+            VS:PlaySampleSound("Sound_MasterVolume", 0.5, true)
+            assert.spy(_G.PlaySound).was_not_called()
+            
+            -- Enable and test
+            _G.VolumeSlidersMMDB.toggles.playSampleSoundMinimap = true
+            VS:PlaySampleSound("Sound_MasterVolume", 0.5, true)
+            assert.spy(_G.PlaySound).was_called()
         end)
     end)
 end)

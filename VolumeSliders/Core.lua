@@ -222,7 +222,7 @@ VS.DEFAULT_FOOTER_ORDER = {
 --- @field voice table
 
 VS.DEFAULT_DB = {
-    schemaVersion = 7,
+    schemaVersion = 8,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -234,6 +234,8 @@ VS.DEFAULT_DB = {
         lowColor = "White",
         windowWidth = VS.DEFAULT_WINDOW_WIDTH,
         windowHeight = VS.DEFAULT_WINDOW_HEIGHT,
+        sampleSound = 856,
+        sampleSoundMinimap = 856,
     },
     
     layout = {
@@ -269,6 +271,8 @@ VS.DEFAULT_DB = {
         showEmoteSounds = false,
         persistentWindow = false,
         isLocked = false,
+        playSampleSound = false,
+        playSampleSoundMinimap = false,
     },
     
     channels = {
@@ -340,12 +344,15 @@ VS.DEFAULT_DB.layout.footerOrder = copyArray(VS.DEFAULT_FOOTER_ORDER)
 --- Plays a sample sound based on user settings, debounced to prevent spamming.
 --- @param channel string The CVar audio channel being adjusted.
 --- @param volume number The new volume level (used for context if needed).
-function VS:PlaySampleSound(channel, volume)
+--- @param isMinimap boolean Optional. If true, uses minimap-specific chime settings.
+function VS:PlaySampleSound(channel, volume, isMinimap)
     local db = VolumeSlidersMMDB
-    if not db or not db.toggles or not db.toggles.playSampleSound then return end
-    if not db.appearance or not db.appearance.sampleSound then return end
+    local toggleKey = isMinimap and "playSampleSoundMinimap" or "playSampleSound"
+    local soundKey = isMinimap and "sampleSoundMinimap" or "sampleSound"
 
-    local soundToPlay = db.appearance.sampleSound
+    if not db.toggles[toggleKey] then return end
+
+    local soundToPlay = db.appearance[soundKey]
     local sess = self.session
 
     if sess.soundDebounceTimers[channel] then
@@ -467,7 +474,7 @@ function VS:AdjustVolume(delta, customStep, cvar)
 
     -- Sample Sound: Play a test chime if enabled.
     if self.PlaySampleSound then
-        self:PlaySampleSound(targetCVar, current)
+        self:PlaySampleSound(targetCVar, current, true)
     end
 end
 
