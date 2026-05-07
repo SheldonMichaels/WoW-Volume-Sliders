@@ -58,7 +58,9 @@ describe("V7 to V8 Database Migration", function()
 
         assert.are.equal(8, db.schemaVersion)
         assert.is_false(db.toggles.playSampleSound)
+        assert.is_false(db.toggles.playSampleSoundMinimap)
         assert.are.equal(856, db.appearance.sampleSound)
+        assert.are.equal(856, db.appearance.sampleSoundMinimap)
     end)
 
     it("should not overwrite existing sample sound variables if migrating from higher versions or manually set", function()
@@ -71,5 +73,9 @@ describe("V7 to V8 Database Migration", function()
         assert.are.equal(8, db.schemaVersion)
         assert.is_true(db.toggles.playSampleSound)
         assert.are.equal("Sound/MyCustomSound.ogg", db.appearance.sampleSound)
+        
+        -- Minimap should have defaulted since we didn't mock it
+        assert.is_false(db.toggles.playSampleSoundMinimap)
+        assert.are.equal(856, db.appearance.sampleSoundMinimap)
     end)
 end)

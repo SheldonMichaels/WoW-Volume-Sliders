@@ -142,7 +142,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
         db.toggles.playSampleSoundMinimap = self:GetChecked()
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end)
-    VS:AddTooltip(playSoundCheck, "Play a chime to preview the volume when adjusting a slider.")
+    VS:AddTooltip(playSoundCheck, "Play a chime when scrolling the minimap icon to adjust volume.")
 
     local knownSounds = {
         [856] = true,
