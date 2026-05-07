@@ -11,6 +11,7 @@
 -- Author:  Sheldon Michaels
 -- Version Source: VolumeSliders.toc / CHANGELOG.md
 -- License: All Rights Reserved (Non-commercial use permitted)
+-- luacheck: globals PlaySound PlaySoundFile StopSound C_Timer GetCVar SetCVar IsControlKeyDown math math_floor math_max math_min math_ceil tonumber tostring pairs ipairs LibStub VolumeSlidersMMDB
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -29,6 +30,9 @@ local pairs      = pairs
 local ipairs     = ipairs
 local GetCVar    = GetCVar
 local SetCVar    = SetCVar
+local PlaySound  = PlaySound
+local PlaySoundFile = PlaySoundFile
+local StopSound  = StopSound
 
 -------------------------------------------------------------------------------
 -- Addon Bootstrapping
@@ -92,6 +96,9 @@ VS.session = {
     -- Trackers and Timers for the sound system restart gate.
     recoveryTicker = nil,
     recoverySafetyTimer = nil,
+
+    -- DEBOUNCED SOUND TIMERS
+    soundDebounceTimers = {},
 }
 
 -------------------------------------------------------------------------------
@@ -215,7 +222,7 @@ VS.DEFAULT_FOOTER_ORDER = {
 --- @field voice table
 
 VS.DEFAULT_DB = {
-    schemaVersion = 7,
+    schemaVersion = 8,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -227,6 +234,8 @@ VS.DEFAULT_DB = {
         lowColor = "White",
         windowWidth = VS.DEFAULT_WINDOW_WIDTH,
         windowHeight = VS.DEFAULT_WINDOW_HEIGHT,
+        sampleSound = 856,
+        sampleSoundMinimap = 856,
     },
     
     layout = {
@@ -262,6 +271,8 @@ VS.DEFAULT_DB = {
         showEmoteSounds = false,
         persistentWindow = false,
         isLocked = false,
+        playSampleSound = false,
+        playSampleSoundMinimap = false,
     },
     
     channels = {
@@ -330,6 +341,72 @@ VS.DEFAULT_DB.layout.footerOrder = copyArray(VS.DEFAULT_FOOTER_ORDER)
 -- Helper Functions
 -----------------------------------------
 
+--- Plays a sample sound based on user settings, debounced to prevent spamming.
+--- @param channel string The CVar audio channel being adjusted.
+--- @param volume number The new volume level (used for context if needed).
+--- @param isMinimap boolean Optional. If true, uses minimap-specific chime settings.
+function VS:PlaySampleSound(channel, volume, isMinimap)
+    local db = VolumeSlidersMMDB
+    local toggleKey = isMinimap and "playSampleSoundMinimap" or "playSampleSound"
+    local soundKey = isMinimap and "sampleSoundMinimap" or "sampleSound"
+
+    if not db.toggles[toggleKey] then return end
+
+    local soundToPlay = db.appearance[soundKey]
+    local sess = self.session
+
+    if sess.soundDebounceTimers[channel] then
+        sess.soundDebounceTimers[channel]:Cancel()
+    end
+
+    sess.soundDebounceTimers[channel] = C_Timer.NewTimer(0.15, function()
+        local channelMap = {
+            ["Sound_MasterVolume"] = "Master",
+            ["Sound_SFXVolume"] = "SFX",
+            ["Sound_MusicVolume"] = "Music",
+            ["Sound_AmbienceVolume"] = "Ambience",
+            ["Sound_DialogVolume"] = "Dialog"
+        }
+        local playbackChannel = channelMap[channel] or "Master"
+
+        local isString = type(soundToPlay) == "string" and not tonumber(soundToPlay)
+        local willPlay, handle
+        
+        -- Stop the previously playing sample sound, if any
+        if sess.activeSoundHandle then
+            StopSound(sess.activeSoundHandle)
+            sess.activeSoundHandle = nil
+        end
+
+        if isString then
+            willPlay, handle = PlaySoundFile(soundToPlay, playbackChannel)
+        else
+            local id = tonumber(soundToPlay)
+            if id then
+                -- PlaySound returns willPlay, soundHandle. If it doesn't play, we can try FileDataID fallback.
+                willPlay, handle = PlaySound(id, playbackChannel)
+                if not willPlay then
+                    willPlay, handle = PlaySoundFile(id, playbackChannel)
+                end
+            end
+        end
+
+        -- Save the handle and schedule a hard cutoff after 5 seconds to prevent endless looping
+        if willPlay and handle then
+            sess.activeSoundHandle = handle
+            if sess.soundCutoffTimer then
+                sess.soundCutoffTimer:Cancel()
+            end
+            sess.soundCutoffTimer = C_Timer.NewTimer(5.0, function()
+                if sess.activeSoundHandle == handle then
+                    StopSound(handle)
+                    sess.activeSoundHandle = nil
+                end
+            end)
+        end
+    end)
+end
+
 --- Read the current master volume from the CVar.
 -- @return number In the range [0, 1]. Falls back to 1 (full volume) if the CVar is missing or unparseable.
 function VS:GetMasterVolume()
@@ -394,6 +471,11 @@ function VS:AdjustVolume(delta, customStep, cvar)
 
     -- Unified State Sync: Keep the baseline informed of manual user adjustments.
     self:SyncBaseline(targetCVar, current)
+
+    -- Sample Sound: Play a test chime if enabled.
+    if self.PlaySampleSound then
+        self:PlaySampleSound(targetCVar, current, true)
+    end
 end
 
 --- Centralized dispatcher for synchronizing the volume baseline and manual overrides.

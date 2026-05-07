@@ -1,4 +1,16 @@
-# Changelog (v3.8.1)
+# Changelog (v3.9.0)
+
+## v3.9.0 — 2026-05-07
+
+### Added
+- **Volume Chimes (Sample Sounds)**: Added the ability to play a sample sound ("chime") whenever you adjust a volume slider or scroll over the minimap icon.
+- **Enhanced Customization**: Choose from 12 built-in WoW sounds or provide your own custom sound file path.
+- **Independent Toggles**: Sample sounds can be enabled or disabled independently for the main volume window and the minimap icon hover actions.
+- **Loop Protection**: Implemented a 5-second safety cutoff for all sample sounds to prevent accidental infinite looping of long ambient tracks or music.
+
+### Fixed
+- **LFG Application Sound**: Restored the "LFG Application" sound (73275) to the sample sound selection menu.
+
 
 ## v3.8.1 — 2026-04-29
 

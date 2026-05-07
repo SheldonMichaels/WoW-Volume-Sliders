@@ -200,11 +200,97 @@ function VS:CreateSlidersSettingsContents(parentFrame)
     end)
     lowDropdown:GenerateMenu()
 
+    -- Play Sample Sound Checkbox
+    local playSoundCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    playSoundCheck:SetPoint("TOPLEFT", lowDropdown, "BOTTOMLEFT", -5, dropdownSpacingOffset + 5)
+    playSoundCheck.text:SetText("Play Sample Sound")
+    playSoundCheck.text:SetFontObject("GameFontNormal")
+    playSoundCheck:SetChecked(db.toggles.playSampleSound == true)
+    playSoundCheck:SetScript("OnClick", function(self)
+        db.toggles.playSampleSound = self:GetChecked()
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+    VS:AddTooltip(playSoundCheck, "Play a chime to preview the volume when adjusting a slider.")
+
+    local knownSounds = {
+        [856] = true,
+        [850] = true,
+        [880] = true,
+        [73275] = true,
+        [8959] = true
+    }
+
+    local function IsSoundSelected(value)
+        if value == "Custom" then
+            return not knownSounds[db.appearance.sampleSound]
+        end
+        return db.appearance.sampleSound == value
+    end
+
+    local function SetSoundSelected(value)
+        if value == "Custom" then
+            if VS.sampleSoundEditBox then
+                VS.sampleSoundEditBox:Show()
+                local textVal = VS.sampleSoundEditBox:GetText()
+                if textVal and textVal ~= "" then
+                    db.appearance.sampleSound = tonumber(textVal) or textVal
+                end
+            end
+        else
+            db.appearance.sampleSound = value
+            if VS.sampleSoundEditBox then VS.sampleSoundEditBox:Hide() end
+        end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end
+
+    local soundDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    soundDropdown:SetPoint("TOPLEFT", playSoundCheck, "BOTTOMLEFT", 5, 0)
+    soundDropdown:SetWidth(dropdownWidth)
+    soundDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Standard Click", IsSoundSelected, SetSoundSelected, 856)
+        rootDescription:CreateRadio("Main Menu Open", IsSoundSelected, SetSoundSelected, 850)
+        rootDescription:CreateRadio("Player Invite", IsSoundSelected, SetSoundSelected, 880)
+        rootDescription:CreateRadio("LFG Application", IsSoundSelected, SetSoundSelected, 73275)
+        rootDescription:CreateRadio("Raid Warning", IsSoundSelected, SetSoundSelected, 8959)
+        rootDescription:CreateRadio("Custom...", IsSoundSelected, SetSoundSelected, "Custom")
+    end)
+    soundDropdown:GenerateMenu()
+
+    local customSoundBox = CreateFrame("EditBox", nil, categoryFrame, "InputBoxTemplate")
+    customSoundBox:SetSize(dropdownWidth - 10, 20)
+    customSoundBox:SetPoint("TOPLEFT", soundDropdown, "BOTTOMLEFT", 15, -5)
+    customSoundBox:SetAutoFocus(false)
+    customSoundBox:SetFontObject("ChatFontNormal")
+    
+    if IsSoundSelected("Custom") then
+        customSoundBox:SetText(tostring(db.appearance.sampleSound or ""))
+        customSoundBox:Show()
+    else
+        customSoundBox:SetText("")
+        customSoundBox:Hide()
+    end
+    VS.sampleSoundEditBox = customSoundBox
+
+    customSoundBox:SetScript("OnEnterPressed", function(self)
+        self:ClearFocus()
+    end)
+    customSoundBox:SetScript("OnEditFocusLost", function(self)
+        local val = self:GetText()
+        if val and val ~= "" then
+            db.appearance.sampleSound = tonumber(val) or val
+        else
+            db.appearance.sampleSound = 856 -- default back if empty
+            soundDropdown:GenerateMenu()
+            self:Hide()
+        end
+    end)
+
     -- Apply tooltips to dropdown labels
     VS:AddTooltip(titleDropdown, "Change the color of the channel titles (e.g. 'Master') to Gold or White.")
     VS:AddTooltip(valueDropdown, "Change the color of the volume percentage numbers to Gold or White.")
     VS:AddTooltip(highDropdown, "Change the color of the '100%' marker to Gold or White.")
     VS:AddTooltip(lowDropdown, "Change the color of the '0%' marker to Gold or White.")
+    VS:AddTooltip(soundDropdown, "Select the chime to play when adjusting sliders, or enter a custom SoundKit ID / File Path.")
     VS:AddTooltip(arrowDropdown, "Select the visual style for the volume increment/decrement buttons.")
     VS:AddTooltip(knobDropdown, "Select the visual style for the slider handle (knob).")
 

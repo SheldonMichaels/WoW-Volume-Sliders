@@ -132,6 +132,55 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     end)
     VS:AddTooltip(showTooltipCheck, "Show or hide the tooltip when hovering over the minimap icon.")
 
+    -- Play Sample Sound Checkbox
+    local playSoundCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
+    playSoundCheck:SetPoint("TOPLEFT", showTooltipCheck, "BOTTOMLEFT", 0, -10)
+    playSoundCheck.text:SetText("Play Sample Sound")
+    playSoundCheck.text:SetFontObject("GameFontNormal")
+    playSoundCheck:SetChecked(db.toggles.playSampleSoundMinimap == true)
+    playSoundCheck:SetScript("OnClick", function(self)
+        db.toggles.playSampleSoundMinimap = self:GetChecked()
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end)
+    VS:AddTooltip(playSoundCheck, "Play a chime when scrolling the minimap icon to adjust volume.")
+
+    local knownSounds = {
+        [856] = true,
+        [850] = true,
+        [880] = true,
+        [73275] = true,
+        [8959] = true
+    }
+
+    local function IsSoundSelected(value)
+        if value == "Custom" then
+            return not knownSounds[db.appearance.sampleSoundMinimap]
+        end
+        return db.appearance.sampleSoundMinimap == value
+    end
+
+    local function SetSoundSelected(value)
+        if value == "Custom" then
+            -- Fallback if no EditBox is available on this page
+            db.appearance.sampleSoundMinimap = 856
+        else
+            db.appearance.sampleSoundMinimap = value
+        end
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end
+
+    local soundDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    soundDropdown:SetPoint("TOPLEFT", playSoundCheck, "BOTTOMLEFT", 10, 0)
+    soundDropdown:SetWidth(180)
+    soundDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Standard Click", IsSoundSelected, SetSoundSelected, 856)
+        rootDescription:CreateRadio("Main Menu Open", IsSoundSelected, SetSoundSelected, 850)
+        rootDescription:CreateRadio("Player Invite", IsSoundSelected, SetSoundSelected, 880)
+        rootDescription:CreateRadio("LFG Application", IsSoundSelected, SetSoundSelected, 73275)
+        rootDescription:CreateRadio("Raid Warning", IsSoundSelected, SetSoundSelected, 8959)
+    end)
+    soundDropdown:GenerateMenu()
+
     local dividerMid = categoryFrame:CreateTexture(nil, "ARTWORK")
     dividerMid:SetWidth(1)
     dividerMid:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 285, -15)

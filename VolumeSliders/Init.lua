@@ -481,6 +481,36 @@ local function Migrate_V6_to_V7(db)
 end
 
 -------------------------------------------------------------------------------
+-- V7 -> V8 Schema Migration Engine
+--
+-- Adds the `playSampleSound` boolean to the `toggles` namespace and the
+-- `sampleSound` property to the `appearance` namespace.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V7_to_V8(db)
+    if db.schemaVersion and db.schemaVersion >= 8 then return end
+
+    db.toggles = db.toggles or {}
+    if db.toggles.playSampleSound == nil then
+        db.toggles.playSampleSound = false
+    end
+    if db.toggles.playSampleSoundMinimap == nil then
+        db.toggles.playSampleSoundMinimap = false
+    end
+
+    db.appearance = db.appearance or {}
+    if db.appearance.sampleSound == nil then
+        db.appearance.sampleSound = 856 -- SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON
+    end
+    if db.appearance.sampleSoundMinimap == nil then
+        db.appearance.sampleSoundMinimap = 856 -- SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON
+    end
+
+    db.schemaVersion = 8
+end
+
+-------------------------------------------------------------------------------
 -- Main Event Handler (PLAYER_LOGIN)
 --
 -- Orchestrates the addon bootstrap sequence:
@@ -500,6 +530,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     Migrate_V4_to_V5(db)
     Migrate_V5_to_V6(db)
     Migrate_V6_to_V7(db)
+    Migrate_V7_to_V8(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"
