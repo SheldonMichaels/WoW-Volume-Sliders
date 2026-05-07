@@ -3,7 +3,7 @@
 **Database:** `VolumeSlidersMMDB`
 **Scope:** Global / Account-wide
 **Format:** Serialized Lua Table (Pseudo-JSON representation below)
-**Last Audited:** 2026-04-24 (SchemaVersion 7)
+**Last Audited:** 2026-05-06 (SchemaVersion 8)
 
 This document defines the exact shape of the saved variables used by Volume Sliders. It acts as the single source of truth for the data layer, distinguishing between user-configurable options, transient session states, and deprecated keys.
 
@@ -15,7 +15,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
 
 ```json
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -41,7 +41,8 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     "titleColor": "string", // Enum (e.g., "White", "Gold")
     "valueColor": "string", // Enum (e.g., "Gold")
     "highColor": "string",  // Enum (e.g., "White")
-    "lowColor": "string"    // Enum (e.g., "White")
+    "lowColor": "string",   // Enum (e.g., "White")
+    "sampleSound": "number|string" // SoundKit ID (e.g., 856), FileData ID, or file path string
   },
 
   // ---------------------------------------------------------
@@ -84,6 +85,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     // General Window State
     "persistentWindow": "boolean", // True if clicking outside doesn't close the menu
     "isLocked": "boolean",         // True if the main window cannot be moved
+    "playSampleSound": "boolean",  // True to play auditory feedback when adjusting volume
 
     // Widget Components (Parts of a single slider row)
     "showTitle": "boolean",
@@ -262,3 +264,7 @@ Adds the `automation.enableDeviceVolumes` flag to support per-hardware-output-de
 ## Migration Contract (`Init.lua:Migrate_V6_to_V7`)
 
 Adds the `showEmoteSounds` toggle to the `toggles` namespace and injects it into the `footerOrder` array for existing users. By default, this toggle is set to `false`, meaning it remains hidden from the main popup footer until manually enabled via the settings window.
+
+## Migration Contract (`Init.lua:Migrate_V7_to_V8`)
+
+Adds the `playSampleSound` boolean to the `toggles` namespace (default `false`) and the `sampleSound` property to the `appearance` namespace (default `856`, which is `SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON`) to support auditory feedback when sliders are adjusted.

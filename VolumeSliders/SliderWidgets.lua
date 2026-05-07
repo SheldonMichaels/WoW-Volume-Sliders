@@ -340,6 +340,10 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
                 VS.VolumeSlidersObject.text = VS:GetVolumeText()
             end
         end
+
+        if VS.PlaySampleSound then
+            VS:PlaySampleSound(cvar, val)
+        end
     end)
 
     ---------------------------------------------------------------------------
@@ -517,6 +521,10 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
             
             -- Unified State Sync: Keep the baseline informed of manual user adjustments.
             VS:SyncBaseline(muteKey, rawValue)
+
+            if VS.PlaySampleSound then
+                VS:PlaySampleSound(muteKey, rawValue)
+            end
         end
 
         if muteKey then

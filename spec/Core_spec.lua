@@ -138,4 +138,35 @@ describe("VolumeSliders Core Module", function()
             assert.is_nil(VS:ProcessSliderAction("Alt+LeftButton"))
         end)
     end)
+
+    describe("Sample Sound System", function()
+        before_each(function()
+            _G.C_Timer = { NewTimer = function() return { Cancel = function() end } end }
+            _G.StopSound = spy.new(function() end)
+            _G.PlaySound = spy.new(function() return true, 123 end)
+            _G.PlaySoundFile = spy.new(function() return true, 123 end)
+            _G.VolumeSlidersMMDB.toggles.playSampleSound = true
+            _G.VolumeSlidersMMDB.appearance.sampleSound = 73275
+            VS.session.soundDebounceTimers = {}
+        end)
+
+        it("PlaySampleSound should sanitize known unkillable UI loops", function()
+            -- 73275 is the LFG Application sound (unkillable loop)
+            assert.equal(73275, _G.VolumeSlidersMMDB.appearance.sampleSound)
+            
+            VS:PlaySampleSound("Sound_MasterVolume")
+            
+            -- It should overwrite the db value to the safe click (856)
+            assert.equal(856, _G.VolumeSlidersMMDB.appearance.sampleSound)
+        end)
+
+        it("AdjustVolume should trigger PlaySampleSound if enabled", function()
+            VS.PlaySampleSound = spy.new(function() end)
+            _G.SetCVar("Sound_MasterVolume", "0.5")
+            
+            VS:AdjustVolume(1)
+            
+            assert.spy(VS.PlaySampleSound).was_called_with(VS, "Sound_MasterVolume", 0.55)
+        end)
+    end)
 end)
