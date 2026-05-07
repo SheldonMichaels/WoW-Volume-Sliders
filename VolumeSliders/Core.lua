@@ -346,20 +346,6 @@ function VS:PlaySampleSound(channel, volume)
     if not db.appearance or not db.appearance.sampleSound then return end
 
     local soundToPlay = db.appearance.sampleSound
-    
-    -- WoW Engine Bug: Certain UI SoundKits are flagged as looping and ignore StopSound(handle).
-    -- If a user has one of these saved (e.g. from an old version or manual entry), intercept and sanitize.
-    local unkillableLoops = {
-        [3175] = true,  -- UI Map Ping
-        [874] = true,   -- Chat Whisper
-        [8960] = true,  -- Ready Check
-        [73275] = true  -- LFG Application (Group Finder pulsing)
-    }
-    if unkillableLoops[soundToPlay] then
-        soundToPlay = 856
-        db.appearance.sampleSound = 856
-    end
-    
     local sess = self.session
 
     if sess.soundDebounceTimers[channel] then
