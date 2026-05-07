@@ -216,7 +216,6 @@ function VS:CreateSlidersSettingsContents(parentFrame)
         [856] = true,
         [850] = true,
         [880] = true,
-        [73275] = true,
         [8959] = true
     }
 
@@ -250,7 +249,6 @@ function VS:CreateSlidersSettingsContents(parentFrame)
         rootDescription:CreateRadio("Standard Click", IsSoundSelected, SetSoundSelected, 856)
         rootDescription:CreateRadio("Main Menu Open", IsSoundSelected, SetSoundSelected, 850)
         rootDescription:CreateRadio("Player Invite", IsSoundSelected, SetSoundSelected, 880)
-        rootDescription:CreateRadio("LFG Application", IsSoundSelected, SetSoundSelected, 73275)
         rootDescription:CreateRadio("Raid Warning", IsSoundSelected, SetSoundSelected, 8959)
         rootDescription:CreateRadio("Custom...", IsSoundSelected, SetSoundSelected, "Custom")
     end)
