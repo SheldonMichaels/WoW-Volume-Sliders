@@ -1,0 +1,13 @@
+---
+description: Core Volume Sliders repository contract
+alwaysApply: true
+---
+
+# Core Project Contract
+
+- Read and follow `AGENTS.md` before making repository changes.
+- Treat committed docs as the source of truth; local-only files can add context but cannot be the only copy of project policy.
+- Work on a `dev/*` branch for repository modifications.
+- Do not commit secrets, screenshots, database backups, generated artifacts, or scratch files.
+- For code changes, run `luacheck VolumeSliders spec` and `busted . --verbose` before completion when available.
+- Do not merge PRs or create release tags without explicit user direction.

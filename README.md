@@ -71,6 +71,7 @@ Browse the [open issues](https://github.com/SheldonMichaels/WoW-Volume-Sliders/i
 - [Architecture](docs/ARCHITECTURE.md)
 - [Testing Infrastructure](docs/TESTING_INFRA.md)
 - [CI and Release](docs/CI_AND_RELEASE.md)
+- [AI Agent Guide](AGENTS.md)
 - [Agent Workflow](docs/AGENT_WORKFLOW.md)
 
 ## Libraries

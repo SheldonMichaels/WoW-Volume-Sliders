@@ -1,0 +1,13 @@
+---
+description: Saved variable migration rules for VolumeSlidersMMDB
+globs: VolumeSliders/Init.lua, VolumeSliders/Presets.lua, VolumeSliders/Settings_*.lua, docs/DATA_SCHEMA.md, spec/**/*.lua
+alwaysApply: false
+---
+
+# Saved Variable Schema Rules
+
+- `VolumeSlidersMMDB` is user-owned persisted state.
+- Any structural change requires a schema version bump, `docs/DATA_SCHEMA.md` update, migration contract, sequential migration logic, and tests.
+- Do not rely on implicit defaults as a replacement for migration.
+- Keep persisted configuration separate from transient runtime state.
+- Read `docs/DATA_SCHEMA.md` before changing saved variable boundaries.

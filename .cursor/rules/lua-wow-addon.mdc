@@ -1,0 +1,14 @@
+---
+description: Lua 5.1 and WoW addon module rules for Volume Sliders
+globs: VolumeSliders/**/*.lua, VolumeSliders/**/*.xml, VolumeSliders/*.toc
+alwaysApply: false
+---
+
+# Lua and WoW Addon Rules
+
+- Target Lua 5.1 only. Avoid Lua 5.2+ syntax and APIs.
+- Use the shared addon table pattern: `local _, VS = ...`.
+- Keep behavior in the existing module boundary unless a new boundary is clearly warranted.
+- Verify unfamiliar WoW APIs, events, CVars, and secure execution behavior before implementation.
+- Preserve taint, secure execution, and UI lifecycle comments.
+- Consult `docs/AGENT_WORKFLOW.md` for the module map and validation flow.

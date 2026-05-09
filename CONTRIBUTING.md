@@ -45,7 +45,15 @@ If you change saved variable structure:
 
 ## Documentation References
 
+- `AGENTS.md`
 - `docs/ARCHITECTURE.md`
 - `docs/TESTING_INFRA.md`
 - `docs/CI_AND_RELEASE.md`
 - `docs/AGENT_WORKFLOW.md`
+
+## AI-Assisted Development
+
+- `AGENTS.md` is the tracked baseline for AI coding agents.
+- `.cursor/rules/` contains scoped Cursor project rules.
+- `.agents/` contains Google Antigravity personas, skills, and workflows.
+- Generated artifacts and local-only overrides must stay ignored.
