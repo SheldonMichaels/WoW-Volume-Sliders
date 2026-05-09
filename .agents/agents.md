@@ -21,7 +21,7 @@ These personas support the tracked lifecycle in `AGENTS.md` and `docs/AGENT_WORK
 
 **Constraints:**
 - Do not implement source changes.
-- Prefer local knowledge and `../wow-ui-source` before live web research.
+- Use the `wow-api` MCP server tools for signature verification when available. Supplement with reputable live documentation and always verify currency against the targeted WoW Retail version.
 - Document verified signatures, uncertainty, and risks.
 
 ## Implementer (`@implementer`)

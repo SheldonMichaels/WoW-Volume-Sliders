@@ -18,6 +18,7 @@ This is the universal, tracked instruction file for AI coding agents working on 
 - Use `docs/DATA_SCHEMA.md` before changing `VolumeSlidersMMDB`.
 - Use `docs/TESTING_INFRA.md` before changing tests, mocks, or validation commands.
 - Use `docs/CI_AND_RELEASE.md` before changing CI, packaging, versioning, or release flow.
+- Use `docs/PRESET_BEHAVIOR.md` before changing preset evaluation, automation triggers, baseline/mute state, or manual toggle behavior.
 - Local-only files may provide extra context, but repository decisions must be reflected in tracked docs.
 
 ## Repository Map
@@ -81,6 +82,7 @@ Documentation-only changes do not require the Lua test suite unless they alter d
 
 - **Cursor:** `.cursor/rules/*.mdc` contains short, scoped project rules. Cursor rules should point back to this file or committed docs instead of copying large sections.
 - **Antigravity:** `.agents/agents.md`, `.agents/skills/`, and `.agents/workflows/` define project personas and lifecycle commands.
+  - Workflows use named personas (`@planner`, `@api-researcher`, `@implementer`, `@validator`, `@debugger`, `@release-manager`) defined in `.agents/agents.md`.
 - **Artifacts:** Generated planning, research, implementation, validation, or release artifacts belong in ignored artifact directories unless the user explicitly asks to commit them.
 
 ## Windows and GitHub CLI

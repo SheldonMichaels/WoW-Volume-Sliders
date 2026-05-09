@@ -10,14 +10,12 @@ compatibility: Designed for Google Antigravity and compatible agent-skill runner
 
 1. Read `AGENTS.md`, `docs/AGENT_WORKFLOW.md`, and any planning artifact.
 2. Identify every API, event, CVar, library function, or secure execution path that must be verified.
-3. Prefer local references first:
-   - `local_dev_assets/knowledge/` if available
-   - `../wow-ui-source`
-   - existing code and tests
-4. Use live documentation or API search when local references are insufficient.
-5. Record exact signatures, event payloads, return values, deprecation status, and taint/combat-lockdown risks.
-6. For non-trivial work, write `.agents/artifacts/API_Research_Artifact.md` using `references/API_Research_Template.md`.
-7. Do not write implementation code in this phase.
+3. Use the `wow-api` MCP server tools (`lookup_api`, `search_api`, `get_event`, `get_enum`, `get_namespace`, `get_widget_methods`) for precise, patch-current signature verification when available.
+4. Supplement with reputable live documentation when MCP tools are unavailable or insufficient. Always verify information is current and relevant to the targeted WoW Retail version.
+5. Cross-reference existing addon code and tests for usage patterns.
+6. Record exact signatures, event payloads, return values, deprecation status, and taint/combat-lockdown risks.
+7. For non-trivial work, write `.agents/artifacts/API_Research_Artifact.md` using `references/API_Research_Template.md`.
+8. Do not write implementation code in this phase.
 
 ## Output
 

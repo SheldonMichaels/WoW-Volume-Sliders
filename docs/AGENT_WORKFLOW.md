@@ -46,7 +46,7 @@ If CI or workflow files change, review `docs/CI_AND_RELEASE.md` and ensure the d
 
 - Verify patch-accurate WoW API signatures before using unfamiliar functions or events.
 - Research taint, protected frame, combat-lockdown, CVar, and settings behavior when relevant.
-- Prefer local references first: `local_dev_assets/knowledge/` if present, `../wow-ui-source`, then reputable live docs.
+- Use the `wow-api` MCP server tools for signature verification when available. Supplement with reputable live documentation relevant to the current WoW Retail version.
 - Capture verified signatures and risks in an ignored research artifact for complex changes.
 
 ### Implementation
@@ -54,9 +54,9 @@ If CI or workflow files change, review `docs/CI_AND_RELEASE.md` and ensure the d
 - Target Lua 5.1 and the existing plain-table addon pattern: `local _, VS = ...`.
 - Keep module responsibilities intact:
   - `Core.lua`: shared constants, helpers, localized globals.
-  - `SliderWidgets.lua`: reusable slider and checkbox widgets.
+  - `SliderWidgets.lua`: widget factory functions for sliders and checkboxes, used by `PopupFrame.lua` and `Settings_*.lua`.
   - `Appearance.lua`: layout, styling, anchoring.
-  - `Presets.lua`: profile and preset behavior.
+  - `Presets.lua`: preset registration, priority ordering, and state refresh. See `docs/PRESET_BEHAVIOR.md` for the full behavioral contract.
   - `Fishing.lua`, `LFGQueue.lua`: automation domains.
   - `Settings_*.lua`: Blizzard Settings pages by feature area.
   - `PopupFrame.lua`: popup construction and slider instantiation.

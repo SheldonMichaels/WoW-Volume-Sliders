@@ -1,6 +1,6 @@
 ---
 description: Documentation, changelog, CI, and release guidance
-globs: README.md, CONTRIBUTING.md, CHANGELOG.md, SECURITY.md, docs/**/*.md, .github/workflows/*.yml, .pkgmeta
+globs: README.md, CONTRIBUTING.md, CHANGELOG.md, SECURITY.md, docs/**/*.md, .github/workflows/*.yml, .pkgmeta, .gitignore
 alwaysApply: false
 ---
 

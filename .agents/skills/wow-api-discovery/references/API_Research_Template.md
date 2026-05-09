@@ -6,7 +6,7 @@
 
 - **Signature:** `[exact signature]`
 - **Returns:** `[return values]`
-- **Source:** `[local file, docs, wow-ui-source, or URL]`
+- **Source:** `[wow-api MCP tool, live docs, existing addon code, or URL]`
 - **Notes:** `[constraints, version details, edge cases]`
 - **Deprecation Info:** `[none or details]`
 

@@ -18,7 +18,7 @@ compatibility: Requires Lua 5.1 tooling, luacheck, busted, and repository test d
 4. For saved variable changes, confirm migration logic, migration tests, and `docs/DATA_SCHEMA.md` updates.
 5. For docs-only changes, verify links, commands, and described behavior.
 6. For CI/release changes, verify `docs/CI_AND_RELEASE.md` and relevant workflow files.
-7. Save `.agents/artifacts/Validation_Report_Artifact.md` for Antigravity workflow runs.
+7. Save `.agents/artifacts/Validation_Report_Artifact.md` using `references/Validation_Report_Template.md` for Antigravity workflow runs.
 
 ## Failure Handling
 
