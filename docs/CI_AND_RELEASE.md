@@ -4,14 +4,14 @@ This repository uses three GitHub Actions workflows.
 
 ## 1) Luacheck (`.github/workflows/luacheck.yml`)
 
-- Triggered on pushes to `master` and `dev/*`
+- Triggered on pushes to `master`
 - Triggered on all pull requests
 - Runs:
   - `luacheck VolumeSliders spec`
 
 ## 2) Busted + Coverage (`.github/workflows/busted.yml`)
 
-- Triggered on pushes to `master` and `dev/*`
+- Triggered on pushes to `master`
 - Triggered on all pull requests
 - Runs:
   - `busted . --verbose --coverage`
