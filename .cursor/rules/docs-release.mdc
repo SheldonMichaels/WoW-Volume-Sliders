@@ -1,0 +1,13 @@
+---
+description: Documentation, changelog, CI, and release guidance
+globs: README.md, CONTRIBUTING.md, CHANGELOG.md, SECURITY.md, docs/**/*.md, .github/workflows/*.yml, .pkgmeta, .gitignore
+alwaysApply: false
+---
+
+# Docs and Release Rules
+
+- Keep public docs user-focused and contributor docs contract-focused.
+- `CHANGELOG.md` must avoid code jargon, filenames, and internal architecture details.
+- Review `docs/CI_AND_RELEASE.md` before changing workflows, packaging, version bumps, or release process.
+- For GitHub CLI bodies longer than one sentence, write an ignored markdown body file and use `--body-file`.
+- Never merge PRs or create release tags unless the user explicitly directs that exact action.

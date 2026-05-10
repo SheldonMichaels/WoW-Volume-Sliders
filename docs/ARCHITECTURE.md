@@ -5,6 +5,8 @@
 The addon is split into focused modules under `VolumeSliders/`:
 
 - `Core.lua`: shared constants, helpers, default schema, and cross-module utilities
+- `SliderWidgets.lua`: widget factory functions for sliders and checkboxes, used by `PopupFrame.lua` and `Settings_*.lua`
+- `Appearance.lua`: layout, styling, anchoring, and visual state for the popup window
 - `Init.lua`: `PLAYER_LOGIN` bootstrap, schema migrations, baseline restoration, and module initialization
 - `PopupFrame.lua`: main in-game slider window
 - `Settings_*.lua`: Blizzard Settings UI sections (window, sliders, automation, minimap, mouse actions)
@@ -42,6 +44,10 @@ See `docs/DATA_SCHEMA.md` for canonical structure.
 - `schemaVersion` only advances via explicit migration code.
 - Preset index operations must keep automation pointers and bindings synchronized.
 - UI state changes that affect layout should flag layout dirty before redraw.
+
+## Preset System
+
+The addon uses a three-layer state stack (baseline → automation → manual) with three mathematical modes (Absolute, Floor, Ceiling). See `docs/PRESET_BEHAVIOR.md` for the full behavioral contract.
 
 ## Third-Party Libraries
 

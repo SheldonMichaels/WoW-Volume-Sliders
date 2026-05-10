@@ -14,5 +14,6 @@ local_dev_assets/
 
 # Agents
 GEMINI.md
+AGENTS.local.md
 .agent/
-AGENTS.md
+.agents/artifacts/

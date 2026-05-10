@@ -1,0 +1,13 @@
+---
+description: AI assistant docs, Cursor rules, Antigravity skills, and workflow structure
+globs: AGENTS.md, .cursor/rules/**/*.mdc, .agents/**/*.md, docs/AGENT_WORKFLOW.md
+alwaysApply: false
+---
+
+# Agent Context Rules
+
+- Keep `AGENTS.md` as the universal baseline.
+- Keep `.cursor/rules` short, scoped, and non-duplicative.
+- Keep Antigravity personas, skills, and workflows under `.agents/`.
+- Put generated artifacts and local overrides in ignored paths.
+- Use Agent Skills-compatible `SKILL.md` packages where practical.
