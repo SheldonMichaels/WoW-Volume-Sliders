@@ -35,4 +35,14 @@ describe("SliderWidgets Factory Module", function()
         local onWheel = slider:GetScript("OnMouseWheel")
         assert.is_function(onWheel)
     end)
+
+    it("syncs the baseline when a standard slider changes", function()
+        local slider = VS:CreateVerticalSlider(_G.UIParent, "SyncSlider", "Sync", "Sound_MasterVolume", "Sound_EnableAllSound", 0, 1, 0.01)
+        local onValueChanged = slider:GetScript("OnValueChanged")
+
+        onValueChanged(slider, 0.25)
+
+        assert.are.equal("0.75", _G.GetCVar("Sound_MasterVolume"))
+        assert.are.equal(0.75, VS.session.baselineVolumes["Sound_MasterVolume"])
+    end)
 end)

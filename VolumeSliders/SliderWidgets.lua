@@ -341,6 +341,9 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
             end
         end
 
+        -- Unified State Sync: Keep the baseline informed of manual user adjustments.
+        VS:SyncBaseline(cvar, val)
+
         if VS.PlaySampleSound then
             VS:PlaySampleSound(cvar, val)
         end
