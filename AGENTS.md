@@ -40,6 +40,7 @@ The release package is built from `VolumeSliders/`; docs and AI configuration ar
 ## Development Rules
 
 - Work on a `dev/*` branch for repository modifications. Do not commit directly to `master`.
+- For PR-bound work, start from current `origin/master` unless the user explicitly asks for a stacked branch.
 - Keep changes scoped to the user's request and the established module boundaries.
 - Preserve existing comments, LDoc, taint notes, and security breadcrumbs unless they are stale. Update misleading comments when touching related logic.
 - New Lua functions must use LDoc comments when they introduce non-obvious behavior or public module surface.
@@ -89,9 +90,10 @@ Documentation-only changes do not require the Lua test suite unless they alter d
 
 - Assume Windows paths and PowerShell unless a tool explicitly provides another shell.
 - Run git commands one at a time and inspect their output before the next git action.
+- Before opening a PR, verify `git log origin/master...HEAD` contains only intended commits.
 - For `gh pr create`, `gh issue comment`, or other long GitHub CLI bodies, write the body to an ignored markdown file first and use `--body-file`.
 - Do not merge pull requests. Only the human user may merge PRs.
-- Do not create or push release tags without explicit user permission for that tag.
+- After the human confirms a squash merge, sync local `master`, clean up the local dev branch, and ask explicit permission before creating or pushing the annotated release tag for the exact version.
 
 ## Documentation Style
 
