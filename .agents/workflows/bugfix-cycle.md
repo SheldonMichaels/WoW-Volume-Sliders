@@ -17,3 +17,4 @@ Use this workflow when the user reports broken behavior, screenshots, errors, fa
 5. Act as `@validator` and run `wow-validation`.
 6. If validation fails, repeat the debugging and validation loop until clean or blocked.
 7. Update comments or docs when the bug reveals a stable contract or non-obvious invariant.
+8. For normal user-facing fixes, continue into `release-pr` so the fix includes version and changelog updates unless the user explicitly says not to ship it yet.

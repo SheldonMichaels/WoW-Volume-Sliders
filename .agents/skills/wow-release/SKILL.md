@@ -9,16 +9,18 @@ compatibility: Requires git, GitHub access, gh or GitHub MCP, and repository val
 ## Instructions
 
 1. Read `AGENTS.md`, `docs/AGENT_WORKFLOW.md`, `docs/CI_AND_RELEASE.md`, and the current diff.
-2. Confirm the user explicitly asked for release preparation.
+2. Treat normal user-facing bug fixes and features as release preparation unless the user explicitly says not to ship the change yet.
 3. Review completed work, linked issues, validation status, and release scope.
 4. Draft release notes using `references/Release_Notes_Template.md`.
-5. Synchronize required version and changelog files.
+5. Synchronize required version and changelog files before opening the PR.
 6. Run required validation before committing, pushing, or opening a PR when code changed.
-7. Use an ignored markdown file plus `--body-file` for GitHub CLI PR bodies.
-8. Open a PR targeting `master` and wait for CI.
-9. Instruct the human user to manually squash and merge on GitHub.
-10. Stop until the user confirms the PR was merged.
-11. Ask explicit permission before creating or pushing any release tag.
+7. Confirm the branch starts from `origin/master` and `git log origin/master...HEAD` contains only intended commits.
+8. Use an ignored markdown file plus `--body-file` for GitHub CLI PR bodies.
+9. Open a PR targeting `master` and wait for CI.
+10. Instruct the human user to manually squash and merge on GitHub.
+11. Stop until the user confirms the PR was merged.
+12. After merge confirmation, fetch/prune, fast-forward local `master`, verify the release version on `master`, and clean up the local dev branch.
+13. Ask explicit permission before creating or pushing the annotated release tag for the exact version.
 
 ## Hard Constraints
 

@@ -39,6 +39,7 @@ If CI or workflow files change, review `docs/CI_AND_RELEASE.md` and ensure the d
 
 - Identify affected modules and whether the change touches Lua, XML, docs, tests, CI, saved variables, or release metadata.
 - Create or use a `dev/*` branch for repository modifications.
+- For PR-bound work, start from current `origin/master` unless the user explicitly asks to stack on another branch.
 - Do not write implementation code before the boundaries are clear.
 - For large or risky work, produce an architecture artifact in an ignored artifact directory.
 
@@ -82,14 +83,16 @@ If CI or workflow files change, review `docs/CI_AND_RELEASE.md` and ensure the d
 ### Release
 
 - Follow `docs/CI_AND_RELEASE.md` and the tracked Antigravity release workflow.
+- Treat normal user-facing bug fixes and features as release PRs for this one-maintainer addon unless the user explicitly says not to ship the change yet.
 - Version bumping must keep these files synchronized:
   - `VolumeSliders/VolumeSliders.toc`
   - `CHANGELOG.md`
   - `local_dev_assets/dev_changelog.md` when present and relevant
   - `README.md` only when user-facing feature status changes
+- Before opening a PR, verify the branch contains only intended commits with `git log origin/master...HEAD`.
 - All merges into `master` must go through a GitHub PR.
 - The agent must not merge PRs.
-- The agent must not create or push release tags without explicit permission for that tag.
+- After the human confirms a squash merge, fetch/prune, fast-forward local `master`, delete the local dev branch, verify the release version on `master`, and ask explicit permission before creating or pushing the annotated release tag for that exact version.
 
 ## Saved Variable Rules
 

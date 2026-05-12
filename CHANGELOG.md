@@ -1,4 +1,9 @@
-# Changelog (v3.9.0)
+# Changelog (v3.9.1)
+
+## v3.9.1 — 2026-05-12
+
+### Fixed
+- **Mute Toggle Volume Restore**: Fixed an issue where unmuting one channel could unexpectedly restore a different channel to an older volume when no presets were active.
 
 ## v3.9.0 — 2026-05-07
 
