@@ -112,6 +112,18 @@ describe("Registry-based Preset Logic (Unified State Stack)", function()
         assert.are.equal("0.7", _G.cvarStorage["Sound_MasterVolume"])
     end)
 
+    it("does not rewrite unrelated channels when syncing mute state with no active presets", function()
+        VS.session.baselineVolumes["Sound_MasterVolume"] = 0.4
+        VS.session.baselineMutes["Sound_MusicVolume"] = "0"
+        _G.cvarStorage["Sound_MasterVolume"] = "0.9"
+        _G.cvarStorage["Sound_EnableMusic"] = "0"
+
+        VS:SyncBaseline("Sound_EnableMusic", "1")
+
+        assert.are.equal("0.9", _G.cvarStorage["Sound_MasterVolume"])
+        assert.are.equal("1", VS.session.baselineMutes["Sound_MusicVolume"])
+    end)
+
     it("filters CVAR_UPDATE to prevent infinite loops", function()
         -- Simulate Blizzard UI changing a volume
         VS.session.isSettingInternal = false

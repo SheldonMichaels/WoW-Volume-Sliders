@@ -524,7 +524,11 @@ function VS:SyncBaseline(channel, value, isVoiceMuteToggle)
         if anyActive then break end
     end
 
-    if anyActive and not isMuteCVar and not isVoiceMuteToggle then
+    if not anyActive then
+        return
+    end
+
+    if not isMuteCVar and not isVoiceMuteToggle then
         sess.manualOverrides[targetChannel] = true
     end
 
