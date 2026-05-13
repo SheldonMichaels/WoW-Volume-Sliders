@@ -74,6 +74,7 @@ Browse the [open issues](https://github.com/SheldonMichaels/WoW-Volume-Sliders/i
 - [CI and Release](docs/CI_AND_RELEASE.md)
 - [AI Agent Guide](AGENTS.md)
 - [Agent Workflow](docs/AGENT_WORKFLOW.md)
+- [Antigravity Guide](docs/ANTIGRAVITY_GUIDE.md)
 
 ## Libraries
 

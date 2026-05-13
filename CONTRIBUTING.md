@@ -57,4 +57,5 @@ If you change saved variable structure:
 - `docs/AGENT_WORKFLOW.md` is the detailed operating guide.
 - `.cursor/rules/` contains scoped Cursor project rules.
 - `.agents/` contains Google Antigravity personas, skills, and workflows.
+- `docs/ANTIGRAVITY_GUIDE.md` explains how to operate Google Antigravity with this project.
 - Generated artifacts and local-only overrides must stay ignored.
