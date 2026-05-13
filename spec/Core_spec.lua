@@ -16,8 +16,8 @@ describe("VolumeSliders Core Module", function()
         
         -- Mock dependencies that Core.lua expects to exist or call
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 8,
-            appearance = { windowWidth = 375, windowHeight = 440, sampleSound = 856, sampleSoundMinimap = 850 },
+            schemaVersion = 9,
+            appearance = { windowWidth = 375, windowHeight = 440, sampleSound = 856, sampleSoundMinimap = 850, volumeDisplayFormat = "percentage" },
             layout = { sliderOrder = {}, footerOrder = {}, mouseActions = { sliders = {}, scrollWheel = {} } },
             toggles = { showMinimapTooltip = true, playSampleSound = true, playSampleSoundMinimap = true },
             channels = {},
@@ -48,6 +48,30 @@ describe("VolumeSliders Core Module", function()
         it("GetVolumeText should return percentage string", function()
             _G.SetCVar("Sound_MasterVolume", "0.45")
             assert.equal("45%", VS:GetVolumeText())
+        end)
+
+        it("FormatVolumeValue should return percentage strings by default", function()
+            assert.equal("80%", VS:FormatVolumeValue(0.8))
+            assert.equal("100%", VS:FormatVolumeValue(1.5))
+            assert.equal("0%", VS:FormatVolumeValue(-0.1))
+        end)
+
+        it("FormatVolumeValue should return fixed decimal strings", function()
+            _G.VolumeSlidersMMDB.appearance.volumeDisplayFormat = "decimal"
+            assert.equal("0.80", VS:FormatVolumeValue(0.8))
+            assert.equal("0.46", VS:FormatVolumeValue(0.455))
+        end)
+
+        it("FormatVolumeValue should return decibel strings", function()
+            _G.VolumeSlidersMMDB.appearance.volumeDisplayFormat = "decibel"
+            assert.equal("0.0 dB", VS:FormatVolumeValue(1))
+            assert.equal("-1.9 dB", VS:FormatVolumeValue(0.8))
+            assert.equal("-∞ dB", VS:FormatVolumeValue(0))
+        end)
+
+        it("FormatVolumeValue should fall back to percentage for unknown formats", function()
+            _G.VolumeSlidersMMDB.appearance.volumeDisplayFormat = "unknown"
+            assert.equal("80%", VS:FormatVolumeValue(0.8))
         end)
 
         it("AdjustVolume should clamp to [0, 1]", function()

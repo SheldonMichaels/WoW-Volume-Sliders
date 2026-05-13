@@ -1,18 +1,18 @@
 -------------------------------------------------------------------------------
--- spec/MigrationV8_spec.lua
--- Tests the V7 to V8 database migration.
+-- spec/MigrationV9_spec.lua
+-- Tests the V8 to V9 database migration.
 -------------------------------------------------------------------------------
 
-describe("V7 to V8 Database Migration", function()
+describe("V8 to V9 Database Migration", function()
     local VS
     local initFrameScript
 
     before_each(function()
         VS = {}
 
-        -- Mock a pristine V7 Database
+        -- Mock a pristine V8 Database
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 7,
+            schemaVersion = 8,
             toggles = {},
             appearance = {},
             minimap = {},
@@ -50,34 +50,22 @@ describe("V7 to V8 Database Migration", function()
         _G.CreateFrame = realCreateFrame
     end)
 
-    it("should initialize playSampleSound to false and sampleSound to 856, and stamp the latest schema version", function()
+    it("should initialize volumeDisplayFormat to percentage and stamp version 9", function()
         local db = _G.VolumeSlidersMMDB
-        
-        -- Logic is executed during PLAYER_LOGIN
+
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
         assert.are.equal(9, db.schemaVersion)
-        assert.is_false(db.toggles.playSampleSound)
-        assert.is_false(db.toggles.playSampleSoundMinimap)
-        assert.are.equal(856, db.appearance.sampleSound)
-        assert.are.equal(856, db.appearance.sampleSoundMinimap)
         assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
     end)
 
-    it("should not overwrite existing sample sound variables if migrating from higher versions or manually set", function()
+    it("should not overwrite an existing volumeDisplayFormat", function()
         local db = _G.VolumeSlidersMMDB
-        db.toggles.playSampleSound = true
-        db.appearance.sampleSound = "Sound/MyCustomSound.ogg"
-        
+        db.appearance.volumeDisplayFormat = "decibel"
+
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
         assert.are.equal(9, db.schemaVersion)
-        assert.is_true(db.toggles.playSampleSound)
-        assert.are.equal("Sound/MyCustomSound.ogg", db.appearance.sampleSound)
-        assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
-        
-        -- Minimap should have defaulted since we didn't mock it
-        assert.is_false(db.toggles.playSampleSoundMinimap)
-        assert.are.equal(856, db.appearance.sampleSoundMinimap)
+        assert.are.equal("decibel", db.appearance.volumeDisplayFormat)
     end)
 end)

@@ -15,7 +15,6 @@ local _, VS = ...
 -------------------------------------------------------------------------------
 -- Localized Globals
 -------------------------------------------------------------------------------
-local math_floor = math.floor
 local math_max   = math.max
 local pairs      = pairs
 local ipairs     = ipairs
@@ -588,6 +587,22 @@ function VS:UpdateAppearance()
     -- Only flag the layout as clean if we actually populated sliders this pass
     if VS.sliders and next(VS.sliders) ~= nil then
         VS.session.layoutDirty = false
+    end
+end
+
+-------------------------------------------------------------------------------
+--- Refresh visible slider value labels after display-format changes.
+function VS:RefreshSliderValueTexts()
+    if VS.sliders then
+        for _, slider in pairs(VS.sliders) do
+            if slider.RefreshValue then
+                slider:RefreshValue()
+            end
+        end
+    end
+
+    if VS.previewSlider and VS.previewSlider.RefreshValue then
+        VS.previewSlider:RefreshValue()
     end
 end
 

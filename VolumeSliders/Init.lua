@@ -511,6 +511,24 @@ local function Migrate_V7_to_V8(db)
 end
 
 -------------------------------------------------------------------------------
+-- V8 -> V9 Schema Migration Engine
+--
+-- Adds the `volumeDisplayFormat` property to the `appearance` namespace.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V8_to_V9(db)
+    if db.schemaVersion and db.schemaVersion >= 9 then return end
+
+    db.appearance = db.appearance or {}
+    if db.appearance.volumeDisplayFormat == nil then
+        db.appearance.volumeDisplayFormat = "percentage"
+    end
+
+    db.schemaVersion = 9
+end
+
+-------------------------------------------------------------------------------
 -- Main Event Handler (PLAYER_LOGIN)
 --
 -- Orchestrates the addon bootstrap sequence:
@@ -531,6 +549,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     Migrate_V5_to_V6(db)
     Migrate_V6_to_V7(db)
     Migrate_V7_to_V8(db)
+    Migrate_V8_to_V9(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"

@@ -77,14 +77,15 @@ describe("Schema V5 to V6 Migration", function()
         _G.CreateFrame = realCreateFrame
     end)
 
-    it("should initialize enableDeviceVolumes and stamp version 6", function()
+    it("should initialize enableDeviceVolumes and stamp the latest schema version", function()
         local db = _G.VolumeSlidersMMDB
 
         -- Logic is executed during PLAYER_LOGIN
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(8, db.schemaVersion)
+        assert.are.equal(9, db.schemaVersion)
         assert.is_true(db.automation.enableDeviceVolumes)
+        assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
     end)
 
     it("should not overwrite enableDeviceVolumes if already present", function()
@@ -94,7 +95,8 @@ describe("Schema V5 to V6 Migration", function()
         
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(8, db.schemaVersion)
+        assert.are.equal(9, db.schemaVersion)
         assert.is_false(db.automation.enableDeviceVolumes)
+        assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
     end)
 end)

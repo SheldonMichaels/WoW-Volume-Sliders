@@ -3,7 +3,7 @@
 **Database:** `VolumeSlidersMMDB`
 **Scope:** Global / Account-wide
 **Format:** Serialized Lua Table (Pseudo-JSON representation below)
-**Last Audited:** 2026-05-06 (SchemaVersion 8)
+**Last Audited:** 2026-05-12 (SchemaVersion 9)
 
 This document defines the exact shape of the saved variables used by Volume Sliders. It acts as the single source of truth for the data layer, distinguishing between user-configurable options, transient session states, and deprecated keys.
 
@@ -15,7 +15,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
 
 ```json
 {
-  "schemaVersion": 8,
+  "schemaVersion": 9,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -43,7 +43,8 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     "highColor": "string",  // Enum (e.g., "White")
     "lowColor": "string",   // Enum (e.g., "White")
     "sampleSound": "number|string", // SoundKit ID for slider chimes
-    "sampleSoundMinimap": "number|string" // SoundKit ID for minimap chimes
+    "sampleSoundMinimap": "number|string", // SoundKit ID for minimap chimes
+    "volumeDisplayFormat": "string" // Enum: "percentage", "decimal", "decibel"
   },
 
   // ---------------------------------------------------------
@@ -270,3 +271,7 @@ Adds the `showEmoteSounds` toggle to the `toggles` namespace and injects it into
 ## Migration Contract (`Init.lua:Migrate_V7_to_V8`)
 
 Adds the `playSampleSound` and `playSampleSoundMinimap` booleans to the `toggles` namespace (default `false`), and the `sampleSound` and `sampleSoundMinimap` properties to the `appearance` namespace (default `856`) to support auditory feedback when sliders or the minimap icon are scrolled.
+
+## Migration Contract (`Init.lua:Migrate_V8_to_V9`)
+
+Adds the `appearance.volumeDisplayFormat` string enum (default `"percentage"`) to control how current volume values are rendered in the popup, minimap broker text, minimap tooltip, and preset editor sliders. Existing users retain percentage output until they choose a different format.

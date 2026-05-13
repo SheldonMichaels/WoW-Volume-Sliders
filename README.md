@@ -53,6 +53,7 @@ Quick-access vertical volume sliders for every WoW sound channel, right from you
 ### Window & Appearance
 - **2D resizable window** — drag edges or corners; sliders and footer elements reflow automatically.
 - **Custom backgrounds** — adjust window color and opacity via the native Blizzard color picker.
+- **Volume display formats** — show values as percentages, decimals, or decibels across sliders and minimap displays.
 - **Lock, persist, or auto-close** — pin the window in place, keep it open across sessions, or let it dismiss on click-away.
 
 ### Ecosystem
