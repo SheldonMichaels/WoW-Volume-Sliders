@@ -529,6 +529,27 @@ local function Migrate_V8_to_V9(db)
 end
 
 -------------------------------------------------------------------------------
+-- V9 -> V10 Schema Migration Engine
+--
+-- Injects default values for the new `minimap` customization fields.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V9_to_V10(db)
+    if db.schemaVersion and db.schemaVersion >= 10 then return end
+
+    db.minimap = db.minimap or {}
+    if db.minimap.iconScale == nil then db.minimap.iconScale = 1.0 end
+    if db.minimap.iconColor == nil then db.minimap.iconColor = { r = 1, g = 1, b = 1, a = 1 } end
+    if db.minimap.fadeSpeed == nil then db.minimap.fadeSpeed = 0.2 end
+    if db.minimap.minimalistClampMode == nil then db.minimap.minimalistClampMode = false end
+    if db.minimap.minimalistAngle == nil then db.minimap.minimalistAngle = 225 end
+    if db.minimap.minimalistRadius == nil then db.minimap.minimalistRadius = 10 end
+
+    db.schemaVersion = 10
+end
+
+-------------------------------------------------------------------------------
 -- Main Event Handler (PLAYER_LOGIN)
 --
 -- Orchestrates the addon bootstrap sequence:
@@ -550,6 +571,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     Migrate_V6_to_V7(db)
     Migrate_V7_to_V8(db)
     Migrate_V8_to_V9(db)
+    Migrate_V9_to_V10(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"

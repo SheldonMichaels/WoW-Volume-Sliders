@@ -3,7 +3,7 @@
 **Database:** `VolumeSlidersMMDB`
 **Scope:** Global / Account-wide
 **Format:** Serialized Lua Table (Pseudo-JSON representation below)
-**Last Audited:** 2026-05-12 (SchemaVersion 9)
+**Last Audited:** 2026-05-13 (SchemaVersion 10)
 
 This document defines the exact shape of the saved variables used by Volume Sliders. It acts as the single source of truth for the data layer, distinguishing between user-configurable options, transient session states, and deprecated keys.
 
@@ -15,7 +15,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
 
 ```json
 {
-  "schemaVersion": 9,
+  "schemaVersion": 10,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -144,6 +144,14 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     "minimalistMinimap": "boolean",// Toggles custom minimalist speaker icon style (nil = auto-detect)
     "minimalistOffsetX": "number", // X offset for minimalist icon
     "minimalistOffsetY": "number", // Y offset for minimalist icon
+    "iconScale": "number",         // Scale of minimalist icon
+    "iconColor": {                 // Color tint for minimalist icon
+      "r": "number", "g": "number", "b": "number", "a": "number"
+    },
+    "fadeSpeed": "number",         // Fade duration in seconds
+    "minimalistClampMode": "boolean", // True to clamp radially, false for free X/Y
+    "minimalistAngle": "number",   // Radial angle (0-360) if clamped
+    "minimalistRadius": "number",  // Radial offset if clamped
     
     // Tooltip and Click Bindings specific to the Minimap Icon
     "showMinimapTooltip": "boolean", // Enables/disables minimap icon tooltip
@@ -275,3 +283,7 @@ Adds the `playSampleSound` and `playSampleSoundMinimap` booleans to the `toggles
 ## Migration Contract (`Init.lua:Migrate_V8_to_V9`)
 
 Adds the `appearance.volumeDisplayFormat` string enum (default `"percentage"`) to control how current volume values are rendered in the popup, minimap broker text, minimap tooltip, and preset editor sliders. Existing users retain percentage output until they choose a different format.
+
+## Migration Contract (`Init.lua:Migrate_V9_to_V10`)
+
+Injects default values for the new `minimap` customization fields (`iconScale`, `iconColor`, `fadeSpeed`, `minimalistClampMode`, `minimalistAngle`, `minimalistRadius`) introduced in v3.11.0 to support the extended minimalist minimap icon feature.

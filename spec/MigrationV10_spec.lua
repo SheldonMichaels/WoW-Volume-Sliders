@@ -1,21 +1,25 @@
 -------------------------------------------------------------------------------
--- spec/MigrationV8_spec.lua
--- Tests the V7 to V8 database migration.
+-- spec/MigrationV10_spec.lua
+-- Tests the V9 to V10 database migration.
 -------------------------------------------------------------------------------
 
-describe("V7 to V8 Database Migration", function()
+describe("V9 to V10 Database Migration", function()
     local VS
     local initFrameScript
 
     before_each(function()
         VS = {}
 
-        -- Mock a pristine V7 Database
+        -- Mock a pristine V9 Database
         _G.VolumeSlidersMMDB = {
-            schemaVersion = 7,
+            schemaVersion = 9,
             toggles = {},
             appearance = {},
-            minimap = {},
+            minimap = {
+                minimalistMinimap = true,
+                minimalistOffsetX = 5,
+                minimalistOffsetY = -5
+            },
             layout = { footerOrder = {} }
         }
 
@@ -50,34 +54,44 @@ describe("V7 to V8 Database Migration", function()
         _G.CreateFrame = realCreateFrame
     end)
 
-    it("should initialize playSampleSound to false and sampleSound to 856, and stamp the latest schema version", function()
+    it("should migrate schemaVersion from 9 to 10 and inject defaults", function()
         local db = _G.VolumeSlidersMMDB
-        
-        -- Logic is executed during PLAYER_LOGIN
+
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
         assert.are.equal(10, db.schemaVersion)
-        assert.is_false(db.toggles.playSampleSound)
-        assert.is_false(db.toggles.playSampleSoundMinimap)
-        assert.are.equal(856, db.appearance.sampleSound)
-        assert.are.equal(856, db.appearance.sampleSoundMinimap)
-        assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
+        
+        -- Ensure old keys were untouched
+        assert.is_true(db.minimap.minimalistMinimap)
+        assert.are.equal(5, db.minimap.minimalistOffsetX)
+        assert.are.equal(-5, db.minimap.minimalistOffsetY)
+        
+        -- Check newly injected defaults
+        assert.are.equal(1.0, db.minimap.iconScale)
+        assert.are.same({ r = 1, g = 1, b = 1, a = 1 }, db.minimap.iconColor)
+        assert.are.equal(0.2, db.minimap.fadeSpeed)
+        assert.is_false(db.minimap.minimalistClampMode)
+        assert.are.equal(225, db.minimap.minimalistAngle)
+        assert.are.equal(10, db.minimap.minimalistRadius)
     end)
 
-    it("should not overwrite existing sample sound variables if migrating from higher versions or manually set", function()
+    it("should not overwrite existing fields if already set", function()
         local db = _G.VolumeSlidersMMDB
-        db.toggles.playSampleSound = true
-        db.appearance.sampleSound = "Sound/MyCustomSound.ogg"
-        
+        db.minimap.iconScale = 1.5
+        db.minimap.iconColor = { r = 0, g = 0, b = 0, a = 1 }
+        db.minimap.fadeSpeed = 0.5
+        db.minimap.minimalistClampMode = true
+        db.minimap.minimalistAngle = 90
+        db.minimap.minimalistRadius = 50
+
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
         assert.are.equal(10, db.schemaVersion)
-        assert.is_true(db.toggles.playSampleSound)
-        assert.are.equal("Sound/MyCustomSound.ogg", db.appearance.sampleSound)
-        assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
-        
-        -- Minimap should have defaulted since we didn't mock it
-        assert.is_false(db.toggles.playSampleSoundMinimap)
-        assert.are.equal(856, db.appearance.sampleSoundMinimap)
+        assert.are.equal(1.5, db.minimap.iconScale)
+        assert.are.same({ r = 0, g = 0, b = 0, a = 1 }, db.minimap.iconColor)
+        assert.are.equal(0.5, db.minimap.fadeSpeed)
+        assert.is_true(db.minimap.minimalistClampMode)
+        assert.are.equal(90, db.minimap.minimalistAngle)
+        assert.are.equal(50, db.minimap.minimalistRadius)
     end)
 end)

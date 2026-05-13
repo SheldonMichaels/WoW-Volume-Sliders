@@ -20,6 +20,8 @@ local tonumber   = tonumber
 local pairs      = pairs
 local GetCVar    = GetCVar
 local SetCVar    = SetCVar
+local UIFrameFadeIn = _G.UIFrameFadeIn
+local UIFrameFadeOut = _G.UIFrameFadeOut
 
 -----------------------------------------
 -- Voice Chat Push-to-Talk Helpers
@@ -207,6 +209,46 @@ function VS:UpdateVolumeTexture(texture)
     end
 end
 
+--- Apply styling, scale, and positioning to the minimalist button.
+function VS:UpdateMinimapVisuals()
+    if not VS.minimalistButton then return end
+    local db = VolumeSlidersMMDB.minimap
+    
+    VS.minimalistButton:SetScale(db.iconScale or 1.0)
+    
+    local c = db.iconColor or { r=1, g=1, b=1, a=1 }
+    -- Always desaturate so we can correctly tint the gold away
+    VS.minimalistButton.minimalistIcon:SetDesaturated(true)
+    
+    -- Check mute state and color appropriately
+    if GetCVar("Sound_EnableAllSound") == "0" then
+        VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker-mute")
+        VS.minimalistButton.minimalistIcon:SetVertexColor(1, 0, 0, 1)
+    else
+        VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker")
+        VS.minimalistButton.minimalistIcon:SetVertexColor(c.r, c.g, c.b, c.a)
+    end
+    
+    if db.minimalistClampMode then
+        local angle = db.minimalistAngle or 225
+        local radius = db.minimalistRadius or 10
+        local rad = math.rad(angle)
+        local cx = (Minimap:GetWidth() / 2) + radius
+        local cy = (Minimap:GetHeight() / 2) + radius
+        
+        local x = math.cos(rad) * cx
+        local y = math.sin(rad) * cy
+        
+        VS.minimalistButton:ClearAllPoints()
+        VS.minimalistButton:SetPoint("CENTER", Minimap, "CENTER", x, y)
+    else
+        local xOffset = db.minimalistOffsetX or -35
+        local yOffset = db.minimalistOffsetY or -5
+        VS.minimalistButton:ClearAllPoints()
+        VS.minimalistButton:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", xOffset, yOffset)
+    end
+end
+
 --- Locate the minimap button created by LibDBIcon and the custom minimalist button
 -- and update their icon textures to reflect the current mute state.
 function VS:UpdateMiniMapVolumeIcon()
@@ -216,11 +258,7 @@ function VS:UpdateMiniMapVolumeIcon()
     end
 
     if VS.minimalistButton and VS.minimalistButton.minimalistIcon then
-        if GetCVar("Sound_EnableAllSound") == "0" then
-            VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker-mute")
-        else
-            VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker")
-        end
+        VS:UpdateMinimapVisuals()
     end
 end
 
@@ -258,6 +296,7 @@ end
 -------------------------------------------------------------------------------
 local hoverTimer = 0
 local checkInterval = 0.15
+local isFadedIn = false
 
 local function HoverPolling_OnUpdate(self, elapsed)
     hoverTimer = hoverTimer + elapsed
@@ -278,7 +317,11 @@ end
 function VS:StartHoverPolling()
     if not VolumeSlidersMMDB.minimap.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.minimap.bindToMinimap then return end
 
-    VS.minimalistButton:SetAlpha(1)
+    if not isFadedIn then
+        local speed = VolumeSlidersMMDB.minimap.fadeSpeed or 0.2
+        UIFrameFadeIn(VS.minimalistButton, speed, VS.minimalistButton:GetAlpha(), 1)
+        isFadedIn = true
+    end
     if VS.minimalistButton:GetScript("OnUpdate") ~= HoverPolling_OnUpdate then
         hoverTimer = 0
         checkInterval = 0.15 -- Reset to fast polling when newly entering
@@ -301,9 +344,17 @@ function VS:CheckMinimapHover()
     if MinimapZoomOut and MinimapZoomOut:IsMouseOver() then isOver = true end
 
     if isOver then
-        VS.minimalistButton:SetAlpha(1)
+        if not isFadedIn then
+            local speed = VolumeSlidersMMDB.minimap.fadeSpeed or 0.2
+            UIFrameFadeIn(VS.minimalistButton, speed, VS.minimalistButton:GetAlpha(), 1)
+            isFadedIn = true
+        end
     else
-        VS.minimalistButton:SetAlpha(0)
+        if isFadedIn then
+            local speed = VolumeSlidersMMDB.minimap.fadeSpeed or 0.2
+            UIFrameFadeOut(VS.minimalistButton, speed, VS.minimalistButton:GetAlpha(), 0)
+            isFadedIn = false
+        end
         VS.minimalistButton:SetScript("OnUpdate", nil)
 
         -- Force the native Minimap to clean up its zoom buttons since the cursor
@@ -339,14 +390,12 @@ function VS:CreateMinimalistButton()
     if VolumeSlidersMMDB.minimap.bindToMinimap then
         btn:SetParent(Minimap)
         btn:SetAlpha(0)
+        isFadedIn = false
     else
         btn:SetParent(UIParent)
         btn:SetAlpha(1)
+        isFadedIn = true
     end
-
-    local xOffset = VolumeSlidersMMDB.minimap.minimalistOffsetX or -35
-    local yOffset = VolumeSlidersMMDB.minimap.minimalistOffsetY or -5
-    btn:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", xOffset, yOffset)
 
     btn:SetFrameStrata("MEDIUM")
     btn:SetFrameLevel(Minimap:GetFrameLevel() + 10)
@@ -359,6 +408,13 @@ function VS:CreateMinimalistButton()
     shadow:SetAtlas("voicechat-icon-speaker")
     shadow:SetVertexColor(0, 0, 0, 0.7)
     btn.shadow = shadow
+    
+    local shadow2 = btn:CreateTexture(nil, "ARTWORK", nil, 1)
+    shadow2:SetSize(17, 17)
+    shadow2:SetPoint("CENTER", btn, "CENTER", 2, -2)
+    shadow2:SetAtlas("voicechat-icon-speaker")
+    shadow2:SetVertexColor(0, 0, 0, 0.4)
+    btn.shadow2 = shadow2
 
     -- Instead of SetNormalAtlas (which can get hijacked by button border templates),
     -- we use a dedicated child texture layer to guarantee it renders exactly as the Atlas intends.
@@ -379,11 +435,13 @@ function VS:CreateMinimalistButton()
     btn:SetScript("OnMouseDown", function(self, button)
         self.minimalistIcon:SetPoint("CENTER", self, "CENTER", 1, -1)
         self.shadow:SetPoint("CENTER", self, "CENTER", 2, -2)
+        if self.shadow2 then self.shadow2:SetPoint("CENTER", self, "CENTER", 3, -3) end
         VS:HandlePTT_OnMouseDown(button)
     end)
     btn:SetScript("OnMouseUp", function(self, button)
         self.minimalistIcon:SetPoint("CENTER", self, "CENTER", 0, 0)
         self.shadow:SetPoint("CENTER", self, "CENTER", 1, -1)
+        if self.shadow2 then self.shadow2:SetPoint("CENTER", self, "CENTER", 2, -2) end
         VS:HandlePTT_OnMouseUp(button)
 
         -- We handle clicks here now since Frames don't have OnClick
@@ -425,35 +483,51 @@ function VS:CreateMinimalistButton()
         local db = VolumeSlidersMMDB
         if not db.minimap.minimapIconLocked then
             self.isMoving = true
-            self:StartMoving()
+            if db.minimap.minimalistClampMode then
+                self:SetScript("OnUpdate", function()
+                    local mx, my = Minimap:GetCenter()
+                    local px, py = GetCursorPosition()
+                    local scale = Minimap:GetEffectiveScale()
+                    px, py = px / scale, py / scale
+                    
+                    local angle = math.deg(math.atan2(py - my, px - mx))
+                    if angle < 0 then angle = angle + 360 end
+                    VolumeSlidersMMDB.minimap.minimalistAngle = angle
+                    VS:UpdateMinimapVisuals()
+                end)
+            else
+                self:StartMoving()
+            end
         end
     end)
 
     btn:SetScript("OnDragStop", function(self)
         if self.isMoving then
-            self:StopMovingOrSizing()
             self.isMoving = false
+            if VolumeSlidersMMDB.minimap.minimalistClampMode then
+                self:SetScript("OnUpdate", nil)
+            else
+                self:StopMovingOrSizing()
 
-            -- Because StopMovingOrSizing changes the anchor and parent coordinates,
-            -- we explicitly recalculate our offset from the Minimap's BOTTOMRIGHT.
-            local mmScale = Minimap:GetEffectiveScale()
-            local btnScale = self:GetEffectiveScale()
-            -- Find the absolute screen difference between their bottom rights:
-            local mmRight = Minimap:GetRight() * mmScale
-            local mmBottom = Minimap:GetBottom() * mmScale
-            local btnRight = self:GetRight() * btnScale
-            local btnBottom = self:GetBottom() * btnScale
+                -- Because StopMovingOrSizing changes the anchor and parent coordinates,
+                -- we explicitly recalculate our offset from the Minimap's BOTTOMRIGHT.
+                local mmScale = Minimap:GetEffectiveScale()
+                local btnScale = self:GetEffectiveScale()
+                -- Find the absolute screen difference between their bottom rights:
+                local mmRight = Minimap:GetRight() * mmScale
+                local mmBottom = Minimap:GetBottom() * mmScale
+                local btnRight = self:GetRight() * btnScale
+                local btnBottom = self:GetBottom() * btnScale
 
-            -- Convert absolute difference back into the button's local scale
-            local rawX = (btnRight - mmRight) / btnScale
-            local rawY = (btnBottom - mmBottom) / btnScale
+                -- Convert absolute difference back into the button's local scale
+                local rawX = (btnRight - mmRight) / btnScale
+                local rawY = (btnBottom - mmBottom) / btnScale
 
-            VolumeSlidersMMDB.minimap.minimalistOffsetX = rawX
-            VolumeSlidersMMDB.minimap.minimalistOffsetY = rawY
-
-            -- Re-lock the anchor formally so resizing the screen doesn't skew it
-            self:ClearAllPoints()
-            self:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", rawX, rawY)
+                VolumeSlidersMMDB.minimap.minimalistOffsetX = rawX
+                VolumeSlidersMMDB.minimap.minimalistOffsetY = rawY
+                VS:UpdateMinimapVisuals()
+            end
+            if VS.RefreshMinimapSettingsUI then VS.RefreshMinimapSettingsUI() end
         end
     end)
 
@@ -508,10 +582,6 @@ function VS:UpdateMiniMapButtonVisibility()
             VS.LDBIcon:Hide("Volume Sliders")
         end
 
-        -- Store coordinates before parenting reparent scrub
-        local xOffset = VolumeSlidersMMDB.minimap.minimalistOffsetX or -35
-        local yOffset = VolumeSlidersMMDB.minimap.minimalistOffsetY or -5
-
         if VolumeSlidersMMDB.minimap.bindToMinimap then
             VS.minimalistButton:SetParent(Minimap)
             VS:ApplyMinimapHoverHooks()
@@ -522,12 +592,10 @@ function VS:UpdateMiniMapButtonVisibility()
             VS.minimalistButton:SetParent(UIParent)
             VS.minimalistButton:SetAlpha(1)
             VS.minimalistButton:SetScript("OnUpdate", nil)
+            isFadedIn = true
         end
 
-        -- Restore Point
-        VS.minimalistButton:ClearAllPoints()
-        VS.minimalistButton:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", xOffset, yOffset)
-
+        VS:UpdateMinimapVisuals()
         VS.minimalistButton:SetFrameStrata("MEDIUM")
         VS.minimalistButton:SetFrameLevel(Minimap:GetFrameLevel() + 10)
 

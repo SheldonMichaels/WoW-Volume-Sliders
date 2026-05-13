@@ -87,15 +87,19 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     bindMinimapCheck:SetPoint("TOPLEFT", customIconCheck, "BOTTOMLEFT", 0, 5)
     bindMinimapCheck.text:SetText("Bind to Minimap")
 
+    local advFrame -- Forward declaration
+
     local function UpdateBindMinimapState()
         if db.minimap.minimalistMinimap then
             bindMinimapCheck:Enable()
             bindMinimapCheck.text:SetFontObject("GameFontNormalSmall")
             bindMinimapCheck:SetChecked(db.minimap.bindToMinimap)
+            if advFrame then advFrame:SetAlpha(1.0) end
         else
             bindMinimapCheck:Disable()
             bindMinimapCheck.text:SetFontObject("GameFontDisableSmall")
             bindMinimapCheck:SetChecked(true)
+            if advFrame then advFrame:SetAlpha(0.5) end
         end
     end
     UpdateBindMinimapState()
@@ -116,15 +120,204 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     resetBtn:SetScript("OnClick", function()
         VolumeSlidersMMDB.minimap.minimalistOffsetX = -35
         VolumeSlidersMMDB.minimap.minimalistOffsetY = -5
-        if VS.minimalistButton then
-            VS.minimalistButton:ClearAllPoints()
-            VS.minimalistButton:SetPoint("BOTTOMRIGHT", Minimap, "BOTTOMRIGHT", -35, -5)
-        end
+        VolumeSlidersMMDB.minimap.minimalistAngle = 225
+        VolumeSlidersMMDB.minimap.minimalistRadius = 10
+        VolumeSlidersMMDB.minimap.iconScale = 1.0
+        VolumeSlidersMMDB.minimap.iconColor = { r = 1, g = 1, b = 1, a = 1 }
+        if VS.RefreshMinimapSettingsUI then VS.RefreshMinimapSettingsUI() end
+        if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
     end)
     VS:AddTooltip(resetBtn, "Reset the custom minimap icon position to its default location.")
 
+    -- Advanced Minimalist Settings
+    advFrame = CreateFrame("Frame", nil, categoryFrame)
+    advFrame:SetSize(400, 180)
+    advFrame:SetPoint("TOPLEFT", bindMinimapCheck, "BOTTOMLEFT", 0, -10)
+    
+    local scaleLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    scaleLabel:SetPoint("TOPLEFT", 5, 0)
+    scaleLabel:SetText("Icon Scale")
+    
+    local scaleSlider = CreateFrame("Slider", "VSMinimapScaleSlider", advFrame, "OptionsSliderTemplate")
+    scaleSlider:SetPoint("TOPLEFT", scaleLabel, "BOTTOMLEFT", 0, -10)
+    scaleSlider:SetMinMaxValues(0.5, 2.0)
+    scaleSlider:SetValueStep(0.05)
+    scaleSlider:SetObeyStepOnDrag(true)
+    scaleSlider:SetValue(db.minimap.iconScale)
+    _G[scaleSlider:GetName() .. "Low"]:SetText("0.5")
+    _G[scaleSlider:GetName() .. "High"]:SetText("2.0")
+    _G[scaleSlider:GetName() .. "Text"]:SetText(string.format("%.2f", db.minimap.iconScale))
+    scaleSlider:SetScript("OnValueChanged", function(self, value)
+        db.minimap.iconScale = value
+        _G[self:GetName() .. "Text"]:SetText(string.format("%.2f", value))
+        if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+    end)
+    
+    local fadeLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    fadeLabel:SetPoint("TOPLEFT", scaleSlider, "BOTTOMLEFT", 0, -15)
+    fadeLabel:SetText("Fade Speed (sec)")
+    
+    local fadeSlider = CreateFrame("Slider", "VSMinimapFadeSlider", advFrame, "OptionsSliderTemplate")
+    fadeSlider:SetPoint("TOPLEFT", fadeLabel, "BOTTOMLEFT", 0, -10)
+    fadeSlider:SetMinMaxValues(0.0, 2.0)
+    fadeSlider:SetValueStep(0.1)
+    fadeSlider:SetObeyStepOnDrag(true)
+    fadeSlider:SetValue(db.minimap.fadeSpeed)
+    _G[fadeSlider:GetName() .. "Low"]:SetText("0s")
+    _G[fadeSlider:GetName() .. "High"]:SetText("2s")
+    _G[fadeSlider:GetName() .. "Text"]:SetText(string.format("%.1fs", db.minimap.fadeSpeed))
+    fadeSlider:SetScript("OnValueChanged", function(self, value)
+        db.minimap.fadeSpeed = value
+        _G[self:GetName() .. "Text"]:SetText(string.format("%.1fs", value))
+    end)
+    
+    local colorBtn = CreateFrame("Button", nil, advFrame)
+    colorBtn:SetSize(20, 20)
+    colorBtn:SetPoint("LEFT", scaleSlider, "RIGHT", 30, 0)
+    local colorTex = colorBtn:CreateTexture(nil, "BACKGROUND")
+    colorTex:SetAllPoints()
+    colorTex:SetColorTexture(db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b, db.minimap.iconColor.a)
+    colorBtn.tex = colorTex
+    local colorBtnLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    colorBtnLabel:SetPoint("LEFT", colorBtn, "RIGHT", 5, 0)
+    colorBtnLabel:SetText("Icon Tint")
+    colorBtn:SetScript("OnClick", function()
+        local function colorCallback(restore)
+            local newR, newG, newB, newA
+            if restore then newR, newG, newB, newA = unpack(restore)
+            else newA, newR, newG, newB = _G.OpacitySliderFrame:GetValue(), ColorPickerFrame:GetColorRGB() end
+            db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b, db.minimap.iconColor.a = newR, newG, newB, newA
+            colorBtn.tex:SetColorTexture(newR, newG, newB, newA)
+            if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+        end
+        ColorPickerFrame.func, ColorPickerFrame.opacityFunc, ColorPickerFrame.cancelFunc = colorCallback, colorCallback, colorCallback
+        ColorPickerFrame:SetColorRGB(db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b)
+        ColorPickerFrame.hasOpacity, ColorPickerFrame.opacity = true, db.minimap.iconColor.a
+        ColorPickerFrame.previousValues = {db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b, db.minimap.iconColor.a}
+        ColorPickerFrame:Show()
+    end)
+    
+    local modeLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    modeLabel:SetPoint("TOPLEFT", colorBtn, "BOTTOMLEFT", 0, -20)
+    modeLabel:SetText("Positioning Mode")
+    
+    local modeDropdown = CreateFrame("DropdownButton", nil, advFrame, "WowStyle1DropdownTemplate")
+    modeDropdown:SetPoint("TOPLEFT", modeLabel, "BOTTOMLEFT", 0, -5)
+    modeDropdown:SetWidth(150)
+    
+    local freeXYGroup, freeXFrame, freeXEdit, freeYFrame, freeYEdit
+    local clampGroup, clampAngleFrame, clampAngleEdit, clampRadiusFrame, clampRadiusEdit
+    
+    local function RefreshPositionEditors()
+        if db.minimap.minimalistClampMode then
+            freeXYGroup:Hide()
+            clampGroup:Show()
+            if clampAngleEdit then clampAngleEdit:SetText(tostring(db.minimap.minimalistAngle or 225)) end
+            if clampRadiusEdit then clampRadiusEdit:SetText(tostring(db.minimap.minimalistRadius or 10)) end
+        else
+            clampGroup:Hide()
+            freeXYGroup:Show()
+            if freeXEdit then freeXEdit:SetText(tostring(db.minimap.minimalistOffsetX or -35)) end
+            if freeYEdit then freeYEdit:SetText(tostring(db.minimap.minimalistOffsetY or -5)) end
+        end
+    end
+    
+    modeDropdown:SetupMenu(function(dropdown, rootDescription)
+        local function IsSelected(value) return db.minimap.minimalistClampMode == value end
+        local function SetSelected(value)
+            db.minimap.minimalistClampMode = value
+            RefreshPositionEditors()
+            if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+        end
+        rootDescription:CreateRadio("Free Floating (X/Y)", IsSelected, SetSelected, false)
+        rootDescription:CreateRadio("Clamped Radially", IsSelected, SetSelected, true)
+    end)
+    
+    local function CreateNudgeGroup(parent, labelText, dbKey, isAngle)
+        local frame = CreateFrame("Frame", nil, parent)
+        frame:SetSize(80, 40)
+        local label = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+        label:SetPoint("TOPLEFT", 0, 0)
+        label:SetText(labelText)
+
+        local editBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
+        editBox:SetSize(40, 20)
+        editBox:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 5, -5)
+        editBox:SetAutoFocus(false)
+        editBox:SetNumeric(false)
+        editBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+        editBox:SetScript("OnEnterPressed", function(self)
+            self:ClearFocus()
+            local val = tonumber(self:GetText())
+            if val then
+                db.minimap[dbKey] = val
+                if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+            end
+        end)
+
+        local function GetStepAmount()
+            if IsAltKeyDown() then return 10
+            elseif IsControlKeyDown() then return 5
+            elseif IsShiftKeyDown() then return 2
+            else return 1 end
+        end
+
+        local upBtn = CreateFrame("Button", nil, frame)
+        upBtn:SetSize(16, 16)
+        upBtn:SetPoint("LEFT", editBox, "RIGHT", 2, 5)
+        upBtn:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Up")
+        upBtn:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Down")
+        upBtn:SetDisabledTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollUp-Disabled")
+        upBtn:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+        upBtn:SetScript("OnClick", function()
+            local s = GetStepAmount()
+            db.minimap[dbKey] = (db.minimap[dbKey] or 0) + s
+            if isAngle and db.minimap[dbKey] >= 360 then db.minimap[dbKey] = db.minimap[dbKey] - 360 end
+            editBox:SetText(tostring(db.minimap[dbKey]))
+            if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+        end)
+        VS:AddTooltip(upBtn, "Increase value.\nHold Shift for 2, Ctrl for 5, Alt for 10.")
+
+        local downBtn = CreateFrame("Button", nil, frame)
+        downBtn:SetSize(16, 16)
+        downBtn:SetPoint("TOP", upBtn, "BOTTOM", 0, 4)
+        downBtn:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
+        downBtn:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
+        downBtn:SetDisabledTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Disabled")
+        downBtn:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+        downBtn:SetScript("OnClick", function()
+            local s = GetStepAmount()
+            db.minimap[dbKey] = (db.minimap[dbKey] or 0) - s
+            if isAngle and db.minimap[dbKey] < 0 then db.minimap[dbKey] = db.minimap[dbKey] + 360 end
+            editBox:SetText(tostring(db.minimap[dbKey]))
+            if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+        end)
+        VS:AddTooltip(downBtn, "Decrease value.\nHold Shift for 2, Ctrl for 5, Alt for 10.")
+
+        return frame, editBox
+    end
+    
+    freeXYGroup = CreateFrame("Frame", nil, advFrame)
+    freeXYGroup:SetSize(200, 40)
+    freeXYGroup:SetPoint("TOPLEFT", modeDropdown, "BOTTOMLEFT", 0, -10)
+    freeXFrame, freeXEdit = CreateNudgeGroup(freeXYGroup, "X Offset", "minimalistOffsetX", false)
+    freeXFrame:SetPoint("TOPLEFT", 0, 0)
+    freeYFrame, freeYEdit = CreateNudgeGroup(freeXYGroup, "Y Offset", "minimalistOffsetY", false)
+    freeYFrame:SetPoint("TOPLEFT", freeXFrame, "TOPRIGHT", 10, 0)
+    
+    clampGroup = CreateFrame("Frame", nil, advFrame)
+    clampGroup:SetSize(200, 40)
+    clampGroup:SetPoint("TOPLEFT", modeDropdown, "BOTTOMLEFT", 0, -10)
+    clampAngleFrame, clampAngleEdit = CreateNudgeGroup(clampGroup, "Angle (Deg)", "minimalistAngle", true)
+    clampAngleFrame:SetPoint("TOPLEFT", 0, 0)
+    clampRadiusFrame, clampRadiusEdit = CreateNudgeGroup(clampGroup, "Radius Offset", "minimalistRadius", false)
+    clampRadiusFrame:SetPoint("TOPLEFT", clampAngleFrame, "TOPRIGHT", 10, 0)
+    
+    RefreshPositionEditors()
+    UpdateBindMinimapState()
+
     local showTooltipCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
-    showTooltipCheck:SetPoint("TOPLEFT", bindMinimapCheck, "BOTTOMLEFT", 0, 5)
+    showTooltipCheck:SetPoint("TOPLEFT", advFrame, "BOTTOMLEFT", 0, -5)
     showTooltipCheck.text:SetText("Show Tooltip")
     showTooltipCheck:SetChecked(db.toggles.showMinimapTooltip ~= false)
     showTooltipCheck:SetScript("OnClick", function(self)
@@ -312,7 +505,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     dragBehavior:SetDropPredicate(function(sourceElementData, intersectData)
         if intersectData.area == DragIntersectionArea.Inside then
             local cursorParent = FrameUtil.GetRootParent(scrollBox)
-            local _, cy = InputUtil.GetCursorPosition(cursorParent)
+            local _, cy = _G.GetCursorPosition()
             local frame = intersectData.frame
             local centerY = frame:GetBottom() + (frame:GetHeight() / 2)
             if cy > centerY then
