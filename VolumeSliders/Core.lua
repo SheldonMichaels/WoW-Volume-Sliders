@@ -24,8 +24,10 @@ local math_floor = math.floor
 local math_max   = math.max
 local math_min   = math.min
 local math_ceil  = math.ceil
+local math_log   = math.log
 local tonumber   = tonumber
 local tostring   = tostring
+local string_format = string.format
 local pairs      = pairs
 local ipairs     = ipairs
 local GetCVar    = GetCVar
@@ -197,7 +199,7 @@ VS.DEFAULT_FOOTER_ORDER = {
     "showVoiceMode",
 }
 
--- Database Schema Defaults (SchemaVersion 7)
+-- Database Schema Defaults (SchemaVersion 9)
 -------------------------------------------------------------------------------
 --- @class VolumeSlidersAutomation
 --- @field persistedBaseline table<string, number>
@@ -222,7 +224,7 @@ VS.DEFAULT_FOOTER_ORDER = {
 --- @field voice table
 
 VS.DEFAULT_DB = {
-    schemaVersion = 8,
+    schemaVersion = 9,
     
     appearance = {
         bgColor = { r = 0.05, g = 0.05, b = 0.05, a = 0.95 },
@@ -236,6 +238,7 @@ VS.DEFAULT_DB = {
         windowHeight = VS.DEFAULT_WINDOW_HEIGHT,
         sampleSound = 856,
         sampleSoundMinimap = 856,
+        volumeDisplayFormat = "percentage",
     },
     
     layout = {
@@ -414,12 +417,30 @@ function VS:GetMasterVolume()
     return tonumber(volStr) or 1
 end
 
---- Return a human-readable percentage string for the current master volume.
+--- Return a human-readable string for a normalized volume value.
+-- @param value number Volume level in the range [0, 1].
+-- @return string Example: "75%", "0.75", or "-2.5 dB".
+function VS:FormatVolumeValue(value)
+    local vol = math_max(0, math_min(1, tonumber(value) or 0))
+    local db = VolumeSlidersMMDB
+    local format = db and db.appearance and db.appearance.volumeDisplayFormat or "percentage"
+
+    if format == "decimal" then
+        return string_format("%.2f", vol)
+    elseif format == "decibel" then
+        if vol <= 0 then
+            return "-∞ dB"
+        end
+        return string_format("%.1f dB", 20 * (math_log(vol) / math_log(10)))
+    end
+
+    return tostring(math_floor(vol * 100 + 0.5)) .. "%"
+end
+
+--- Return a human-readable display string for the current master volume.
 -- @return string Example: "75%"
 function VS:GetVolumeText()
-    local vol = self:GetMasterVolume()
-    vol = vol * 100
-    return tostring(math_floor(vol + 0.5)) .. "%"
+    return self:FormatVolumeValue(self:GetMasterVolume())
 end
 
 --- Adjust a volume channel by one increment in the given direction.
@@ -466,7 +487,7 @@ function VS:AdjustVolume(delta, customStep, cvar)
     if VS.sliders and VS.sliders[targetCVar] then
          local sliderVal = 1 - current
          VS.sliders[targetCVar]:SetValue(sliderVal)
-         VS.sliders[targetCVar].valueText:SetText(math_floor(current * 100 + 0.5) .. "%")
+         VS.sliders[targetCVar].valueText:SetText(self:FormatVolumeValue(current))
     end
 
     -- Unified State Sync: Keep the baseline informed of manual user adjustments.
@@ -609,11 +630,11 @@ function VS:StartHardwareRecovery(targetVolume, optionalDeviceName)
             slider:SetValue(1 - target)
             -- Force the text update even if isSwitching is true to ensure
             -- the UI doesn't get stuck at 100% if the engine wins a race.
-            slider.valueText:SetText(math_floor(target * 100 + 0.5) .. "%")
+            slider.valueText:SetText(self:FormatVolumeValue(target))
             slider.isRefreshing = false
         end
         if self.VolumeSlidersObject then
-            self.VolumeSlidersObject.text = (math_floor(target * 100 + 0.5)) .. "%"
+            self.VolumeSlidersObject.text = self:FormatVolumeValue(target)
         end
         if self.UpdateMiniMapVolumeIcon then
             self:UpdateMiniMapVolumeIcon()

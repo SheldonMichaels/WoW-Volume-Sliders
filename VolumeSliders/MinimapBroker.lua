@@ -16,7 +16,6 @@ local _, VS = ...
 -------------------------------------------------------------------------------
 -- Localized Globals
 -------------------------------------------------------------------------------
-local math_floor = math.floor
 local tonumber   = tonumber
 local pairs      = pairs
 local GetCVar    = GetCVar
@@ -160,7 +159,7 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
                 end
             elseif item.type == "ChannelVolume" and item.channel then
                 local valStr = GetCVar(item.channel) or "0"
-                local val = math_floor((tonumber(valStr) or 0) * 100 + 0.5)
+                local valueText = VS:FormatVolumeValue(tonumber(valStr) or 0)
                 local niceNames = {
                     ["Sound_MasterVolume"] = "Master",
                     ["Sound_SFXVolume"] = "SFX",
@@ -176,7 +175,7 @@ VS.VolumeSlidersObject = VS.LDB:NewDataObject("Volume Sliders", {
                     ["Voice_MicSensitivity"] = "Mic Sensitivity",
                 }
                 local pretty = niceNames[item.channel] or item.channel
-                tooltip:AddLine(string.format("%s: |cffffffff%d%%|r", pretty, val), 1, 0.82, 0)
+                tooltip:AddLine(string.format("%s: |cffffffff%s|r", pretty, valueText), 1, 0.82, 0)
             end
         end
     end,
@@ -229,7 +228,7 @@ end
 -- Tooltip Refresh Helper
 --
 -- Rebuilds the active minimap tooltip if it's currently showing, allowing
--- real-time updates of volume percentages and preset states after actions.
+-- real-time updates of volume displays and preset states after actions.
 -------------------------------------------------------------------------------
 function VS:RefreshMinimapTooltip()
     -- Case 1: Minimalist button using standard GameTooltip
@@ -571,7 +570,7 @@ eventFrame:SetScript("OnEvent", function(self, event, cvarName, value)
         if VS.sliders and VS.sliders["Sound_MasterVolume"] then
              local val = tonumber(value) or 0
              VS.sliders["Sound_MasterVolume"]:SetValue(1 - val)
-             VS.sliders["Sound_MasterVolume"].valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
+             VS.sliders["Sound_MasterVolume"].valueText:SetText(VS:FormatVolumeValue(val))
         end
     end
 end)

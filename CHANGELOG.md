@@ -1,4 +1,9 @@
-# Changelog (v3.9.1)
+# Changelog (v3.10.0)
+
+## v3.10.0 — 2026-05-12
+
+### Added
+- **Volume Display Formats**: Added a new Slider Customization option to display volume values as percentages, decimals, or decibels across the popup window, minimap broker text, minimap tooltip, and preset editor sliders.
 
 ## v3.9.1 — 2026-05-12
 

@@ -32,7 +32,7 @@ local SetCVar    = SetCVar
 --   • Three-piece track (top cap, middle fill, bottom cap) using rotated atlases
 --   • Diamond thumb texture
 --   • Stepper arrow buttons (▲ / ▼) with configurable snap behavior
---   • Labels: title, percentage, High, Low
+--   • Labels: title, formatted value, High, Low
 --   • Mouse wheel handler
 --
 -- DESIGN NOTE: The slider uses "Inverted Value" logic internally.
@@ -211,7 +211,7 @@ local function CreateSliderBase(parent, name, label, tooltipText)
     slider.lowLabel:SetPoint("TOP", slider, "BOTTOM", 0, -26)
     slider.lowLabel:SetText("Low")
 
-    -- Numeric percentage readout above the "High" text.
+    -- Numeric volume readout above the "High" text.
     slider.valueText = slider:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     slider.valueText:SetPoint("BOTTOM", slider.highLabel, "TOP", 0, 10)
     slider.valueText:SetTextColor(NORMAL_FONT_COLOR:GetRGB())
@@ -313,7 +313,7 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
     ---------------------------------------------------------------------------
     local currentVolume = tonumber(GetCVar(cvar)) or 1
     slider:SetValue(1 - currentVolume)
-    slider.valueText:SetText(math_floor(currentVolume * 100 + 0.5) .. "%")
+    slider.valueText:SetText(VS:FormatVolumeValue(currentVolume))
 
     slider:SetScript("OnValueChanged", function(self, value)
         if self.isRefreshing then return end
@@ -332,7 +332,7 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
         local val = math_floor(invertedValue * 100 + 0.5) / 100
 
         SetCVar(cvar, val)
-        self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
+        self.valueText:SetText(VS:FormatVolumeValue(val))
 
         -- Keep the broker text in sync when the Master slider moves.
         if cvar == "Sound_MasterVolume" then
@@ -399,7 +399,7 @@ function VS:CreateVerticalSlider(parent, name, label, cvar, muteCvar, minVal, ma
         local currentVol = tonumber(GetCVar(cvar)) or 1
         self.isRefreshing = true
         self:SetValue(1 - currentVol)
-        self.valueText:SetText(math_floor(currentVol * 100 + 0.5) .. "%")
+        self.valueText:SetText(VS:FormatVolumeValue(currentVol))
         self.isRefreshing = false
     end
 
@@ -494,7 +494,7 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
 
         self.isRefreshing = true
         self:SetValue(1 - currentVol)
-        self.valueText:SetText(math_floor(currentVol * 100 + 0.5) .. "%")
+        self.valueText:SetText(VS:FormatVolumeValue(currentVol))
         self.isRefreshing = false
     end
 
@@ -502,7 +502,7 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
         local val = 1 - invertedValue
         val = math_max(0, math_min(1, val))
 
-        self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
+        self.valueText:SetText(VS:FormatVolumeValue(val))
 
         if self.isRefreshing then return end
 
@@ -520,7 +520,7 @@ function VS:CreateVoiceSlider(parent, name, label, getterFunc, setterFunc, displ
 
         if not db.voice["MuteState_"..muteKey] then
             setterFunc(rawValue * 100)
-            self.valueText:SetText(math_floor(rawValue * 100 + 0.5) .. "%")
+            self.valueText:SetText(VS:FormatVolumeValue(rawValue))
             
             -- Unified State Sync: Keep the baseline informed of manual user adjustments.
             VS:SyncBaseline(muteKey, rawValue)
@@ -654,7 +654,7 @@ function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, m
 
     local currentObjVol = workingTable.volumes[channelKey]
     slider:SetValue(1 - currentObjVol)
-    slider.valueText:SetText(math_floor(currentObjVol * 100 + 0.5) .. "%")
+    slider.valueText:SetText(VS:FormatVolumeValue(currentObjVol))
 
     slider:SetScript("OnValueChanged", function(self, value)
         if self.isRefreshing then return end
@@ -664,7 +664,7 @@ function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, m
         local val = math_floor(invertedValue * 100 + 0.5) / 100
 
         workingTable.volumes[channelKey] = val
-        self.valueText:SetText(math_floor(val * 100 + 0.5) .. "%")
+        self.valueText:SetText(VS:FormatVolumeValue(val))
     end)
 
     -- Push the value text and title up even further for more breathing room
@@ -783,7 +783,7 @@ function VS:CreateTriggerSlider(parent, name, label, channelKey, workingTable, m
         local currentVol = workingTable.volumes[channelKey] or 1
         self.isRefreshing = true
         self:SetValue(1 - currentVol)
-        self.valueText:SetText(math_floor(currentVol * 100 + 0.5) .. "%")
+        self.valueText:SetText(VS:FormatVolumeValue(currentVol))
         self.isRefreshing = false
         
         local ignored = workingTable.ignored and workingTable.ignored[channelKey]

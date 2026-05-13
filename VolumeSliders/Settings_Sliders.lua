@@ -13,7 +13,6 @@ local addonName, VS = ...
 -- Localized Globals
 -------------------------------------------------------------------------------
 local _G = _G
-local math_floor = math.floor
 local tostring   = tostring
 local ipairs     = ipairs
 
@@ -110,9 +109,36 @@ function VS:CreateSlidersSettingsContents(parentFrame)
     end)
     valueDropdown:GenerateMenu()
 
+    -- Value Display Format Label & Dropdown
+    local formatLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    formatLabel:SetPoint("TOPLEFT", valueDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset)
+    formatLabel:SetText("Value Display Format")
+
+    local function IsFormatSelected(value)
+        return (db.appearance.volumeDisplayFormat or "percentage") == value
+    end
+    local function SetFormatSelected(value)
+        db.appearance.volumeDisplayFormat = value
+        VS:UpdateAppearance()
+        if VS.RefreshSliderValueTexts then VS:RefreshSliderValueTexts() end
+        if VS.VolumeSlidersObject then VS.VolumeSlidersObject.text = VS:GetVolumeText() end
+        if VS.RefreshMinimapTooltip then VS:RefreshMinimapTooltip() end
+    end
+
+    local formatDropdown = CreateFrame("DropdownButton", nil, categoryFrame, "WowStyle1DropdownTemplate")
+    formatDropdown:SetPoint("TOPLEFT", formatLabel, "BOTTOMLEFT", -15, -8)
+    formatDropdown:SetWidth(dropdownWidth)
+    formatDropdown:SetupMenu(function(dropdown, rootDescription)
+        rootDescription:CreateRadio("Percentage (80%)", IsFormatSelected, SetFormatSelected, "percentage")
+        rootDescription:CreateRadio("Decimal (0.80)", IsFormatSelected, SetFormatSelected, "decimal")
+        rootDescription:CreateRadio("Decibel (-1.9 dB)", IsFormatSelected, SetFormatSelected, "decibel")
+    end)
+    formatDropdown:GenerateMenu()
+    VS:AddTooltip(formatDropdown, "Choose how current volume values are displayed in sliders, broker text, and tooltips.")
+
     -- High Color Label & Dropdown
     local highColorLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    highColorLabel:SetPoint("TOPLEFT", valueDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset)
+    highColorLabel:SetPoint("TOPLEFT", formatDropdown, "BOTTOMLEFT", 15, dropdownSpacingOffset)
     highColorLabel:SetText("High Text Color")
 
     local function IsHighSelected(value)
@@ -287,7 +313,7 @@ function VS:CreateSlidersSettingsContents(parentFrame)
 
     -- Apply tooltips to dropdown labels
     VS:AddTooltip(titleDropdown, "Change the color of the channel titles (e.g. 'Master') to Gold or White.")
-    VS:AddTooltip(valueDropdown, "Change the color of the volume percentage numbers to Gold or White.")
+    VS:AddTooltip(valueDropdown, "Change the color of the displayed volume values to Gold or White.")
     VS:AddTooltip(highDropdown, "Change the color of the '100%' marker to Gold or White.")
     VS:AddTooltip(lowDropdown, "Change the color of the '0%' marker to Gold or White.")
     VS:AddTooltip(soundDropdown, "Select the chime to play when adjusting sliders, or enter a custom SoundKit ID / File Path.")
@@ -355,7 +381,7 @@ function VS:CreateSlidersSettingsContents(parentFrame)
 
     local checkboxes = {
         { name = "Title", var = "showTitle", namespace = "toggles", tooltip = "Show or hide the channel name (e.g., 'Master') above each slider." },
-        { name = "Value (%)", var = "showValue", namespace = "toggles", tooltip = "Show or hide the volume percentage text above each slider." },
+        { name = "Value", var = "showValue", namespace = "toggles", tooltip = "Show or hide the formatted volume value above each slider." },
         { name = "High Label", var = "showHigh", namespace = "toggles", tooltip = "Show or hide the '100%' label at the top of the slider track." },
         { name = "Up Arrow", var = "showUpArrow", namespace = "toggles", tooltip = "Show or hide the button for fine-tuning volume increments." },
         { name = "Slider Track", var = "showSlider", namespace = "toggles", tooltip = "Show or hide the main vertical slider bar and knob." },
