@@ -216,17 +216,22 @@ function VS:UpdateMinimapVisuals()
     
     VS.minimalistButton:SetScale(db.iconScale or 1.0)
     
-    local c = db.iconColor or { r=1, g=1, b=1, a=1 }
-    -- Always desaturate so we can correctly tint the gold away
-    VS.minimalistButton.minimalistIcon:SetDesaturated(true)
-    
-    -- Check mute state and color appropriately
+    -- Check mute state first — red override always wins
     if GetCVar("Sound_EnableAllSound") == "0" then
         VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker-mute")
+        VS.minimalistButton.minimalistIcon:SetDesaturated(true)
         VS.minimalistButton.minimalistIcon:SetVertexColor(1, 0, 0, 1)
-    else
+    elseif db.useCustomTint then
+        -- Custom tint: desaturate to remove atlas gold, then apply user color
+        local c = db.iconColor or { r=1, g=1, b=1, a=1 }
         VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker")
+        VS.minimalistButton.minimalistIcon:SetDesaturated(true)
         VS.minimalistButton.minimalistIcon:SetVertexColor(c.r, c.g, c.b, c.a)
+    else
+        -- Default: natural atlas colors (gold), no desaturation
+        VS.minimalistButton.minimalistIcon:SetAtlas("voicechat-icon-speaker")
+        VS.minimalistButton.minimalistIcon:SetDesaturated(false)
+        VS.minimalistButton.minimalistIcon:SetVertexColor(1, 1, 1, 1)
     end
     
     if db.minimalistClampMode then
@@ -318,7 +323,7 @@ function VS:StartHoverPolling()
     if not VolumeSlidersMMDB.minimap.minimalistMinimap or not VS.minimalistButton or not VolumeSlidersMMDB.minimap.bindToMinimap then return end
 
     if not isFadedIn then
-        local speed = VolumeSlidersMMDB.minimap.fadeSpeed or 0.2
+        local speed = VolumeSlidersMMDB.minimap.fadeInSpeed or 0.1
         UIFrameFadeIn(VS.minimalistButton, speed, VS.minimalistButton:GetAlpha(), 1)
         isFadedIn = true
     end
@@ -345,13 +350,13 @@ function VS:CheckMinimapHover()
 
     if isOver then
         if not isFadedIn then
-            local speed = VolumeSlidersMMDB.minimap.fadeSpeed or 0.2
+            local speed = VolumeSlidersMMDB.minimap.fadeInSpeed or 0.1
             UIFrameFadeIn(VS.minimalistButton, speed, VS.minimalistButton:GetAlpha(), 1)
             isFadedIn = true
         end
     else
         if isFadedIn then
-            local speed = VolumeSlidersMMDB.minimap.fadeSpeed or 0.2
+            local speed = VolumeSlidersMMDB.minimap.fadeOutSpeed or 0.5
             UIFrameFadeOut(VS.minimalistButton, speed, VS.minimalistButton:GetAlpha(), 0)
             isFadedIn = false
         end
@@ -492,7 +497,7 @@ function VS:CreateMinimalistButton()
                     
                     local angle = math.deg(math.atan2(py - my, px - mx))
                     if angle < 0 then angle = angle + 360 end
-                    VolumeSlidersMMDB.minimap.minimalistAngle = angle
+                    VolumeSlidersMMDB.minimap.minimalistAngle = math.floor(angle + 0.5)
                     VS:UpdateMinimapVisuals()
                 end)
             else
@@ -523,8 +528,8 @@ function VS:CreateMinimalistButton()
                 local rawX = (btnRight - mmRight) / btnScale
                 local rawY = (btnBottom - mmBottom) / btnScale
 
-                VolumeSlidersMMDB.minimap.minimalistOffsetX = rawX
-                VolumeSlidersMMDB.minimap.minimalistOffsetY = rawY
+                VolumeSlidersMMDB.minimap.minimalistOffsetX = math.floor(rawX + 0.5)
+                VolumeSlidersMMDB.minimap.minimalistOffsetY = math.floor(rawY + 0.5)
                 VS:UpdateMinimapVisuals()
             end
             if VS.RefreshMinimapSettingsUI then VS.RefreshMinimapSettingsUI() end

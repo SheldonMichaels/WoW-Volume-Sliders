@@ -144,14 +144,16 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     "minimalistMinimap": "boolean",// Toggles custom minimalist speaker icon style (nil = auto-detect)
     "minimalistOffsetX": "number", // X offset for minimalist icon
     "minimalistOffsetY": "number", // Y offset for minimalist icon
-    "iconScale": "number",         // Scale of minimalist icon
-    "iconColor": {                 // Color tint for minimalist icon
+    "iconScale": "number",         // Scale of minimalist icon (default 1.0)
+    "iconColor": {                 // Color tint for minimalist icon (default {r=1, g=1, b=1, a=1})
       "r": "number", "g": "number", "b": "number", "a": "number"
     },
-    "fadeSpeed": "number",         // Fade duration in seconds
-    "minimalistClampMode": "boolean", // True to clamp radially, false for free X/Y
-    "minimalistAngle": "number",   // Radial angle (0-360) if clamped
-    "minimalistRadius": "number",  // Radial offset if clamped
+    "useCustomTint": "boolean",    // When true, apply iconColor; false uses atlas color (default false)
+    "fadeInSpeed": "number",        // Fade-in duration in seconds (default 0.1)
+    "fadeOutSpeed": "number",       // Fade-out duration in seconds (default 0.5)
+    "minimalistClampMode": "boolean", // True to clamp radially, false for free X/Y (default false)
+    "minimalistAngle": "number",   // Radial angle (0-360) if clamped (default 225)
+    "minimalistRadius": "number",  // Radial offset if clamped (default 10)
     
     // Tooltip and Click Bindings specific to the Minimap Icon
     "showMinimapTooltip": "boolean", // Enables/disables minimap icon tooltip
@@ -286,4 +288,4 @@ Adds the `appearance.volumeDisplayFormat` string enum (default `"percentage"`) t
 
 ## Migration Contract (`Init.lua:Migrate_V9_to_V10`)
 
-Injects default values for the new `minimap` customization fields (`iconScale`, `iconColor`, `fadeSpeed`, `minimalistClampMode`, `minimalistAngle`, `minimalistRadius`) introduced in v3.11.0 to support the extended minimalist minimap icon feature.
+Injects default values for the new `minimap` customization fields (`iconScale`, `iconColor`, `useCustomTint`, `fadeInSpeed`, `fadeOutSpeed`, `minimalistClampMode`, `minimalistAngle`, `minimalistRadius`) introduced in v3.11.0 to support the extended minimalist minimap icon feature. Migrates any legacy `fadeSpeed` to the split `fadeInSpeed`/`fadeOutSpeed` fields.

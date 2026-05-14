@@ -69,29 +69,36 @@ describe("V9 to V10 Database Migration", function()
         -- Check newly injected defaults
         assert.are.equal(1.0, db.minimap.iconScale)
         assert.are.same({ r = 1, g = 1, b = 1, a = 1 }, db.minimap.iconColor)
-        assert.are.equal(0.2, db.minimap.fadeSpeed)
+        assert.are.equal(0.1, db.minimap.fadeInSpeed)
+        assert.are.equal(0.5, db.minimap.fadeOutSpeed)
+        assert.is_nil(db.minimap.fadeSpeed)
         assert.is_false(db.minimap.minimalistClampMode)
         assert.are.equal(225, db.minimap.minimalistAngle)
         assert.are.equal(10, db.minimap.minimalistRadius)
+        assert.is_false(db.minimap.useCustomTint)
     end)
 
     it("should not overwrite existing fields if already set", function()
         local db = _G.VolumeSlidersMMDB
         db.minimap.iconScale = 1.5
         db.minimap.iconColor = { r = 0, g = 0, b = 0, a = 1 }
-        db.minimap.fadeSpeed = 0.5
+        db.minimap.fadeInSpeed = 0.3
+        db.minimap.fadeOutSpeed = 1.0
         db.minimap.minimalistClampMode = true
         db.minimap.minimalistAngle = 90
         db.minimap.minimalistRadius = 50
+        db.minimap.useCustomTint = true
 
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
         assert.are.equal(10, db.schemaVersion)
         assert.are.equal(1.5, db.minimap.iconScale)
         assert.are.same({ r = 0, g = 0, b = 0, a = 1 }, db.minimap.iconColor)
-        assert.are.equal(0.5, db.minimap.fadeSpeed)
+        assert.are.equal(0.3, db.minimap.fadeInSpeed)
+        assert.are.equal(1.0, db.minimap.fadeOutSpeed)
         assert.is_true(db.minimap.minimalistClampMode)
         assert.are.equal(90, db.minimap.minimalistAngle)
         assert.are.equal(50, db.minimap.minimalistRadius)
+        assert.is_true(db.minimap.useCustomTint)
     end)
 end)

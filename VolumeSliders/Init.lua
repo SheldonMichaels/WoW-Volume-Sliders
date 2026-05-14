@@ -541,10 +541,15 @@ local function Migrate_V9_to_V10(db)
     db.minimap = db.minimap or {}
     if db.minimap.iconScale == nil then db.minimap.iconScale = 1.0 end
     if db.minimap.iconColor == nil then db.minimap.iconColor = { r = 1, g = 1, b = 1, a = 1 } end
-    if db.minimap.fadeSpeed == nil then db.minimap.fadeSpeed = 0.2 end
+    -- Migrate legacy fadeSpeed to split fade in/out (never shipped, dev-only)
+    local legacyFade = db.minimap.fadeSpeed
+    db.minimap.fadeSpeed = nil -- Remove legacy key
+    if db.minimap.fadeInSpeed == nil then db.minimap.fadeInSpeed = legacyFade or 0.1 end
+    if db.minimap.fadeOutSpeed == nil then db.minimap.fadeOutSpeed = legacyFade or 0.5 end
     if db.minimap.minimalistClampMode == nil then db.minimap.minimalistClampMode = false end
     if db.minimap.minimalistAngle == nil then db.minimap.minimalistAngle = 225 end
     if db.minimap.minimalistRadius == nil then db.minimap.minimalistRadius = 10 end
+    if db.minimap.useCustomTint == nil then db.minimap.useCustomTint = false end
 
     db.schemaVersion = 10
 end

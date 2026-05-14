@@ -130,8 +130,9 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     VS:AddTooltip(resetBtn, "Reset the custom minimap icon position to its default location.")
 
     -- Advanced Minimalist Settings
+    -- Spacing tiers: 20px between sections, 10px label-to-control, 5px sub-elements
     advFrame = CreateFrame("Frame", nil, categoryFrame)
-    advFrame:SetSize(400, 180)
+    advFrame:SetSize(400, 325)
     advFrame:SetPoint("TOPLEFT", bindMinimapCheck, "BOTTOMLEFT", 0, -10)
     
     local scaleLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -139,7 +140,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     scaleLabel:SetText("Icon Scale")
     
     local scaleSlider = CreateFrame("Slider", "VSMinimapScaleSlider", advFrame, "OptionsSliderTemplate")
-    scaleSlider:SetPoint("TOPLEFT", scaleLabel, "BOTTOMLEFT", 0, -10)
+    scaleSlider:SetPoint("TOPLEFT", scaleLabel, "BOTTOMLEFT", 0, -15)
     scaleSlider:SetMinMaxValues(0.5, 2.0)
     scaleSlider:SetValueStep(0.05)
     scaleSlider:SetObeyStepOnDrag(true)
@@ -153,52 +154,112 @@ function VS:CreateMinimapSettingsContents(parentFrame)
         if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
     end)
     
-    local fadeLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    fadeLabel:SetPoint("TOPLEFT", scaleSlider, "BOTTOMLEFT", 0, -15)
-    fadeLabel:SetText("Fade Speed (sec)")
+    local fadeInLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    fadeInLabel:SetPoint("TOPLEFT", scaleSlider, "BOTTOMLEFT", 0, -20)
+    fadeInLabel:SetText("Fade In (sec)")
     
-    local fadeSlider = CreateFrame("Slider", "VSMinimapFadeSlider", advFrame, "OptionsSliderTemplate")
-    fadeSlider:SetPoint("TOPLEFT", fadeLabel, "BOTTOMLEFT", 0, -10)
-    fadeSlider:SetMinMaxValues(0.0, 2.0)
-    fadeSlider:SetValueStep(0.1)
-    fadeSlider:SetObeyStepOnDrag(true)
-    fadeSlider:SetValue(db.minimap.fadeSpeed)
-    _G[fadeSlider:GetName() .. "Low"]:SetText("0s")
-    _G[fadeSlider:GetName() .. "High"]:SetText("2s")
-    _G[fadeSlider:GetName() .. "Text"]:SetText(string.format("%.1fs", db.minimap.fadeSpeed))
-    fadeSlider:SetScript("OnValueChanged", function(self, value)
-        db.minimap.fadeSpeed = value
+    local fadeInSlider = CreateFrame("Slider", "VSMinimapFadeInSlider", advFrame, "OptionsSliderTemplate")
+    fadeInSlider:SetPoint("TOPLEFT", fadeInLabel, "BOTTOMLEFT", 0, -15)
+    fadeInSlider:SetMinMaxValues(0.0, 2.0)
+    fadeInSlider:SetValueStep(0.1)
+    fadeInSlider:SetObeyStepOnDrag(true)
+    fadeInSlider:SetValue(db.minimap.fadeInSpeed)
+    _G[fadeInSlider:GetName() .. "Low"]:SetText("0s")
+    _G[fadeInSlider:GetName() .. "High"]:SetText("2s")
+    _G[fadeInSlider:GetName() .. "Text"]:SetText(string.format("%.1fs", db.minimap.fadeInSpeed))
+    fadeInSlider:SetScript("OnValueChanged", function(self, value)
+        db.minimap.fadeInSpeed = value
         _G[self:GetName() .. "Text"]:SetText(string.format("%.1fs", value))
     end)
     
+    local fadeOutLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    fadeOutLabel:SetPoint("TOPLEFT", fadeInSlider, "BOTTOMLEFT", 0, -20)
+    fadeOutLabel:SetText("Fade Out (sec)")
+    
+    local fadeOutSlider = CreateFrame("Slider", "VSMinimapFadeOutSlider", advFrame, "OptionsSliderTemplate")
+    fadeOutSlider:SetPoint("TOPLEFT", fadeOutLabel, "BOTTOMLEFT", 0, -15)
+    fadeOutSlider:SetMinMaxValues(0.0, 2.0)
+    fadeOutSlider:SetValueStep(0.1)
+    fadeOutSlider:SetObeyStepOnDrag(true)
+    fadeOutSlider:SetValue(db.minimap.fadeOutSpeed)
+    _G[fadeOutSlider:GetName() .. "Low"]:SetText("0s")
+    _G[fadeOutSlider:GetName() .. "High"]:SetText("2s")
+    _G[fadeOutSlider:GetName() .. "Text"]:SetText(string.format("%.1fs", db.minimap.fadeOutSpeed))
+    fadeOutSlider:SetScript("OnValueChanged", function(self, value)
+        db.minimap.fadeOutSpeed = value
+        _G[self:GetName() .. "Text"]:SetText(string.format("%.1fs", value))
+    end)
+    
+    local tintCheck = CreateFrame("CheckButton", nil, advFrame, "UICheckButtonTemplate")
+    tintCheck:SetPoint("TOPLEFT", fadeOutSlider, "BOTTOMLEFT", -5, -15)
+    tintCheck.text:SetText("Icon Tint:")
+    tintCheck:SetChecked(db.minimap.useCustomTint == true)
+    
     local colorBtn = CreateFrame("Button", nil, advFrame)
     colorBtn:SetSize(20, 20)
-    colorBtn:SetPoint("LEFT", scaleSlider, "RIGHT", 30, 0)
-    local colorTex = colorBtn:CreateTexture(nil, "BACKGROUND")
-    colorTex:SetAllPoints()
+    colorBtn:SetPoint("LEFT", tintCheck.text, "RIGHT", 8, 0)
+    local swatchBorder = colorBtn:CreateTexture(nil, "BORDER")
+    swatchBorder:SetAllPoints()
+    swatchBorder:SetColorTexture(1, 1, 1, 0.8)
+    local colorTex = colorBtn:CreateTexture(nil, "ARTWORK")
+    colorTex:SetPoint("TOPLEFT", 1, -1)
+    colorTex:SetPoint("BOTTOMRIGHT", -1, 1)
     colorTex:SetColorTexture(db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b, db.minimap.iconColor.a)
     colorBtn.tex = colorTex
-    local colorBtnLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    colorBtnLabel:SetPoint("LEFT", colorBtn, "RIGHT", 5, 0)
-    colorBtnLabel:SetText("Icon Tint")
+    
+    local function UpdateTintState()
+        local enabled = db.minimap.useCustomTint
+        if enabled then
+            colorBtn:Enable()
+            colorBtn:SetAlpha(1.0)
+        else
+            colorBtn:Disable()
+            colorBtn:SetAlpha(0.4)
+        end
+    end
+    UpdateTintState()
+    
+    tintCheck:SetScript("OnClick", function(self)
+        db.minimap.useCustomTint = self:GetChecked()
+        UpdateTintState()
+        if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+    end)
+    VS:AddTooltip(tintCheck, "Enable custom color tinting for the minimalist icon.\nWhen unchecked, the icon uses its natural atlas color.")
+    
     colorBtn:SetScript("OnClick", function()
-        local function colorCallback(restore)
-            local newR, newG, newB, newA
-            if restore then newR, newG, newB, newA = unpack(restore)
-            else newA, newR, newG, newB = _G.OpacitySliderFrame:GetValue(), ColorPickerFrame:GetColorRGB() end
-            db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b, db.minimap.iconColor.a = newR, newG, newB, newA
-            colorBtn.tex:SetColorTexture(newR, newG, newB, newA)
+        local info = {}
+        info.r = db.minimap.iconColor.r
+        info.g = db.minimap.iconColor.g
+        info.b = db.minimap.iconColor.b
+        info.opacity = 1 - (db.minimap.iconColor.a or 1)
+        info.hasOpacity = true
+        info.swatchFunc = function()
+            local r, g, b = ColorPickerFrame:GetColorRGB()
+            db.minimap.iconColor.r = r
+            db.minimap.iconColor.g = g
+            db.minimap.iconColor.b = b
+            colorBtn.tex:SetColorTexture(r, g, b, db.minimap.iconColor.a)
             if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
         end
-        ColorPickerFrame.func, ColorPickerFrame.opacityFunc, ColorPickerFrame.cancelFunc = colorCallback, colorCallback, colorCallback
-        ColorPickerFrame:SetColorRGB(db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b)
-        ColorPickerFrame.hasOpacity, ColorPickerFrame.opacity = true, db.minimap.iconColor.a
-        ColorPickerFrame.previousValues = {db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b, db.minimap.iconColor.a}
-        ColorPickerFrame:Show()
+        info.opacityFunc = function()
+            local a = 1 - ColorPickerFrame:GetColorAlpha()
+            db.minimap.iconColor.a = a
+            colorBtn.tex:SetColorTexture(db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b, a)
+            if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+        end
+        info.cancelFunc = function(previousValues)
+            db.minimap.iconColor.r = previousValues.r
+            db.minimap.iconColor.g = previousValues.g
+            db.minimap.iconColor.b = previousValues.b
+            db.minimap.iconColor.a = 1 - (previousValues.a or 0)
+            colorBtn.tex:SetColorTexture(db.minimap.iconColor.r, db.minimap.iconColor.g, db.minimap.iconColor.b, db.minimap.iconColor.a)
+            if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
+        end
+        ColorPickerFrame:SetupColorPickerAndShow(info)
     end)
     
     local modeLabel = advFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    modeLabel:SetPoint("TOPLEFT", colorBtn, "BOTTOMLEFT", 0, -20)
+    modeLabel:SetPoint("TOPLEFT", tintCheck, "BOTTOMLEFT", 5, -10)
     modeLabel:SetText("Positioning Mode")
     
     local modeDropdown = CreateFrame("DropdownButton", nil, advFrame, "WowStyle1DropdownTemplate")
@@ -212,13 +273,13 @@ function VS:CreateMinimapSettingsContents(parentFrame)
         if db.minimap.minimalistClampMode then
             freeXYGroup:Hide()
             clampGroup:Show()
-            if clampAngleEdit then clampAngleEdit:SetText(tostring(db.minimap.minimalistAngle or 225)) end
-            if clampRadiusEdit then clampRadiusEdit:SetText(tostring(db.minimap.minimalistRadius or 10)) end
+            if clampAngleEdit then clampAngleEdit:SetText(tostring(db.minimap.minimalistAngle or 225)); clampAngleEdit:SetCursorPosition(0) end
+            if clampRadiusEdit then clampRadiusEdit:SetText(tostring(db.minimap.minimalistRadius or 10)); clampRadiusEdit:SetCursorPosition(0) end
         else
             clampGroup:Hide()
             freeXYGroup:Show()
-            if freeXEdit then freeXEdit:SetText(tostring(db.minimap.minimalistOffsetX or -35)) end
-            if freeYEdit then freeYEdit:SetText(tostring(db.minimap.minimalistOffsetY or -5)) end
+            if freeXEdit then freeXEdit:SetText(tostring(db.minimap.minimalistOffsetX or -35)); freeXEdit:SetCursorPosition(0) end
+            if freeYEdit then freeYEdit:SetText(tostring(db.minimap.minimalistOffsetY or -5)); freeYEdit:SetCursorPosition(0) end
         end
     end
     
@@ -235,13 +296,13 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     
     local function CreateNudgeGroup(parent, labelText, dbKey, isAngle)
         local frame = CreateFrame("Frame", nil, parent)
-        frame:SetSize(80, 40)
+        frame:SetSize(100, 40)
         local label = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
         label:SetPoint("TOPLEFT", 0, 0)
         label:SetText(labelText)
 
         local editBox = CreateFrame("EditBox", nil, frame, "InputBoxTemplate")
-        editBox:SetSize(40, 20)
+        editBox:SetSize(60, 20)
         editBox:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 5, -5)
         editBox:SetAutoFocus(false)
         editBox:SetNumeric(false)
@@ -274,6 +335,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
             db.minimap[dbKey] = (db.minimap[dbKey] or 0) + s
             if isAngle and db.minimap[dbKey] >= 360 then db.minimap[dbKey] = db.minimap[dbKey] - 360 end
             editBox:SetText(tostring(db.minimap[dbKey]))
+            editBox:SetCursorPosition(0)
             if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
         end)
         VS:AddTooltip(upBtn, "Increase value.\nHold Shift for 2, Ctrl for 5, Alt for 10.")
@@ -290,6 +352,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
             db.minimap[dbKey] = (db.minimap[dbKey] or 0) - s
             if isAngle and db.minimap[dbKey] < 0 then db.minimap[dbKey] = db.minimap[dbKey] + 360 end
             editBox:SetText(tostring(db.minimap[dbKey]))
+            editBox:SetCursorPosition(0)
             if VS.UpdateMinimapVisuals then VS:UpdateMinimapVisuals() end
         end)
         VS:AddTooltip(downBtn, "Decrease value.\nHold Shift for 2, Ctrl for 5, Alt for 10.")
@@ -317,7 +380,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     UpdateBindMinimapState()
 
     local showTooltipCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
-    showTooltipCheck:SetPoint("TOPLEFT", advFrame, "BOTTOMLEFT", 0, -5)
+    showTooltipCheck:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 295, -15)
     showTooltipCheck.text:SetText("Show Tooltip")
     showTooltipCheck:SetChecked(db.toggles.showMinimapTooltip ~= false)
     showTooltipCheck:SetScript("OnClick", function(self)
@@ -327,7 +390,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
 
     -- Play Sample Sound Checkbox
     local playSoundCheck = CreateFrame("CheckButton", nil, categoryFrame, "UICheckButtonTemplate")
-    playSoundCheck:SetPoint("TOPLEFT", showTooltipCheck, "BOTTOMLEFT", 0, -10)
+    playSoundCheck:SetPoint("TOPLEFT", advFrame, "BOTTOMLEFT", 0, -10)
     playSoundCheck.text:SetText("Play Sample Sound")
     playSoundCheck.text:SetFontObject("GameFontNormal")
     playSoundCheck:SetChecked(db.toggles.playSampleSoundMinimap == true)
@@ -384,7 +447,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
     -- Tooltip Drag-and-Drop List
     ---------------------------------------------------------------------------
     local tooltipLabel = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    tooltipLabel:SetPoint("TOPLEFT", desc, "BOTTOMLEFT", 300, -15)
+    tooltipLabel:SetPoint("TOPLEFT", showTooltipCheck, "BOTTOMLEFT", 5, -5)
     tooltipLabel:SetText("Tooltip Elements")
     
     local tooltipDesc = categoryFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -558,6 +621,7 @@ function VS:CreateMinimapSettingsContents(parentFrame)
 
     VS.RefreshMinimapSettingsUI = function()
         UpdateBindMinimapState()
+        RefreshPositionEditors()
         RefreshTooltipDataProvider()
     end
 end

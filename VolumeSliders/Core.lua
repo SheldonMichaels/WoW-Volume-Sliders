@@ -301,6 +301,7 @@ VS.DEFAULT_DB = {
         minimalistOffsetX = -35,
         minimalistOffsetY = -5,
         minimapIconLocked = true,
+        useCustomTint = false,
         mouseActions = {
             { trigger = "None+Scroll", effect = "SCROLL_VOLUME", stringTarget = "Sound_MasterVolume", numStep = 0.05 }
         },
