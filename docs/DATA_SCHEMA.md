@@ -22,29 +22,29 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   // ---------------------------------------------------------
   "appearance": {
     // Window Dimensions & Positioning
-    "windowWidth": "number",  // Set when user resizes; nil = use VS.DEFAULT_WINDOW_WIDTH
-    "windowHeight": "number", // Set when user resizes; nil = use VS.DEFAULT_WINDOW_HEIGHT
-    "customX": "number",      // X coordinate for custom anchor (set when window is dragged)
-    "customY": "number",      // Y coordinate for custom anchor (set when window is dragged)
+    "windowWidth": "number",  // Default: 375 (Set when user resizes; nil = use VS.DEFAULT_WINDOW_WIDTH)
+    "windowHeight": "number", // Default: 440 (Set when user resizes; nil = use VS.DEFAULT_WINDOW_HEIGHT)
+    "customX": "number",      // Default: nil (X coordinate for custom anchor; set when window is dragged)
+    "customY": "number",      // Default: nil (Y coordinate for custom anchor; set when window is dragged)
 
     // Background Color
     "bgColor": {
-      "r": "number", // Float 0.0 - 1.0
-      "g": "number", // Float 0.0 - 1.0
-      "b": "number", // Float 0.0 - 1.0
-      "a": "number"  // Opacity (0.0 - 1.0)
+      "r": "number", // Default: 0.05 (Float 0.0 - 1.0)
+      "g": "number", // Default: 0.05 (Float 0.0 - 1.0)
+      "b": "number", // Default: 0.05 (Float 0.0 - 1.0)
+      "a": "number"  // Default: 0.95 (Opacity 0.0 - 1.0)
     },
 
     // Widget Styling Enums
-    "knobStyle": "string",  // Enum (e.g., "Diamond", "Silver")
-    "arrowStyle": "string", // Enum (e.g., "GoldPlusMinus")
-    "titleColor": "string", // Enum (e.g., "White", "Gold")
-    "valueColor": "string", // Enum (e.g., "Gold")
-    "highColor": "string",  // Enum (e.g., "White")
-    "lowColor": "string",   // Enum (e.g., "White")
-    "sampleSound": "number|string", // SoundKit ID for slider chimes
-    "sampleSoundMinimap": "number|string", // SoundKit ID for minimap chimes
-    "volumeDisplayFormat": "string" // Enum: "percentage", "decimal", "decibel"
+    "knobStyle": "string",  // Default: "Diamond" (Enum e.g., "Diamond", "Silver")
+    "arrowStyle": "string", // Default: "GoldPlusMinus" (Enum e.g., "GoldPlusMinus")
+    "titleColor": "string", // Default: "White" (Enum e.g., "White", "Gold")
+    "valueColor": "string", // Default: "Gold" (Enum e.g., "Gold")
+    "highColor": "string",  // Default: "White" (Enum e.g., "White")
+    "lowColor": "string",   // Default: "White" (Enum e.g., "White")
+    "sampleSound": "number|string", // Default: 856 (SoundKit ID for slider chimes)
+    "sampleSoundMinimap": "number|string", // Default: 856 (SoundKit ID for minimap chimes)
+    "volumeDisplayFormat": "string" // Default: "percentage" (Enum: "percentage", "decimal", "decibel")
   },
 
   // ---------------------------------------------------------
@@ -52,12 +52,12 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   // ---------------------------------------------------------
   "layout": {
     // Structural Ordering
-    "sliderOrder": ["string"], // Ordered array of CVar channel names
-    "footerOrder": ["string"], // Ordered array of footer visibility keys
+    "sliderOrder": ["string"], // Default: VS.DEFAULT_CVAR_ORDER (Ordered array of CVar channel names)
+    "footerOrder": ["string"], // Default: VS.DEFAULT_FOOTER_ORDER (Ordered array of footer visibility keys)
     
     // Layout Constraints
-    "maxFooterCols": "number",    // Maximum items per footer row
-    "limitFooterCols": "boolean", // Whether to enforce maxFooterCols
+    "maxFooterCols": "number",    // Default: 3 (Maximum items per footer row)
+    "limitFooterCols": "boolean", // Default: true (Whether to enforce maxFooterCols)
 
     // Defines what happens when clicking or scrolling on specific UI boundaries
     "mouseActions": {
@@ -68,7 +68,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
           "stringTarget": "string", // [Optional] Target identifier (e.g., "Sound_MasterVolume" or "1" for Preset #1)
           "numStep": "number"       // [Optional] Numeric magnitude for adjustable effects (e.g., 0.05 for 5% scroll)
         }
-      ],
+      ], // Default: {}
       "scrollWheel": [
         { 
           "trigger": "string",      // e.g., "None", "Shift", "Ctrl"
@@ -76,7 +76,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
           "stringTarget": "string", 
           "numStep": "number"
         }
-      ]
+      ] // Default: {}
     }
   },
 
@@ -85,33 +85,33 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   // ---------------------------------------------------------
   "toggles": {
     // General Window State
-    "persistentWindow": "boolean", // True if clicking outside doesn't close the menu
-    "isLocked": "boolean",         // True if the main window cannot be moved
-    "playSampleSound": "boolean",  // True for slider chimes
-    "playSampleSoundMinimap": "boolean", // True for minimap chimes
+    "persistentWindow": "boolean", // Default: false (True if clicking outside doesn't close the menu)
+    "isLocked": "boolean",         // Default: false (True if the main window cannot be moved)
+    "playSampleSound": "boolean",  // Default: false (True for slider chimes)
+    "playSampleSoundMinimap": "boolean", // Default: false (True for minimap chimes)
 
     // Widget Components (Parts of a single slider row)
-    "showTitle": "boolean",
-    "showValue": "boolean",
-    "showHigh": "boolean",
-    "showUpArrow": "boolean",
-    "showSlider": "boolean",
-    "showDownArrow": "boolean",
-    "showLow": "boolean",
-    "showMute": "boolean",
+    "showTitle": "boolean",     // Default: true
+    "showValue": "boolean",     // Default: true
+    "showHigh": "boolean",      // Default: false
+    "showUpArrow": "boolean",   // Default: true
+    "showSlider": "boolean",    // Default: true
+    "showDownArrow": "boolean", // Default: true
+    "showLow": "boolean",       // Default: false
+    "showMute": "boolean",      // Default: true
     
     // UI Elements (Parts of the main frame popup)
-    "showWarnings": "boolean",
-    "showBackground": "boolean",
-    "showCharacter": "boolean",      // Shows the "Sound at Character" toggle
-    "showOutput": "boolean",         // Shows output device dropdown
-    "showPresetsDropdown": "boolean", // Shows quick-apply presets dropdown
-    "showLfgPop": "boolean",         // Shows LFG Pop Boost toggle in footer
-    "showZoneTriggers": "boolean",   // Shows Zone Triggers toggle in footer
-    "showFishingSplash": "boolean",  // Shows Fishing Splash Boost toggle in footer
-    "showHelpText": "boolean",       // Shows help instructions in header
-    "showEmoteSounds": "boolean",    // Shows Emote Sounds toggle in footer
-    "showVoiceMode": "boolean"       // Shows Voice Chat Mode toggle in footer
+    "showWarnings": "boolean",       // Default: true
+    "showBackground": "boolean",     // Default: true
+    "showCharacter": "boolean",      // Default: true (Shows the "Sound at Character" toggle)
+    "showOutput": "boolean",         // Default: true (Shows output device dropdown)
+    "showPresetsDropdown": "boolean", // Default: true (Shows quick-apply presets dropdown)
+    "showLfgPop": "boolean",         // Default: true (Shows LFG Pop Boost toggle in footer)
+    "showZoneTriggers": "boolean",   // Default: true (Shows Zone Triggers toggle in footer)
+    "showFishingSplash": "boolean",  // Default: true (Shows Fishing Splash Boost toggle in footer)
+    "showHelpText": "boolean",       // Default: true (Shows help instructions in header)
+    "showEmoteSounds": "boolean",    // Default: false (Shows Emote Sounds toggle in footer)
+    "showVoiceMode": "boolean"       // Default: true (Shows Voice Chat Mode toggle in footer)
   },
 
   // ---------------------------------------------------------
@@ -119,55 +119,55 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   // ---------------------------------------------------------
   // Determines which audio channels are rendered as sliders in the UI.
   "channels": {
-    "Sound_MasterVolume": "boolean",
-    "Sound_SFXVolume": "boolean",
-    "Sound_MusicVolume": "boolean",
-    "Sound_AmbienceVolume": "boolean",
-    "Sound_DialogVolume": "boolean",
-    "Sound_GameplaySFX": "boolean",
-    "Sound_PingVolume": "boolean",
-    "Sound_EncounterWarningsVolume": "boolean",
-    "Voice_ChatVolume": "boolean",
-    "Voice_ChatDucking": "boolean",
-    "Voice_MicVolume": "boolean",
-    "Voice_MicSensitivity": "boolean"
+    "Sound_MasterVolume": "boolean",            // Default: true
+    "Sound_SFXVolume": "boolean",               // Default: true
+    "Sound_MusicVolume": "boolean",             // Default: true
+    "Sound_AmbienceVolume": "boolean",          // Default: true
+    "Sound_DialogVolume": "boolean",            // Default: true
+    "Sound_GameplaySFX": "boolean",             // Default: false
+    "Sound_PingVolume": "boolean",              // Default: false
+    "Sound_EncounterWarningsVolume": "boolean", // Default: false
+    "Voice_ChatVolume": "boolean",              // Default: false
+    "Voice_ChatDucking": "boolean",             // Default: false
+    "Voice_MicVolume": "boolean",               // Default: false
+    "Voice_MicSensitivity": "boolean"           // Default: false
   },
 
   // ---------------------------------------------------------
   // 5. MINIMAP CONFIGURATION
   // ---------------------------------------------------------
   "minimap": {
-    "minimapPos": "number",        // Radial degree placement (0-360), owned by LibDBIcon
-    "hide": "boolean",             // Master visibility toggle for the addon icon
-    "minimapIconLocked": "boolean",// Locks minimap icon dragging
-    "bindToMinimap": "boolean",    // True if minimalist icon fades in on minimap hover
-    "minimalistMinimap": "boolean",// Toggles custom minimalist speaker icon style (nil = auto-detect)
-    "minimalistOffsetX": "number", // X offset for minimalist icon
-    "minimalistOffsetY": "number", // Y offset for minimalist icon
-    "iconScale": "number",         // Scale of minimalist icon (default 1.0)
-    "iconColor": {                 // Color tint for minimalist icon (default {r=1, g=1, b=1, a=1})
+    "minimapPos": "number",        // Default: 180 (Radial degree placement 0-360, owned by LibDBIcon)
+    "hide": "boolean",             // Default: false (Master visibility toggle for the addon icon)
+    "minimapIconLocked": "boolean",// Default: true (Locks minimap icon dragging)
+    "bindToMinimap": "boolean",    // Default: true (True if minimalist icon fades in on minimap hover)
+    "minimalistMinimap": "boolean",// Default: nil (Toggles custom minimalist speaker icon style; nil = auto-detect)
+    "minimalistOffsetX": "number", // Default: -35 (X offset for minimalist icon)
+    "minimalistOffsetY": "number", // Default: -5 (Y offset for minimalist icon)
+    "iconScale": "number",         // Default: 1.0 (Scale of minimalist icon)
+    "iconColor": {                 // Default: {r=1, g=1, b=1, a=1} (Color tint for minimalist icon)
       "r": "number", "g": "number", "b": "number", "a": "number"
     },
-    "useCustomTint": "boolean",    // When true, apply iconColor; false uses atlas color (default false)
-    "fadeInSpeed": "number",        // Fade-in duration in seconds (default 0.1)
-    "fadeOutSpeed": "number",       // Fade-out duration in seconds (default 0.5)
-    "minimalistClampMode": "boolean", // True to clamp radially, false for free X/Y (default false)
-    "minimalistAngle": "number",   // Radial angle (0-360) if clamped (default 225)
-    "minimalistRadius": "number",  // Radial offset if clamped (default 10)
+    "useCustomTint": "boolean",    // Default: false (When true, apply iconColor; false uses atlas color)
+    "fadeInSpeed": "number",        // Default: 0.1 (Fade-in duration in seconds)
+    "fadeOutSpeed": "number",       // Default: 0.5 (Fade-out duration in seconds)
+    "minimalistClampMode": "boolean", // Default: false (True to clamp radially, false for free X/Y)
+    "minimalistAngle": "number",   // Default: 225 (Radial angle 0-360 if clamped)
+    "minimalistRadius": "number",  // Default: 10 (Radial offset if clamped)
     
     // Tooltip and Click Bindings specific to the Minimap Icon
-    "showMinimapTooltip": "boolean", // Enables/disables minimap icon tooltip
+    "showMinimapTooltip": "boolean", // Default: true (Enables/disables minimap icon tooltip)
     "minimapTooltipOrder": [
       {
         "type": "string",   // "ChannelVolume", "MouseActions", "OutputDevice", "ActivePresets"
         "channel": "string" // Optional: specific CVar if type is "ChannelVolume"
       }
-    ],
+    ], // Default: {OutputDevice, MouseActions, ChannelVolume:Master, ActivePresets}
     "minimapScrollBindings": {
-      "None": "string",  // Maps to CVar (e.g., "Sound_MasterVolume") or "Disabled"
-      "Shift": "string",
-      "Ctrl": "string",
-      "Alt": "string"
+      "None": "string",  // Default: "Sound_MasterVolume" (Maps to CVar or "Disabled")
+      "Shift": "string", // Default: "Disabled"
+      "Ctrl": "string",  // Default: "Disabled"
+      "Alt": "string"    // Default: "Disabled"
     },
     // Minimap-specific mouse click interactions.
     "mouseActions": [
@@ -177,7 +177,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
         "stringTarget": "string",
         "numStep": "number"
       }
-    ]
+    ] // Default: {None+Scroll, SCROLL_VOLUME, Sound_MasterVolume, 0.05}
   },
 
   // ---------------------------------------------------------
@@ -186,7 +186,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   "hardware": {
     // Stores preferred master volume per hardware output device name
     "deviceVolumes": {
-      "[deviceName]": "number" // e.g., "Realtek Digital Output": 0.81
+      "[deviceName]": "number" // Default: {} (e.g., "Realtek Digital Output": 0.81)
     }
   },
 
@@ -194,14 +194,14 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   // 7. AUTOMATION & PRESETS
   // ---------------------------------------------------------
   "automation": {
-    "persistedBaseline": {},           // { [channel] = volume } The user's true intended volumes
-    "lastAppliedState": {},            // { [channel] = volume } The last state written by EvaluateAllPresets
-    "enableTriggers": "boolean",       // Master toggle for zone-triggered preset automation
-    "enableFishingVolume": "boolean",  // Enables fishing splash boost automation
-    "enableLfgVolume": "boolean",      // Enables LFG queue pop boost automation
-    "enableDeviceVolumes": "boolean",  // Enables per-hardware-device master volume tracking
-    "fishingPresetIndex": "number",    // Index in `presets` array for the fishing automation profile
-    "lfgPresetIndex": "number",        // Index in `presets` array for the LFG automation profile
+    "persistedBaseline": {},           // Default: {} ({ [channel] = volume } The user's true intended volumes)
+    "lastAppliedState": {},            // Default: {} ({ [channel] = volume } The last state written by EvaluateAllPresets)
+    "enableTriggers": "boolean",       // Default: true (Master toggle for zone-triggered preset automation) TODO: change to false
+    "enableFishingVolume": "boolean",  // Default: true (Enables fishing splash boost automation) TODO: change to false
+    "enableLfgVolume": "boolean",      // Default: true (Enables LFG queue pop boost automation) TODO: change to false
+    "enableDeviceVolumes": "boolean",  // Default: true (Enables per-hardware-device master volume tracking)
+    "fishingPresetIndex": "number",    // Default: 0 (Index in `presets` array for the fishing automation profile)
+    "lfgPresetIndex": "number",        // Default: 0 (Index in `presets` array for the LFG automation profile)
     
     // User-defined volume states that can be triggered manually or automatically by zone.
     "presets": [
@@ -223,10 +223,10 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
           "[cvarName]": "string"     // Mathematical operation: "absolute" (default), "floor", or "ceiling"
         }
       }
-    ],
+    ], // Default: [] (Sunwell Silencer injected if empty on login)
     // Tracks manually toggled presets and their exact activation timestamp.
     "activeManualPresets": {
-      "[presetIndex]": "number" // GetTime() timestamp when toggled ON
+      "[presetIndex]": "number" // Default: {} (GetTime() timestamp when toggled ON)
     }
   },
 
@@ -237,6 +237,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   // standard sound channels. We implement a "soft mute" by zeroing the value
   // and caching the original. These are INTENTIONAL user state.
   "voice": {
+    // Default: {}
     // Dynamic key pattern: "MuteState_" + voice channel CVar name
     // e.g., "MuteState_Voice_ChatVolume": boolean
     
