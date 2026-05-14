@@ -1,4 +1,14 @@
-# Changelog (v3.10.0)
+# Changelog (v3.11.0)
+
+## v3.11.0 — 2026-05-14
+
+### Added
+- **Custom Minimap Icon Positioning**: The custom minimalist minimap icon can now be freely detached from the minimap and positioned anywhere on the screen using a dedicated toggle, along with precise X/Y nudging via the settings.
+- **Advanced Icon Customization**: Added comprehensive customization options for the minimap icon, including scaling (50% to 200%), icon tint/color selection, and distinct fade speed controls for both mouse-over and mouse-out states.
+
+### Changed
+- **Default Automation Settings**: Changed default configurations to ensure automation overrides and visibility elements remain disabled on clean installations, providing a less intrusive initial user experience.
+- **Schema Documentation**: Updated internal `DATA_SCHEMA.md` to explicitly document all default fallback values, ensuring accurate state restoration behaviors.
 
 ## v3.10.0 — 2026-05-12
 
