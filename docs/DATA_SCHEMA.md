@@ -103,15 +103,15 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     // UI Elements (Parts of the main frame popup)
     "showWarnings": "boolean",       // Default: true
     "showBackground": "boolean",     // Default: true
-    "showCharacter": "boolean",      // Default: true (Shows the "Sound at Character" toggle)
-    "showOutput": "boolean",         // Default: true (Shows output device dropdown)
+    "showCharacter": "boolean",      // Default: true (Shows the "Sound at Character" toggle) TODO: change to false
+    "showOutput": "boolean",         // Default: true (Shows output device dropdown) TODO: change to false
     "showPresetsDropdown": "boolean", // Default: true (Shows quick-apply presets dropdown)
     "showLfgPop": "boolean",         // Default: true (Shows LFG Pop Boost toggle in footer)
-    "showZoneTriggers": "boolean",   // Default: true (Shows Zone Triggers toggle in footer)
-    "showFishingSplash": "boolean",  // Default: true (Shows Fishing Splash Boost toggle in footer)
+    "showZoneTriggers": "boolean",   // Default: true (Shows Zone Triggers toggle in footer) TODO: change to false
+    "showFishingSplash": "boolean",  // Default: true (Shows Fishing Splash Boost toggle in footer) TODO: change to false
     "showHelpText": "boolean",       // Default: true (Shows help instructions in header)
     "showEmoteSounds": "boolean",    // Default: false (Shows Emote Sounds toggle in footer)
-    "showVoiceMode": "boolean"       // Default: true (Shows Voice Chat Mode toggle in footer)
+    "showVoiceMode": "boolean"       // Default: true (Shows Voice Chat Mode toggle in footer) TODO: change to false
   },
 
   // ---------------------------------------------------------
@@ -196,9 +196,9 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
   "automation": {
     "persistedBaseline": {},           // Default: {} ({ [channel] = volume } The user's true intended volumes)
     "lastAppliedState": {},            // Default: {} ({ [channel] = volume } The last state written by EvaluateAllPresets)
-    "enableTriggers": "boolean",       // Default: true (Master toggle for zone-triggered preset automation) TODO: change to false
-    "enableFishingVolume": "boolean",  // Default: true (Enables fishing splash boost automation) TODO: change to false
-    "enableLfgVolume": "boolean",      // Default: true (Enables LFG queue pop boost automation) TODO: change to false
+    "enableTriggers": "boolean",       // Default: false (Master toggle for zone-triggered preset automation)
+    "enableFishingVolume": "boolean",  // Default: false (Enables fishing splash boost automation)
+    "enableLfgVolume": "boolean",      // Default: false (Enables LFG queue pop boost automation)
     "enableDeviceVolumes": "boolean",  // Default: true (Enables per-hardware-device master volume tracking)
     "fishingPresetIndex": "number",    // Default: 0 (Index in `presets` array for the fishing automation profile)
     "lfgPresetIndex": "number",        // Default: 0 (Index in `presets` array for the LFG automation profile)
