@@ -66,6 +66,7 @@ After the maintainer confirms the merge:
 3. Verify `HEAD`, `CHANGELOG.md`, and `VolumeSliders/VolumeSliders.toc` match the intended release version.
 4. Delete the merged local `dev/*` branch. Squash merges usually require `git branch -D` because the exact branch commit is not an ancestor of `master`.
 5. Ask explicit permission before creating and pushing the annotated release tag for the exact version, for example `v3.9.1`.
+6. Finally, clean up agent scratch files and temporary artifacts created during the completed branch's work. Always verify the contents of a file before deleting it to ensure it is safe to remove (e.g., delete scratch PR bodies or temporary logs, but preserve persistent history, documentation, and screenshots).
 
 ## Local Equivalents
 

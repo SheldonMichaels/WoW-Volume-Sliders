@@ -93,6 +93,7 @@ If CI or workflow files change, review `docs/CI_AND_RELEASE.md` and ensure the d
 - All merges into `master` must go through a GitHub PR.
 - The agent must not merge PRs.
 - After the human confirms a squash merge, fetch/prune, fast-forward local `master`, delete the local dev branch, verify the release version on `master`, and ask explicit permission before creating or pushing the annotated release tag for that exact version.
+- Once tags are pushed, clean up agent scratch files and temporary artifacts created during the completed branch's work. Always verify the contents of a file before deleting it to ensure it is safe to remove (e.g., delete scratch PR bodies or temporary logs, but preserve persistent history, documentation, and screenshots).
 
 ## Saved Variable Rules
 
