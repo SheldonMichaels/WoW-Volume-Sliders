@@ -103,15 +103,15 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
     // UI Elements (Parts of the main frame popup)
     "showWarnings": "boolean",       // Default: true
     "showBackground": "boolean",     // Default: true
-    "showCharacter": "boolean",      // Default: true (Shows the "Sound at Character" toggle) TODO: change to false
-    "showOutput": "boolean",         // Default: true (Shows output device dropdown) TODO: change to false
+    "showCharacter": "boolean",      // Default: false (Shows the "Sound at Character" toggle)
+    "showOutput": "boolean",         // Default: false (Shows output device dropdown)
     "showPresetsDropdown": "boolean", // Default: true (Shows quick-apply presets dropdown)
     "showLfgPop": "boolean",         // Default: true (Shows LFG Pop Boost toggle in footer)
-    "showZoneTriggers": "boolean",   // Default: true (Shows Zone Triggers toggle in footer) TODO: change to false
-    "showFishingSplash": "boolean",  // Default: true (Shows Fishing Splash Boost toggle in footer) TODO: change to false
+    "showZoneTriggers": "boolean",   // Default: false (Shows Zone Triggers toggle in footer)
+    "showFishingSplash": "boolean",  // Default: false (Shows Fishing Splash Boost toggle in footer)
     "showHelpText": "boolean",       // Default: true (Shows help instructions in header)
     "showEmoteSounds": "boolean",    // Default: false (Shows Emote Sounds toggle in footer)
-    "showVoiceMode": "boolean"       // Default: true (Shows Voice Chat Mode toggle in footer) TODO: change to false
+    "showVoiceMode": "boolean"       // Default: false (Shows Voice Chat Mode toggle in footer)
   },
 
   // ---------------------------------------------------------
