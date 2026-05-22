@@ -27,6 +27,7 @@ This is the universal, tracked instruction file for AI coding agents working on 
 WoW-Volume-Sliders/
 |-- AGENTS.md                  # universal tracked agent baseline
 |-- .agents/                   # tracked Antigravity personas, skills, workflows
+|   `-- artifacts/             # ignored agent execution artifacts (plans, logs, reports)
 |-- .cursor/rules/             # tracked Cursor project rules
 |-- .github/workflows/         # CI/CD
 |-- docs/                      # architecture, schema, testing, release, AI docs
@@ -84,7 +85,7 @@ Documentation-only changes do not require the Lua test suite unless they alter d
 - **Cursor:** `.cursor/rules/*.mdc` contains short, scoped project rules. Cursor rules should point back to this file or committed docs instead of copying large sections.
 - **Antigravity:** `.agents/agents.md`, `.agents/skills/`, and `.agents/workflows/` define project personas and lifecycle commands.
   - Workflows use named personas (`@planner`, `@api-researcher`, `@implementer`, `@validator`, `@debugger`, `@release-manager`) defined in `.agents/agents.md`.
-- **Artifacts:** Generated planning, research, implementation, validation, or release artifacts belong in ignored artifact directories unless the user explicitly asks to commit them.
+- **Artifacts:** Generated planning, research, implementation, validation, or release artifacts belong in the ignored `.agents/artifacts/` directory unless the user explicitly asks to commit them.
 
 ## Windows and GitHub CLI
 

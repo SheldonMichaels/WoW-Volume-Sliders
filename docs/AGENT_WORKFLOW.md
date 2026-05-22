@@ -41,14 +41,14 @@ If CI or workflow files change, review `docs/CI_AND_RELEASE.md` and ensure the d
 - Create or use a `dev/*` branch for repository modifications.
 - For PR-bound work, start from current `origin/master` unless the user explicitly asks to stack on another branch.
 - Do not write implementation code before the boundaries are clear.
-- For large or risky work, produce an architecture artifact in an ignored artifact directory.
+- For large or risky work, produce an architecture artifact in the ignored `.agents/artifacts/` directory.
 
 ### API Discovery
 
 - Verify patch-accurate WoW API signatures before using unfamiliar functions or events.
 - Research taint, protected frame, combat-lockdown, CVar, and settings behavior when relevant.
 - Use the `wow-api` MCP server tools for signature verification when available. Supplement with reputable live documentation relevant to the current WoW Retail version.
-- Capture verified signatures and risks in an ignored research artifact for complex changes.
+- Capture verified signatures and risks in an ignored research artifact in `.agents/artifacts/` for complex changes.
 
 ### Implementation
 
@@ -93,7 +93,7 @@ If CI or workflow files change, review `docs/CI_AND_RELEASE.md` and ensure the d
 - All merges into `master` must go through a GitHub PR.
 - The agent must not merge PRs.
 - After the human confirms a squash merge, fetch/prune, fast-forward local `master`, delete the local dev branch, verify the release version on `master`, and ask explicit permission before creating or pushing the annotated release tag for that exact version.
-- Once tags are pushed, clean up agent scratch files and temporary artifacts created during the completed branch's work. Always verify the contents of a file before deleting it to ensure it is safe to remove (e.g., delete scratch PR bodies or temporary logs, but preserve persistent history, documentation, and screenshots).
+- Once tags are pushed, clean up agent scratch files and temporary artifacts in `.agents/artifacts/` created during the completed branch's work. Always verify the contents of a file before deleting it to ensure it is safe to remove (e.g., delete scratch PR bodies or temporary logs, but preserve persistent history, documentation, and screenshots).
 
 ## Saved Variable Rules
 
@@ -126,7 +126,7 @@ Do not change persisted boundaries through implicit defaults alone.
 
 - Project personas, skills, and workflows live in `.agents/`.
 - Skills should prefer `SKILL.md` directory packages with `name` and `description` metadata.
-- Workflows should orchestrate the lifecycle phases and save generated artifacts to ignored artifact paths.
+- Workflows should orchestrate the lifecycle phases and save generated artifacts to the `.agents/artifacts/` directory.
 
 ### Local Overrides
 
