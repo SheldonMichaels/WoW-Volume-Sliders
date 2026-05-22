@@ -11,10 +11,20 @@ describe("VolumeSliders Settings Minimap Module", function()
             UpdateMiniMapButtonVisibility = spy.new(function() end),
         }
         _G.VolumeSlidersMMDB = {
+            schemaVersion = 10,
             minimap = {
-                minimapIconLocked = true,
-                minimalistMinimap = false,
+                minimalistMinimap = true,
+                minimapIconLocked = false,
                 bindToMinimap = true,
+                iconScale = 1.0,
+                iconColor = { r=1, g=1, b=1, a=1 },
+                fadeInSpeed = 0.1,
+                fadeOutSpeed = 0.5,
+                minimalistOffsetX = -35,
+                minimalistOffsetY = -5,
+                minimalistClampMode = false,
+                minimalistAngle = 225,
+                minimalistRadius = 10,
                 minimapTooltipOrder = {
                     { type = "OutputDevice" }
                 }

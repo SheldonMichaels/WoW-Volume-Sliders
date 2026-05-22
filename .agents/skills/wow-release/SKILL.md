@@ -21,6 +21,7 @@ compatibility: Requires git, GitHub access, gh or GitHub MCP, and repository val
 11. Stop until the user confirms the PR was merged.
 12. After merge confirmation, fetch/prune, fast-forward local `master`, verify the release version on `master`, and clean up the local dev branch.
 13. Ask explicit permission before creating or pushing the annotated release tag for the exact version.
+14. Finally, clean up agent scratch files and temporary artifacts created during the completed branch's work. Always verify the contents of a file before deleting it to ensure it is safe to remove (e.g., delete scratch PR bodies or temporary logs, but preserve persistent history, documentation, and screenshots).
 
 ## Hard Constraints
 

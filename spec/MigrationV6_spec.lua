@@ -83,7 +83,7 @@ describe("Schema V5 to V6 Migration", function()
         -- Logic is executed during PLAYER_LOGIN
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(9, db.schemaVersion)
+        assert.are.equal(10, db.schemaVersion)
         assert.is_true(db.automation.enableDeviceVolumes)
         assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
     end)
@@ -95,7 +95,7 @@ describe("Schema V5 to V6 Migration", function()
         
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(9, db.schemaVersion)
+        assert.are.equal(10, db.schemaVersion)
         assert.is_false(db.automation.enableDeviceVolumes)
         assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
     end)

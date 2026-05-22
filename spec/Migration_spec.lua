@@ -113,7 +113,7 @@ describe("V1 to V2 Database Migration", function()
         local db = _G.VolumeSlidersMMDB
 
         -- Assert Version Label
-        assert.are.equal(9, db.schemaVersion)
+        assert.are.equal(10, db.schemaVersion)
         assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
 
         -- Assert transient keys are completely purged

@@ -55,7 +55,7 @@ describe("V8 to V9 Database Migration", function()
 
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(9, db.schemaVersion)
+        assert.are.equal(10, db.schemaVersion)
         assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
     end)
 
@@ -65,7 +65,7 @@ describe("V8 to V9 Database Migration", function()
 
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(9, db.schemaVersion)
+        assert.are.equal(10, db.schemaVersion)
         assert.are.equal("decibel", db.appearance.volumeDisplayFormat)
     end)
 end)

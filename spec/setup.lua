@@ -23,6 +23,9 @@ _G.GameTooltip = {
     Hide = function() end,
 }
 
+_G.UIFrameFadeIn = function(frame, timeToFade, startAlpha, endAlpha) if frame then frame:SetAlpha(endAlpha) end end
+_G.UIFrameFadeOut = function(frame, timeToFade, startAlpha, endAlpha) if frame then frame:SetAlpha(endAlpha) end end
+
 _G.Minimap = {
     IsMouseOver = function() return false end,
     GetScript = function() end,
@@ -65,7 +68,14 @@ local function createMockFrame(frameType, name, parent, template)
         scripts = {},
         points = {},
     }
-    if name then _G[name] = f end
+    if name then
+        _G[name] = f
+        if frameType == "Slider" then
+            _G[name .. "Low"] = { SetText = function() end, Hide = function() end, Show = function() end }
+            _G[name .. "High"] = { SetText = function() end, Hide = function() end, Show = function() end }
+            _G[name .. "Text"] = { SetText = function() end, Hide = function() end, Show = function() end }
+        end
+    end
 
     table.merge = function(t1, t2) for k, v in pairs(t2) do t1[k] = v end end
     table.merge(f, {
@@ -103,6 +113,9 @@ local function createMockFrame(frameType, name, parent, template)
         GetFrameLevel = function(self) return self.level end,
         SetFrameStrata = function(self, strata) end,
         SetClampedToScreen = function(self, clamped) end,
+        SetNormalTexture = function() end,
+        SetPushedTexture = function() end,
+        SetDisabledTexture = function() end,
         EnableMouse = function(self, enable) end,
         RegisterForDrag = function(self, btn) end,
         SetMovable = function(self, movable) self.movable = movable end,

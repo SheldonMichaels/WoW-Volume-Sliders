@@ -85,7 +85,7 @@ describe("Schema V6 to V7 Migration", function()
         -- Logic is executed during PLAYER_LOGIN
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(9, db.schemaVersion)
+        assert.are.equal(10, db.schemaVersion)
         assert.is_false(db.toggles.showEmoteSounds)
         assert.are.equal("percentage", db.appearance.volumeDisplayFormat)
         
@@ -175,7 +175,7 @@ describe("Schema V6 to V7 Migration (empty footerOrder)", function()
         local db = _G.VolumeSlidersMMDB
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(9, db.schemaVersion)
+        assert.are.equal(10, db.schemaVersion)
         assert.are.equal(8, #db.layout.footerOrder)
         assert.are.equal("showZoneTriggers", db.layout.footerOrder[1])
         assert.are.equal("showEmoteSounds", db.layout.footerOrder[6])
@@ -267,7 +267,7 @@ describe("Schema V6 to V7 Migration (short footerOrder)", function()
         local db = _G.VolumeSlidersMMDB
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(9, db.schemaVersion)
+        assert.are.equal(10, db.schemaVersion)
         assert.are.equal("showEmoteSounds", db.layout.footerOrder[5])
         local n = 0
         for _ in ipairs(db.layout.footerOrder) do
