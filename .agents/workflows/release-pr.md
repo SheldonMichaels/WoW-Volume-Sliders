@@ -18,4 +18,4 @@ Use this workflow when the user asks to prepare a release, or when a normal user
 10. Instruct the human user to manually squash and merge the PR on GitHub.
 11. Stop until the user confirms the PR has been merged.
 12. After user confirmation, fetch/prune, fast-forward local `master`, verify `HEAD` and release metadata, clean up the local dev branch, and ask explicit permission before creating any annotated release tag.
-13. After tags are created and pushed, clean up untracked artifacts (`.gemini/artifacts`, `.cursor/artifacts`) and temporary files in `local_dev_assets/` (e.g. scratch PR bodies).
+13. After tags are created and pushed, clean up untracked artifacts (`.agents/artifacts/`) and temporary files in `local_dev_assets/` (e.g. scratch PR bodies).
