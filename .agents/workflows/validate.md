@@ -21,3 +21,4 @@ Use this workflow before handing code changes back to the user or before prepari
 5. For CI or release changes, verify `docs/CI_AND_RELEASE.md`.
 6. Save a concise report to `.agents/artifacts/Validation_Report_Artifact.md` during Antigravity workflow runs.
 7. Do not mark validation complete until failures are fixed or clearly reported as blockers.
+8. Report automated and in-game results separately. When no client testing is possible, mark it not performed and link `docs/IN_GAME_TESTING.md` for follow-up.

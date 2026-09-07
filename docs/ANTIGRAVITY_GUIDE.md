@@ -1,6 +1,6 @@
 # Using Google Antigravity with Volume Sliders
 
-This guide explains how to effectively use the Google Antigravity AI assistant with the Volume Sliders project. The project is pre-configured with a suite of AI "stuff" (workflows, skills, and personas) designed to safely and effectively develop, debug, and release updates.
+This guide describes the repository's Google Antigravity workflow, previously used with Gemini. Start by asking the assistant to read `AGENTS.md` and `docs/AGENT_WORKFLOW.md`. For Codex, see [CODEX_GUIDE.md](CODEX_GUIDE.md). When client testing is unavailable, follow [OFFLINE_MAINTENANCE.md](OFFLINE_MAINTENANCE.md).
 
 ## The AI Infrastructure
 
@@ -16,39 +16,39 @@ All of these are bound by the universal rules defined in `AGENTS.md` and the det
 
 ## 1. Workflows (Slash Commands)
 
-Workflows are the best way to kick off a new session or a major piece of work. You can invoke them using slash commands in the Antigravity chat interface.
+Workflow files are tracked under `.agents/workflows/`. Confirm which commands your installed Antigravity version discovers; display names and folder support must be checked locally. If discovery fails, ask the assistant to read the relevant file directly. If the installation expects `.agent/`, see [.agents/README.md](../.agents/README.md) for the ignored compatibility option.
 
 ### Available Workflows
 
-- **/Volume Sliders Feature Cycle**
+- **Feature Cycle** (`.agents/workflows/feature-cycle.md`)
   Use this when you want to add a non-trivial new feature. The AI will guide you through planning, API research, implementation, validation, and documentation.
-- **/Volume Sliders Bugfix Cycle**
+- **Bugfix Cycle** (`.agents/workflows/bugfix-cycle.md`)
   Use this for diagnosing a bug report, applying a targeted fix, and ensuring regressions are validated.
-- **/Volume Sliders Validation**
+- **Validation** (`.agents/workflows/validate.md`)
   Use this to simply run the repository validation checklist (linting, tests, migration checks) and get a summary.
-- **/Volume Sliders Release PR**
+- **Release PR** (`.agents/workflows/release-pr.md`)
   Use this when you are ready to prepare a new release. The AI will help update versions, sync changelogs, run tests, and prepare a PR.
 
-*Note: Workflows automatically orchestrate the different Personas and utilize the necessary Skills under the hood.*
+These documents instruct an assistant to adopt the listed roles and use relevant skills. They do not by themselves register separate agents or guarantee automatic orchestration.
 
 ---
 
 ## 2. Personas (Roles)
 
-Under the hood, Antigravity uses distinct personas to separate concerns and maintain high code quality. While you don't typically need to invoke these manually, understanding them helps you know what the AI is trying to accomplish at any given time.
+The repository defines the following personas in `.agents/agents.md`. They are written role descriptions that one assistant can follow sequentially.
 
 - **@planner**: Analyzes your request and builds an architecture plan before any code is written. It respects existing module boundaries.
 - **@api-researcher**: Verifies WoW Retail APIs, event payloads, CVar behavior, and taint risks before implementation begins.
 - **@implementer**: Writes the actual Lua/XML code based on the approved plan and API research.
-- **@validator**: Runs the static checks (`luacheck`) and behavioral specs (`busted`) to prove the changes work.
-- **@debugger**: Diagnoses and surgical fixes failures discovered during validation or from user reports.
+- **@validator**: Runs static checks (`luacheck`) and mocked behavioral specs (`busted`), and identifies remaining in-game checks.
+- **@debugger**: Diagnoses and makes targeted fixes for failures discovered during validation or from user reports.
 - **@release-manager**: Prepares PR-based releases, keeping version metadata strictly synchronized.
 
 ---
 
 ## 3. Skills (Automated Capabilities)
 
-Skills are folders of instructions and resources that extend Antigravity's capabilities. If a task requires a specific skill, Antigravity will automatically load and use it. 
+Skills are folders of instructions and resources. Verify they appear in the active assistant's skill list; otherwise ask it to read the relevant `SKILL.md` explicitly. These same project skills are available to Codex through `.agents/skills/`.
 
 - **wow-planning**: Used when planning non-trivial changes or architecture decisions.
 - **wow-api-discovery**: Used to verify WoW Retail API signatures and avoid taint issues before implementing new addon behavior.
@@ -62,8 +62,8 @@ Skills are folders of instructions and resources that extend Antigravity's capab
 
 ## Best Practices for Human Users
 
-1. **Use Slash Commands for Big Tasks**: If you want to build a feature or fix a bug, start your prompt with the appropriate slash command (e.g., `/Volume Sliders Feature Cycle Let's add a master volume slider.`). This sets the AI on the right tracked path immediately.
-2. **Review the Plans**: When the AI enters the "Planning" phase, it will often generate an `implementation_plan.md` artifact and ask for your approval. Review this carefully before saying "go ahead"—this prevents the AI from writing code that strays outside established boundaries.
-3. **Let the AI Validate**: The AI is instructed to run `luacheck` and `busted` tests automatically during the Validation phase. If it forgets, you can remind it, or just run `/Volume Sliders Validation`.
-4. **Agent Cannot Merge**: The AI is strictly forbidden from merging Pull Requests or pushing release tags without explicit permission. You remain the final gatekeeper for releases.
+1. **Choose a Workflow**: Use a discovered command or ask the assistant to follow `.agents/workflows/validate.md`, for example. State your scope and testing limitations.
+2. **Review Plans**: Complex plans belong in `.agents/artifacts/Architecture_Design_Artifact.md`. The assistant should resolve routine choices within your request and ask about consequential ambiguities.
+3. **Check Validation Evidence**: Request lint/test results separately from in-game checks. Tests do not prove live client compatibility.
+4. **Human Merge Gate**: Only the human maintainer may merge PRs. Creating or pushing a release tag requires explicit permission for the exact version.
 5. **Private Notes**: If you have scratch files or personal notes you want the AI to read but not commit, put them in the `local_dev_assets/` folder, which is git-ignored.

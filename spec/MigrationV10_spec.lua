@@ -78,6 +78,56 @@ describe("V9 to V10 Database Migration", function()
         assert.is_false(db.minimap.useCustomTint)
     end)
 
+    it("preserves explicit false and zero settings during migration", function()
+        local db = _G.VolumeSlidersMMDB
+        db.minimap.fadeInSpeed = 0
+        db.minimap.fadeOutSpeed = 0
+        db.minimap.minimalistAngle = 0
+        db.minimap.minimalistRadius = 0
+        db.minimap.useCustomTint = false
+        db.minimap.minimalistClampMode = false
+
+        initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
+
+        assert.equal(10, db.schemaVersion)
+        assert.equal(0, db.minimap.fadeInSpeed)
+        assert.equal(0, db.minimap.fadeOutSpeed)
+        assert.equal(0, db.minimap.minimalistAngle)
+        assert.equal(0, db.minimap.minimalistRadius)
+        assert.is_false(db.minimap.useCustomTint)
+        assert.is_false(db.minimap.minimalistClampMode)
+    end)
+
+    it("initializes a missing minimap namespace on a version 9 database", function()
+        local db = _G.VolumeSlidersMMDB
+        db.minimap = nil
+
+        initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
+
+        assert.equal(10, db.schemaVersion)
+        assert.equal(1, db.minimap.iconScale)
+        assert.same({ r = 1, g = 1, b = 1, a = 1 }, db.minimap.iconColor)
+        assert.equal(0.1, db.minimap.fadeInSpeed)
+        assert.equal(0.5, db.minimap.fadeOutSpeed)
+    end)
+
+    it("preserves customized version 10 settings across repeated login initialization", function()
+        local db = _G.VolumeSlidersMMDB
+        initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
+        db.minimap.iconScale = 1.75
+        db.minimap.fadeOutSpeed = 0
+        db.minimap.minimalistOffsetX = 123
+        db.minimap.iconColor = { r = 0.2, g = 0.3, b = 0.4, a = 0.5 }
+
+        initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
+
+        assert.equal(10, db.schemaVersion)
+        assert.equal(1.75, db.minimap.iconScale)
+        assert.equal(0, db.minimap.fadeOutSpeed)
+        assert.equal(123, db.minimap.minimalistOffsetX)
+        assert.same({ r = 0.2, g = 0.3, b = 0.4, a = 0.5 }, db.minimap.iconColor)
+    end)
+
     it("should not overwrite existing fields if already set", function()
         local db = _G.VolumeSlidersMMDB
         db.minimap.iconScale = 1.5

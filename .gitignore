@@ -15,5 +15,10 @@ local_dev_assets/
 # Agents
 GEMINI.md
 AGENTS.local.md
+AGENTS.override.md
 .agent/
 .agents/artifacts/
+
+# Local coverage output
+luacov.stats.out
+luacov.report.out

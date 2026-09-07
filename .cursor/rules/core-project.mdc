@@ -10,4 +10,4 @@ alwaysApply: true
 - Work on a `dev/*` branch for repository modifications.
 - Do not commit secrets, screenshots, database backups, generated artifacts, or scratch files.
 - For code changes, run `luacheck VolumeSliders spec` and `busted . --verbose` before completion when available.
-- Do not merge PRs or create release tags without explicit user direction.
+- Never merge PRs; only the human maintainer may merge. Release tags require explicit permission for the exact tag.

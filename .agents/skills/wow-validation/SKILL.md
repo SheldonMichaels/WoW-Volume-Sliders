@@ -19,6 +19,7 @@ compatibility: Requires Lua 5.1 tooling, luacheck, busted, and repository test d
 5. For docs-only changes, verify links, commands, and described behavior.
 6. For CI/release changes, verify `docs/CI_AND_RELEASE.md` and relevant workflow files.
 7. Save `.agents/artifacts/Validation_Report_Artifact.md` using `references/Validation_Report_Template.md` for Antigravity workflow runs.
+8. Follow `docs/OFFLINE_MAINTENANCE.md` when client testing is unavailable. Separate automated results from in-game results; use `docs/IN_GAME_TESTING.md` for deferred checks. A passing mocked suite is not a compatibility certification.
 
 ## Failure Handling
 

@@ -199,7 +199,8 @@ VS.DEFAULT_FOOTER_ORDER = {
     "showVoiceMode",
 }
 
--- Database Schema Defaults (SchemaVersion 9)
+-- Base defaults retain schemaVersion 9; Init.lua migrations stamp schema 10.
+-- See docs/DATA_SCHEMA.md for the current persisted schema.
 -------------------------------------------------------------------------------
 --- @class VolumeSlidersAutomation
 --- @field persistedBaseline table<string, number>
@@ -685,7 +686,7 @@ end
 -- UI Utility Functions
 -----------------------------------------
 
---- Safely identifies "secret" or protected values introduced in the Midnight (13.x) expansion.
+--- Safely identifies "secret" or protected values introduced in the Midnight (12.x) expansion.
 --- Addons cannot directly compare or manipulate these values in an unprotected context.
 --- @param value any The value to check.
 --- @return boolean True if the value is "secret", false otherwise.

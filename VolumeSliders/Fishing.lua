@@ -93,7 +93,7 @@ local function OnEvent(self, event, ...)
         
         local unitTarget, castGUID, spellID = ...
         if unitTarget == "player" then
-            -- Guard against secret values in Midnight (13.x)
+            -- Guard against secret values in Midnight (12.x)
             -- Comparing or indexing secret values directly during secure execution paths
             -- (like combat) will cause taint errors, so we explicitly filter them out first.
             if VS:IsSecret(spellID) then return end

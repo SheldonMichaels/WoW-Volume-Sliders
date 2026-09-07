@@ -111,7 +111,7 @@ end
 -- Hook PlaySound so we can react at the same moment READY_CHECK is requested.
 -- We then gate with GetLFGProposal() to avoid boosting non-LFG ready checks.
 hooksecurefunc("PlaySound", function(soundID)
-    -- Guard against secret values in Midnight (13.x)
+    -- Guard against secret values in Midnight (12.x)
     -- Comparing secret values directly during secure execution paths (like combat)
     -- will cause taint errors, so we explicitly filter them out first.
     if VS:IsSecret(soundID) then return end
