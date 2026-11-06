@@ -1,4 +1,10 @@
-# Changelog (v3.11.0)
+# Changelog (v3.12.0)
+
+## v3.12.0 — 2026-11-06
+
+### Added
+- **World of Warcraft: Forever Compatibility**: Added full support for the new *World of Warcraft: Forever* client (interface `16001`), including automatic multi-flavor TOC generation for package releases.
+- **WoW Retail (Midnight 12.1.x) Support**: Updated interface version targeting to support modern Retail patches up through `12.1.5` (`120100`, `120105`).
 
 ## v3.11.0 — 2026-05-14
 
