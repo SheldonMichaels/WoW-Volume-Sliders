@@ -83,6 +83,39 @@ describe("Registry-based Preset Logic (Unified State Stack)", function()
         assert.are.equal("0.5", _G.cvarStorage["Sound_MasterVolume"])
     end)
 
+    it("reveals the earlier manual preset before restoring baseline", function()
+        local quiet = { name = "Quiet", volumes = { Sound_MasterVolume = 0.2 }, ignored = {} }
+        local loud = { name = "Loud", volumes = { Sound_MasterVolume = 0.8 }, ignored = {} }
+        _G.VolumeSlidersMMDB.automation.presets = { quiet, loud }
+
+        VS.Presets:TogglePreset(quiet, 1)
+        _G.AdvanceTime(1)
+        VS.Presets:TogglePreset(loud, 2)
+        assert.equal("0.8", _G.cvarStorage.Sound_MasterVolume)
+
+        VS.Presets:TogglePreset(loud, 2)
+        assert.equal("0.2", _G.cvarStorage.Sound_MasterVolume)
+
+        VS.Presets:TogglePreset(quiet, 1)
+        assert.equal("1", _G.cvarStorage.Sound_MasterVolume)
+    end)
+
+    it("restores a pre-existing manual mute after an automated preset ends", function()
+        VS.session.baselineMutes.Sound_MasterVolume = "0"
+        _G.cvarStorage.Sound_EnableAllSound = "0"
+        _G.VolumeSlidersMMDB.automation.presets = {
+            { name = "Zone", priority = 10, zones = { "Elwynn Forest" },
+              volumes = { Sound_MasterVolume = 0.5 }, ignored = {} }
+        }
+
+        VS.Presets:RefreshEventState()
+        assert.equal("0", _G.cvarStorage.Sound_EnableAllSound)
+        _G.zoneStates = { real = "Unknown", sub = "Unknown", mini = "Unknown" }
+        VS.Presets:RefreshEventState()
+        assert.equal("0", _G.cvarStorage.Sound_EnableAllSound)
+        assert.equal("1", _G.cvarStorage.Sound_MasterVolume)
+    end)
+
     it("implements the Kill-Switch: Overrides clear when all presets deactivate", function()
         local preset = {
             name = "Test", priority = 10,

@@ -10,9 +10,11 @@ description: Plan, research, implement, validate, and document a non-trivial fea
 
 Use this workflow when the user asks for a new feature or substantial enhancement.
 
+First check `docs/OFFLINE_MAINTENANCE.md` when in-game testing is unavailable. Documentation/test maintenance does not authorize feature implementation or a release.
+
 1. Act as `@planner` and run the `wow-planning` skill.
    - Save complex output to `.agents/artifacts/Architecture_Design_Artifact.md`.
-   - Pause for user approval when the design has meaningful trade-offs.
+   - Resolve choices within the user's authorized scope; ask when a consequential ambiguity remains.
 2. Act as `@api-researcher` and run the `wow-api-discovery` skill for any unfamiliar WoW APIs, events, CVars, secure execution paths, or library behavior.
    - Save output to `.agents/artifacts/API_Research_Artifact.md`.
 3. Act as `@implementer` and run the `wow-implementation` skill.

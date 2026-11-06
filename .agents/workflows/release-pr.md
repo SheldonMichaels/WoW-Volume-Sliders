@@ -6,6 +6,8 @@ description: Prepare a PR-based release while preserving human merge and tag gat
 
 Use this workflow when the user asks to prepare a release, or when a normal user-facing bug fix or feature is ready for PR unless the user explicitly says not to ship it yet.
 
+Documentation, comments, and tests under `docs/OFFLINE_MAINTENANCE.md` do not trigger this workflow. Record unavailable in-game checks explicitly; never infer compatibility from a passing mocked suite.
+
 1. Act as `@release-manager` and run the `wow-release` skill.
 2. Ensure the work is on a clean `dev/*` branch based on current `origin/master`.
 3. Review the current branch, diff, issue links, changelog needs, and validation status.
@@ -18,4 +20,4 @@ Use this workflow when the user asks to prepare a release, or when a normal user
 10. Instruct the human user to manually squash and merge the PR on GitHub.
 11. Stop until the user confirms the PR has been merged.
 12. After user confirmation, fetch/prune, fast-forward local `master`, verify `HEAD` and release metadata, clean up the local dev branch, and ask explicit permission before creating any annotated release tag.
-13. After tags are created and pushed, clean up untracked artifacts (`.agents/artifacts/`) and temporary files in `local_dev_assets/` (e.g. scratch PR bodies).
+13. After tags are created and pushed, follow the scoped artifact cleanup rules in `docs/CI_AND_RELEASE.md`; inspect files first and preserve backups, screenshots, and persistent notes.

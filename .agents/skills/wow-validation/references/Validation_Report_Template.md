@@ -32,3 +32,10 @@
 ## 6. Blockers
 
 - `[none or list unresolved issues]`
+
+## 7. In-Game Validation
+
+- **Result:** `[PASS / FAIL / NOT PERFORMED]`
+- **Client Build and Addon Commit:** `[values or not applicable]`
+- **Untested Behavior:** `[list; refer to docs/IN_GAME_TESTING.md]`
+- **Compatibility Claim:** `[supported by recorded client checks / not established]`

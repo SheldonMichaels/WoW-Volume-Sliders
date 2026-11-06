@@ -74,6 +74,29 @@ describe("VolumeSliders Core Module", function()
             assert.equal("80%", VS:FormatVolumeValue(0.8))
         end)
 
+        it("formats missing and invalid values as silence", function()
+            assert.equal("0%", VS:FormatVolumeValue(nil))
+            assert.equal("0%", VS:FormatVolumeValue("invalid"))
+            _G.VolumeSlidersMMDB.appearance.volumeDisplayFormat = "decimal"
+            assert.equal("0.00", VS:FormatVolumeValue(nil))
+            _G.VolumeSlidersMMDB.appearance.volumeDisplayFormat = "decibel"
+            assert.equal("-∞ dB", VS:FormatVolumeValue("invalid"))
+        end)
+
+        it("formats numeric strings and clamps decimal endpoints", function()
+            _G.VolumeSlidersMMDB.appearance.volumeDisplayFormat = "decimal"
+            assert.equal("0.25", VS:FormatVolumeValue("0.25"))
+            assert.equal("0.00", VS:FormatVolumeValue(-1))
+            assert.equal("1.00", VS:FormatVolumeValue(2))
+        end)
+
+        it("clamps decibel endpoints and formats one tenth volume", function()
+            _G.VolumeSlidersMMDB.appearance.volumeDisplayFormat = "decibel"
+            assert.equal("-∞ dB", VS:FormatVolumeValue(-1))
+            assert.equal("0.0 dB", VS:FormatVolumeValue(2))
+            assert.equal("-20.0 dB", VS:FormatVolumeValue(0.1))
+        end)
+
         it("AdjustVolume should clamp to [0, 1]", function()
             _G.SetCVar("Sound_MasterVolume", "0.98")
             VS:AdjustVolume(1)

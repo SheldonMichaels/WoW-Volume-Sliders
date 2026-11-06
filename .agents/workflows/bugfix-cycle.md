@@ -10,6 +10,8 @@ description: Diagnose a bug report, apply a targeted fix, and validate the regre
 
 Use this workflow when the user reports broken behavior, screenshots, errors, failed tests, or CI failures.
 
+When the user limits work to offline maintenance, follow `docs/OFFLINE_MAINTENANCE.md`: record runtime defects for later work and do not automatically continue into release preparation.
+
 1. Act as `@debugger` and gather the failing behavior, logs, screenshots, current tests, and affected modules.
 2. If the fix requires unfamiliar WoW API behavior, act as `@api-researcher` and run `wow-api-discovery`.
 3. Apply the smallest targeted source change using `wow-implementation` only when code needs editing.

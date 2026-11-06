@@ -7,9 +7,11 @@ This document is the tracked, repository-visible operating guide for AI-assisted
 - Treat `AGENTS.md` and committed docs as the source of truth for project behavior.
 - Keep Cursor rules and Antigravity skills thin. They should route work and reference canonical docs rather than copying long policies.
 - Local-only guidance may exist in ignored files, but any rule that affects repository decisions belongs in tracked docs.
-- If an instruction conflicts with a direct user request, ask for clarification before changing behavior-critical files.
+- Direct user instructions determine task scope. Resolve routine choices within that scope; ask only when a consequential ambiguity remains.
 
 ## Standard Delivery Pattern
+
+For maintenance without in-game testing, follow [OFFLINE_MAINTENANCE.md](OFFLINE_MAINTENANCE.md). Documentation, comments, and tests in that scope do not trigger release preparation or compatibility bumps.
 
 For non-trivial code changes, follow this sequence:
 
@@ -115,6 +117,10 @@ Do not change persisted boundaries through implicit defaults alone.
 - Keep README and CONTRIBUTING links aligned with the current docs.
 
 ## Tool-Specific Layers
+
+### Codex and ChatGPT
+
+See [CODEX_GUIDE.md](CODEX_GUIDE.md) for instruction and skill discovery. Keep shared policy here and in `AGENTS.md`; use `.agents/skills/` for reusable project procedures. Persona labels describe roles, not a requirement to spawn agents. Workflow Markdown can be followed sequentially when an assistant has no workflow command support.
 
 ### Cursor
 

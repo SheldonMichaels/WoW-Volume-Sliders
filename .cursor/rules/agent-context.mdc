@@ -8,6 +8,6 @@ alwaysApply: false
 
 - Keep `AGENTS.md` as the universal baseline.
 - Keep `.cursor/rules` short, scoped, and non-duplicative.
-- Keep Antigravity personas, skills, and workflows under `.agents/`.
+- Keep shared skills and Antigravity personas/workflows under `.agents/`; route Codex onboarding through `docs/CODEX_GUIDE.md`.
 - Put generated artifacts and local overrides in ignored paths.
 - Use Agent Skills-compatible `SKILL.md` packages where practical.

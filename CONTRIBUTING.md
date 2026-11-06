@@ -15,7 +15,7 @@ Thanks for helping improve Volume Sliders.
 
 ## Branch and PR Workflow
 
-- Use a feature branch for each logical change.
+- Use a `dev/*` branch based on current `origin/master` for each logical change.
 - Keep PRs focused and reviewable (one theme per PR).
 - Include regression tests for any bug fix.
 - Update relevant docs in the same PR when contracts change.
@@ -42,6 +42,12 @@ If you change saved variable structure:
 - Prefer behavior tests against real module handlers.
 - Do not copy production logic into test files.
 - Extend `spec/setup.lua` when new WoW APIs are used.
+- Tests use mocked WoW APIs; passing them does not establish in-game compatibility. See [testing limits](docs/TESTING_INFRA.md) and the [in-game checklist](docs/IN_GAME_TESTING.md).
+- When in-game testing is unavailable, use the [offline maintenance scope](docs/OFFLINE_MAINTENANCE.md).
+
+## Editor Setup
+
+Run validation commands from the repository root with Lua 5.1 tooling available on `PATH`. The checked-in `.luarc.json` files reference a maintainer-specific WoW annotation directory; that directory is not a dependency of Busted or Luacheck. Configure annotation locations in your local editor settings when using another machine. Keep local paths and credentials out of shared assistant configuration.
 
 ## Documentation References
 
@@ -56,6 +62,7 @@ If you change saved variable structure:
 - `AGENTS.md` is the tracked baseline for AI coding agents.
 - `docs/AGENT_WORKFLOW.md` is the detailed operating guide.
 - `.cursor/rules/` contains scoped Cursor project rules.
-- `.agents/` contains Google Antigravity personas, skills, and workflows.
+- `.agents/skills/` contains shared project skills; `.agents/agents.md` and `.agents/workflows/` describe Antigravity roles and processes.
+- [Codex Guide](docs/CODEX_GUIDE.md) covers Codex discovery and moving between assistants.
 - `docs/ANTIGRAVITY_GUIDE.md` explains how to operate Google Antigravity with this project.
 - Generated artifacts and local-only overrides must stay ignored.

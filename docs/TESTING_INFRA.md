@@ -25,6 +25,8 @@ See `docs/CI_AND_RELEASE.md` for workflow details.
 
 ## Test Design Rules
 
+Automated results cover Lua behavior under the mocks in `spec/setup.lua`. They do not verify live API availability, secret values, combat restrictions, event timing, audio hardware, or rendered UI. A green suite is not a compatibility certification. Record in-game testing separately using [IN_GAME_TESTING.md](IN_GAME_TESTING.md).
+
 ### 1) Behavior over implementation
 
 Tests should validate observable outcomes of production modules, not copied helper logic. Avoid re-implementing internal algorithms inside specs; drive real handlers/functions instead.
@@ -56,3 +58,4 @@ If new runtime APIs are introduced in production code, add matching mocks before
 - Coverage is currently scoped to core logic modules listed in `.luacov` (migration, presets, automation, and related control logic).
 - UI-heavy rendering modules are still validated by `luacheck` + behavior tests and can be added to coverage scope incrementally.
 - If coverage drops, either improve tests in the same PR or justify/plan follow-up in the PR description.
+- The 80% gate is for the modules selected by `.luacov`, not the entire addon. It currently excludes `MinimapBroker.lua`, `Appearance.lua`, `PopupFrame.lua`, `SliderWidgets.lua`, and several settings modules. Historical changelog coverage claims are not a statement of current whole-addon coverage.

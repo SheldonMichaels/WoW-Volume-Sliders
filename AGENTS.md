@@ -26,7 +26,7 @@ This is the universal, tracked instruction file for AI coding agents working on 
 ```text
 WoW-Volume-Sliders/
 |-- AGENTS.md                  # universal tracked agent baseline
-|-- .agents/                   # tracked Antigravity personas, skills, workflows
+|-- .agents/                   # shared skills and Antigravity personas/workflows
 |   `-- artifacts/             # ignored agent execution artifacts (plans, logs, reports)
 |-- .cursor/rules/             # tracked Cursor project rules
 |-- .github/workflows/         # CI/CD
@@ -82,6 +82,8 @@ Documentation-only changes do not require the Lua test suite unless they alter d
 
 ## Agent Workflow Layers
 
+- **Offline maintenance:** When in-game testing is unavailable, follow `docs/OFFLINE_MAINTENANCE.md`. Limit work to authorized docs, comments, tests, and backlog review; defer runtime, library, schema, and compatibility changes.
+- **Codex / ChatGPT:** Start with this file and `docs/CODEX_GUIDE.md`. Shared project skills live in `.agents/skills/`; Antigravity persona labels and workflow files are not Codex commands.
 - **Cursor:** `.cursor/rules/*.mdc` contains short, scoped project rules. Cursor rules should point back to this file or committed docs instead of copying large sections.
 - **Antigravity:** `.agents/agents.md`, `.agents/skills/`, and `.agents/workflows/` define project personas and lifecycle commands.
   - Workflows use named personas (`@planner`, `@api-researcher`, `@implementer`, `@validator`, `@debugger`, `@release-manager`) defined in `.agents/agents.md`.

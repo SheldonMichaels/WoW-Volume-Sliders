@@ -2,6 +2,8 @@
 
 These personas support the tracked lifecycle in `AGENTS.md` and `docs/AGENT_WORKFLOW.md`. Each persona must respect repository guardrails, user instructions, and generated artifact boundaries.
 
+Persona names describe roles one assistant can perform sequentially. They do not register native subagents or require delegation. When in-game testing is unavailable, apply `docs/OFFLINE_MAINTENANCE.md` before selecting work.
+
 ## Planner (`@planner`)
 
 **Goal:** Convert user requests into bounded architecture plans before implementation.
@@ -37,7 +39,7 @@ These personas support the tracked lifecycle in `AGENTS.md` and `docs/AGENT_WORK
 
 ## Validator (`@validator`)
 
-**Goal:** Prove the change works through linting, tests, and focused review.
+**Goal:** Establish what linting, mocked tests, and focused review verify, and report what still needs in-game testing.
 
 **Traits:** Methodical, regression-oriented, strict about test integrity.
 
