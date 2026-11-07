@@ -4,8 +4,8 @@ This is the universal, tracked instruction file for AI coding agents working on 
 
 ## Project Snapshot
 
-- **Project:** World of Warcraft Retail addon for quick-access volume controls.
-- **Runtime:** WoW Retail 12.x, Lua 5.1, XML UI templates.
+- **Project:** World of Warcraft Retail and Forever addon for quick-access volume controls.
+- **Runtime:** WoW Retail 12.x, WoW Forever 1.x, Lua 5.1, XML UI templates.
 - **Addon root:** `VolumeSliders/`
 - **Tests:** Busted specs in `spec/`
 - **Public docs:** `README.md`, `CONTRIBUTING.md`, `docs/`

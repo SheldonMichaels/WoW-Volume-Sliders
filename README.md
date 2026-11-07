@@ -2,7 +2,8 @@
 
 Quick-access vertical volume sliders for every WoW sound channel, right from your minimap.
 
-![WoW](https://img.shields.io/badge/WoW-12.0.5-blue)
+![WoW Retail](https://img.shields.io/badge/WoW%20Retail-12.1.5-blue)
+![WoW Forever](https://img.shields.io/badge/WoW%20Forever-1.60.1-blue)
 ![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-lightgrey)
 
 <p align="center">
@@ -18,7 +19,8 @@ Quick-access vertical volume sliders for every WoW sound channel, right from you
 1. Download or clone this repository.
 2. Copy the inner `VolumeSliders/` folder into your WoW addons directory:
    ```
-   World of Warcraft/_retail_/Interface/AddOns/
+   - Retail: World of Warcraft/_retail_/Interface/AddOns/
+   - Forever: World of Warcraft/_forever_/Interface/AddOns/
    ```
 3. Restart WoW or type `/reload` in chat.
 

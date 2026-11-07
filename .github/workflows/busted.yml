@@ -13,13 +13,13 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Setup Lua
-      uses: leafo/gh-actions-lua@v9
+      uses: leafo/gh-actions-lua@v13
       with:
         luaVersion: "5.1.5"
-        buildCache: false
+        buildCache: true
 
     - name: Setup Luarocks
-      uses: leafo/gh-actions-luarocks@v4
+      uses: leafo/gh-actions-luarocks@v6
 
     - name: Install dependencies
       run: |
