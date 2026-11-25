@@ -1,22 +1,15 @@
 ---
 name: wow-api-discovery
-description: Verifies WoW Retail API signatures, event payloads, CVar behavior, and taint risks before Volume Sliders code changes. Use before implementing unfamiliar addon behavior.
-compatibility: Designed for Google Antigravity and compatible agent-skill runners in this repository.
+description: Verifies WoW Retail (12.x) and WoW Forever (16001) API signatures, event payloads, CVar behavior, and taint risks before Volume Sliders code changes.
 ---
 
 # WoW API Discovery
 
 ## Instructions
 
-1. Read `AGENTS.md`, `docs/AGENT_WORKFLOW.md`, and any planning artifact.
-2. Identify every API, event, CVar, library function, or secure execution path that must be verified.
-3. Use the `wow-api` MCP server tools (`lookup_api`, `search_api`, `get_event`, `get_enum`, `get_namespace`, `get_widget_methods`) for precise, patch-current signature verification when available.
-4. Supplement with reputable live documentation when MCP tools are unavailable or insufficient. Always verify information is current and relevant to the targeted WoW Retail version.
-5. Cross-reference existing addon code and tests for usage patterns.
-6. Record exact signatures, event payloads, return values, deprecation status, and taint/combat-lockdown risks.
-7. For non-trivial work, write `.agents/artifacts/API_Research_Artifact.md` using `references/API_Research_Template.md`.
-8. Do not write implementation code in this phase.
-
-## Output
-
-Return verified facts, uncertainty, and implementation warnings. Clearly mark anything not verified.
+1. Identify the target WoW client(s) and build/interface version (`VolumeSliders/VolumeSliders.toc` declares both Retail 12.x and Forever 16001).
+2. List every API function, event, enum, CVar, widget method, library call, or secure execution path that needs verification.
+3. If a `wow-api` MCP server is available in the active session, use its lookup tools first. Verify findings against client-specific documentation or UI source for the target build. Use those sources directly when the server is unavailable.
+4. Cross-reference existing usage in `VolumeSliders/` and mocks in `spec/setup.lua`.
+5. Report exact signatures, event payloads, return values, client-specific differences (Retail vs. Forever), deprecation status, and taint or combat-lockdown risks.
+6. Clearly mark anything that could not be verified. Do not edit source code during this research step.

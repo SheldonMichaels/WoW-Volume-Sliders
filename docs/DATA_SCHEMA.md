@@ -7,7 +7,7 @@
 
 This document defines the exact shape of the saved variables used by Volume Sliders. It acts as the single source of truth for the data layer, distinguishing between user-configurable options, transient session states, and deprecated keys.
 
-> **Contract:** Any contributor changing persisted-vs-transient boundaries, migration behavior, or namespace keys MUST update this document in the same PR. See `docs/AGENT_WORKFLOW.md` for workflow requirements.
+> **Contract:** Any contributor changing persisted-vs-transient boundaries, migration behavior, or namespace keys MUST update this document in the same PR. See the [agent guide](../AGENTS.md#saved-variables-volumeslidersmmdb) for the migration requirements.
 
 ## Root Structure
 

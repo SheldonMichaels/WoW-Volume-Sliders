@@ -36,14 +36,14 @@ The release workflow trims `CHANGELOG.md` down to the latest `## v...` section b
 
 ## Release Policy
 
-Volume Sliders is a small one-maintainer addon. In normal maintenance, every user-facing bug fix or feature PR is also a release PR unless the user explicitly says it should not ship yet.
+Update release metadata for user-facing fixes or features that are ready to ship, or when the maintainer explicitly requests it.
 
 Before opening a release PR:
 
 1. Start from a clean `dev/*` branch based on current `origin/master`.
 2. Apply the code, docs, and test changes.
 3. Choose the next semantic version for the scope:
-   - Patch (`x.y.Z`) for bug fixes and small documentation/release workflow corrections.
+   - Patch (`x.y.Z`) for user-facing bug fixes.
    - Minor (`x.Y.0`) for user-facing features or notable behavior changes.
    - Major (`X.0.0`) only for breaking saved-variable or compatibility changes.
 4. Synchronize release metadata:
@@ -57,7 +57,7 @@ Before opening a release PR:
 6. Verify the PR will contain only intended commits with `git log origin/master...HEAD`.
 7. Open a PR targeting `master` and include the validation results, manual in-game testing when applicable, and linked issue closure text.
 
-The human maintainer performs the squash merge on GitHub.
+Only the human maintainer may squash-merge pull requests on GitHub.
 
 After the maintainer confirms the merge:
 
@@ -66,7 +66,6 @@ After the maintainer confirms the merge:
 3. Verify `HEAD`, `CHANGELOG.md`, and `VolumeSliders/VolumeSliders.toc` match the intended release version.
 4. Delete the merged local `dev/*` branch. Squash merges usually require `git branch -D` because the exact branch commit is not an ancestor of `master`.
 5. Ask explicit permission before creating and pushing the annotated release tag for the exact version, for example `v3.9.1`.
-6. Finally, clean up agent scratch files and temporary artifacts in `.agents/artifacts/` created during the completed branch's work. Always verify the contents of a file before deleting it to ensure it is safe to remove (e.g., delete scratch PR bodies or temporary logs, but preserve persistent history, documentation, and screenshots).
 
 ## Local Equivalents
 

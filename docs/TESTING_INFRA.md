@@ -59,3 +59,7 @@ If new runtime APIs are introduced in production code, add matching mocks before
 - UI-heavy rendering modules are still validated by `luacheck` + behavior tests and can be added to coverage scope incrementally.
 - If coverage drops, either improve tests in the same PR or justify/plan follow-up in the PR description.
 - The 80% gate is for the modules selected by `.luacov`, not the entire addon. It currently excludes `MinimapBroker.lua`, `Appearance.lua`, `PopupFrame.lua`, `SliderWidgets.lua`, and several settings modules. Historical changelog coverage claims are not a statement of current whole-addon coverage.
+
+## Maintenance Without In-Game Testing
+
+When a live WoW client is unavailable, keep offline maintenance to documentation, source comments, mocked regression tests of existing behavior, and backlog review. Runtime behavior, saved-variable migrations, embedded libraries, `.toc` interface numbers, and release versions require client verification. Report in-game checks as **not performed** when they were unavailable.

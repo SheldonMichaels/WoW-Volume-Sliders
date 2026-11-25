@@ -75,10 +75,6 @@ Browse the [open issues](https://github.com/SheldonMichaels/WoW-Volume-Sliders/i
 - [Testing Infrastructure](docs/TESTING_INFRA.md)
 - [CI and Release](docs/CI_AND_RELEASE.md)
 - [AI Agent Guide](AGENTS.md)
-- [Agent Workflow](docs/AGENT_WORKFLOW.md)
-- [Antigravity Guide](docs/ANTIGRAVITY_GUIDE.md)
-- [Codex Guide](docs/CODEX_GUIDE.md)
-- [Offline Maintenance](docs/OFFLINE_MAINTENANCE.md)
 - [In-Game Test Checklist](docs/IN_GAME_TESTING.md)
 
 ## Libraries
