@@ -15,9 +15,15 @@ ignore:
   - docs
   - GEMINI.md
   - AGENTS.md
+  - AGENTS.local.md
+  - AGENTS.override.md
+  - CLAUDE.md
+  - CLAUDE.local.md
   - .agent
   - .agents
-  - .cursor
+  - .claude
+  - .codex
+  - .mcp.json
   - spec
   - .luarc.json
   - .busted
