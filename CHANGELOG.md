@@ -1,4 +1,9 @@
-# Changelog (v3.12.0)
+# Changelog (v3.12.1)
+
+## v3.12.1 — 2026-11-24
+
+### Fixed
+- **Minimap Scroll Wheel**: Fixed an issue on fresh installations (including new *World of Warcraft: Forever* setups) where scrolling the mouse wheel over the minimap icon without modifier keys failed to adjust Master volume due to a mismatch in the default scroll binding. Existing affected profiles are automatically migrated on login.
 
 ## v3.12.0 — 2026-11-06
 

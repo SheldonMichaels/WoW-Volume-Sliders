@@ -59,7 +59,7 @@ describe("V9 to V10 Database Migration", function()
 
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(10, db.schemaVersion)
+        assert.are.equal(11, db.schemaVersion)
         
         -- Ensure old keys were untouched
         assert.is_true(db.minimap.minimalistMinimap)
@@ -89,7 +89,7 @@ describe("V9 to V10 Database Migration", function()
 
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.equal(10, db.schemaVersion)
+        assert.equal(11, db.schemaVersion)
         assert.equal(0, db.minimap.fadeInSpeed)
         assert.equal(0, db.minimap.fadeOutSpeed)
         assert.equal(0, db.minimap.minimalistAngle)
@@ -104,7 +104,7 @@ describe("V9 to V10 Database Migration", function()
 
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.equal(10, db.schemaVersion)
+        assert.equal(11, db.schemaVersion)
         assert.equal(1, db.minimap.iconScale)
         assert.same({ r = 1, g = 1, b = 1, a = 1 }, db.minimap.iconColor)
         assert.equal(0.1, db.minimap.fadeInSpeed)
@@ -121,7 +121,7 @@ describe("V9 to V10 Database Migration", function()
 
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.equal(10, db.schemaVersion)
+        assert.equal(11, db.schemaVersion)
         assert.equal(1.75, db.minimap.iconScale)
         assert.equal(0, db.minimap.fadeOutSpeed)
         assert.equal(123, db.minimap.minimalistOffsetX)
@@ -141,7 +141,7 @@ describe("V9 to V10 Database Migration", function()
 
         initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
 
-        assert.are.equal(10, db.schemaVersion)
+        assert.are.equal(11, db.schemaVersion)
         assert.are.equal(1.5, db.minimap.iconScale)
         assert.are.same({ r = 0, g = 0, b = 0, a = 1 }, db.minimap.iconColor)
         assert.are.equal(0.3, db.minimap.fadeInSpeed)

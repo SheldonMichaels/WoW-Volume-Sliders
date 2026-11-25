@@ -104,6 +104,48 @@ describe("VolumeSliders Core Module", function()
         end)
     end)
 
+    describe("Mouse Actions and Default Scroll Binding", function()
+        after_each(function()
+            _G.IsShiftKeyDown = function() return false end
+            _G.IsControlKeyDown = function() return false end
+            _G.IsAltKeyDown = function() return false end
+        end)
+
+        it("should default minimap mouseActions scroll trigger to Scroll", function()
+            local defaultAction = VS.DEFAULT_DB.minimap.mouseActions[1]
+            assert.is_table(defaultAction)
+            assert.equal("Scroll", defaultAction.trigger)
+            assert.equal("SCROLL_VOLUME", defaultAction.effect)
+            assert.equal("Sound_MasterVolume", defaultAction.stringTarget)
+            assert.equal(0.05, defaultAction.numStep)
+        end)
+
+        it("GetActiveTriggerString should build modifier-free and modified scroll triggers", function()
+            assert.equal("Scroll", VS:GetActiveTriggerString(nil, 1))
+            assert.equal("LeftButton", VS:GetActiveTriggerString("LeftButton"))
+
+            _G.IsShiftKeyDown = function() return true end
+            assert.equal("Shift+Scroll", VS:GetActiveTriggerString(nil, -1))
+
+            _G.IsControlKeyDown = function() return true end
+            assert.equal("Shift+Ctrl+Scroll", VS:GetActiveTriggerString(nil, 1))
+
+            _G.IsAltKeyDown = function() return true end
+            assert.equal("Shift+Ctrl+Alt+Scroll", VS:GetActiveTriggerString(nil, 1))
+        end)
+
+        it("ProcessMinimapAction should adjust master volume for default Scroll trigger", function()
+            _G.VolumeSlidersMMDB.minimap.mouseActions = VS.DEFAULT_DB.minimap.mouseActions
+            _G.SetCVar("Sound_MasterVolume", "0.5")
+
+            local triggerStr = VS:GetActiveTriggerString(nil, 1)
+            local handled = VS:ProcessMinimapAction(triggerStr, nil, 1)
+
+            assert.is_true(handled)
+            assert.equal("0.55", _G.GetCVar("Sound_MasterVolume"))
+        end)
+    end)
+
     describe("Syncing", function()
         it("SyncBaseline should store values in persistedBaseline", function()
             VS:SyncBaseline("Sound_MasterVolume", 0.5)
