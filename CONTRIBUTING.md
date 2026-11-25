@@ -43,7 +43,6 @@ If you change saved variable structure:
 - Do not copy production logic into test files.
 - Extend `spec/setup.lua` when new WoW APIs are used.
 - Tests use mocked WoW APIs; passing them does not establish in-game compatibility. See [testing limits](docs/TESTING_INFRA.md) and the [in-game checklist](docs/IN_GAME_TESTING.md).
-- When in-game testing is unavailable, use the [offline maintenance scope](docs/OFFLINE_MAINTENANCE.md).
 
 ## Editor Setup
 
@@ -59,10 +58,12 @@ Run validation commands from the repository root with Lua 5.1 tooling available 
 
 ## AI-Assisted Development
 
-- `AGENTS.md` is the tracked baseline for AI coding agents.
-- `docs/AGENT_WORKFLOW.md` is the detailed operating guide.
-- `.cursor/rules/` contains scoped Cursor project rules.
-- `.agents/skills/` contains shared project skills; `.agents/agents.md` and `.agents/workflows/` describe Antigravity roles and processes.
-- [Codex Guide](docs/CODEX_GUIDE.md) covers Codex discovery and moving between assistants.
-- `docs/ANTIGRAVITY_GUIDE.md` explains how to operate Google Antigravity with this project.
-- Generated artifacts and local-only overrides must stay ignored.
+Open the cloned repository in Google Antigravity, OpenAI Codex, or Claude Code.
+
+- All three use the shared [agent guide](AGENTS.md). Claude Code loads it through [CLAUDE.md](CLAUDE.md).
+- Antigravity and Codex discover the shared [WoW API discovery](.agents/skills/wow-api-discovery/SKILL.md) and [WoW validation](.agents/skills/wow-validation/SKILL.md) skills. Claude Code can run them as `/wow-api-discovery` and `/wow-validation`.
+- The optional `wow-api-mcp` server and personal overrides stay local. See [.gitignore](.gitignore) for the ignored paths. In Codex, a local `AGENTS.override.md` replaces `AGENTS.md` at that level, so point it to the shared guide if you use one.
+
+Starter prompt for any of the three tools
+
+> Follow AGENTS.md. Before editing, tell me which modules and docs apply to my request and whether mocked tests or in-game checks are needed.

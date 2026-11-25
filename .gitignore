@@ -12,11 +12,17 @@ Thumbs.db
 local_dev_assets/
 .logs/
 
-# Agents
+# AI local overrides and scratch artifacts
 GEMINI.md
 AGENTS.local.md
 AGENTS.override.md
+CLAUDE.local.md
+.claude/settings.local.json
+.codex/config.toml
+.codex/config.local.toml
+.mcp.json
 .agent/
+.agents/mcp_config.json
 .agents/artifacts/
 
 # Local coverage output

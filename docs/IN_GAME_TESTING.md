@@ -1,13 +1,13 @@
 # In-Game Test Checklist
 
-Use this when a tester has access to the target WoW Retail client. None of these checks were performed during the offline maintenance review.
+Use this checklist on the target WoW Retail or WoW Forever (16001) client. Record results separately for each client tested.
 
 Record the addon commit/version, WoW version/build and interface number, locale, UI scale, other enabled addons, audio devices, and test date. Back up SavedVariables before testing upgrades; keep backups and screenshots in ignored local storage.
 
 | Check | Procedure and expected result | Result |
 | --- | --- | --- |
 | Fresh install | Start with a separate clean configuration. Login, open settings and popup, reload; defaults initialize and persist without Lua errors. | Not run |
-| Upgrade | Load a backed-up older configuration. Login and reload; preset bindings, layout, custom minimap settings and volumes remain intact; schema reaches 10. | Not run |
+| Upgrade | Load a backed-up older configuration. Login and reload; preset bindings, layout, custom minimap settings and volumes remain intact; schema matches the current version in the [saved-variable contract](DATA_SCHEMA.md). | Not run |
 | Volume and mute | Adjust each enabled channel, mute and unmute it, then use Blizzard sound settings. Values and labels stay synchronized; unrelated channels do not change. | Not run |
 | Overlapping presets | Activate overlapping automatic/manual presets, adjust a channel, then deactivate presets in reverse order. Compare restoration and mute behavior with `PRESET_BEHAVIOR.md`. | Not run |
 | Reload and logout | Reload/logout with active manual presets and muted channels. Confirm active state and baseline restoration match the documented contract. | Not run |
