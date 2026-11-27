@@ -199,7 +199,7 @@ VS.DEFAULT_FOOTER_ORDER = {
     "showVoiceMode",
 }
 
--- Base defaults retain schemaVersion 9; Init.lua migrations stamp schema 10.
+-- Base defaults retain schemaVersion 9; Init.lua migrations stamp schema 11.
 -- See docs/DATA_SCHEMA.md for the current persisted schema.
 -------------------------------------------------------------------------------
 --- @class VolumeSlidersAutomation
@@ -304,7 +304,7 @@ VS.DEFAULT_DB = {
         minimapIconLocked = true,
         useCustomTint = false,
         mouseActions = {
-            { trigger = "None+Scroll", effect = "SCROLL_VOLUME", stringTarget = "Sound_MasterVolume", numStep = 0.05 }
+            { trigger = "Scroll", effect = "SCROLL_VOLUME", stringTarget = "Sound_MasterVolume", numStep = 0.05 }
         },
         minimapTooltipOrder = {
             { type = "OutputDevice" },

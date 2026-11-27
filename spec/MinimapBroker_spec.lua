@@ -7,8 +7,33 @@ describe("MinimapBroker Module", function()
 
     before_each(function()
         VS = {}
+        _G.IsShiftKeyDown = function() return false end
+        _G.IsControlKeyDown = function() return false end
+        _G.IsAltKeyDown = function() return false end
+        _G.SetCVar("Sound_MasterVolume", "1")
+        _G.SetCVar("Sound_EnableAllSound", "1")
+
         local f1 = assert(loadfile("VolumeSliders/Core.lua"))
         f1("VolumeSliders", VS)
+
+        _G.VolumeSlidersMMDB = {
+            toggles = { showMinimapTooltip = true },
+            appearance = { volumeDisplayFormat = "percentage" },
+            minimap = {
+                minimalistMinimap = true,
+                bindToMinimap = true,
+                mouseActions = {
+                    {
+                        trigger = VS.DEFAULT_DB.minimap.mouseActions[1].trigger,
+                        effect = VS.DEFAULT_DB.minimap.mouseActions[1].effect,
+                        stringTarget = VS.DEFAULT_DB.minimap.mouseActions[1].stringTarget,
+                        numStep = VS.DEFAULT_DB.minimap.mouseActions[1].numStep,
+                    }
+                },
+                minimapTooltipOrder = {},
+            },
+            automation = { persistedBaseline = {}, presets = {} },
+        }
 
         -- Mock the GetVolumeText dependency which is usually in another file
         VS.GetVolumeText = function() return "50%" end
@@ -94,5 +119,36 @@ describe("MinimapBroker Module", function()
 
         -- Should only have been hooked once
         assert.are.equal(1, hookCount)
+    end)
+
+    it("adjusts master volume when scrolling the hooked LDB display frame with default settings", function()
+        local displayFrame = _G.CreateFrame("Frame")
+        local tooltip = _G.CreateFrame("GameTooltip")
+        tooltip.GetOwner = function() return displayFrame end
+        tooltip.AddLine = function() end
+
+        VS.VolumeSlidersObject.OnTooltipShow(tooltip)
+        local onWheel = displayFrame:GetScript("OnMouseWheel")
+        assert.is_function(onWheel)
+
+        _G.SetCVar("Sound_MasterVolume", "0.5")
+        onWheel(displayFrame, 1)
+        assert.are.equal("0.55", _G.GetCVar("Sound_MasterVolume"))
+
+        onWheel(displayFrame, -1)
+        assert.are.equal("0.5", _G.GetCVar("Sound_MasterVolume"))
+    end)
+
+    it("adjusts master volume when scrolling the minimalist minimap button with default settings", function()
+        VS:CreateMinimalistButton()
+        local onWheel = VS.minimalistButton:GetScript("OnMouseWheel")
+        assert.is_function(onWheel)
+
+        _G.SetCVar("Sound_MasterVolume", "0.5")
+        onWheel(VS.minimalistButton, 1)
+        assert.are.equal("0.55", _G.GetCVar("Sound_MasterVolume"))
+
+        onWheel(VS.minimalistButton, -1)
+        assert.are.equal("0.5", _G.GetCVar("Sound_MasterVolume"))
     end)
 end)

@@ -19,6 +19,9 @@ _G.GameTooltip = {
     SetOwner = function() end,
     SetText = function() end,
     AddLine = function() end,
+    ClearLines = function() end,
+    IsShown = function() return false end,
+    GetOwner = function() return nil end,
     Show = function() end,
     Hide = function() end,
 }

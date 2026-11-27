@@ -22,6 +22,7 @@ local tonumber  = tonumber
 local type      = type
 local GetCVar   = GetCVar
 local table_insert = table.insert
+local table_remove = table.remove
 local table_sort   = table.sort
 
 -----------------------------------------
@@ -555,6 +556,45 @@ local function Migrate_V9_to_V10(db)
 end
 
 -------------------------------------------------------------------------------
+-- V10 -> V11 Schema Migration Engine
+--
+-- Normalizes legacy default minimap action trigger "None+Scroll" to "Scroll"
+-- so unmodified minimap scroll matches VS:GetActiveTriggerString() output.
+--
+-- @param db table The VolumeSlidersMMDB global table.
+-------------------------------------------------------------------------------
+local function Migrate_V10_to_V11(db)
+    if db.schemaVersion and db.schemaVersion >= 11 then return end
+
+    db.minimap = db.minimap or {}
+    local actions = db.minimap.mouseActions
+    if type(actions) == "table" then
+        local hasScroll = false
+        for _, action in ipairs(actions) do
+            -- The runtime skips unfinished bindings that have no effect.
+            if type(action) == "table" and action.trigger == "Scroll" and action.effect then
+                hasScroll = true
+                break
+            end
+        end
+
+        for i = #actions, 1, -1 do
+            local action = actions[i]
+            if type(action) == "table" and action.trigger == "None+Scroll" then
+                if hasScroll then
+                    table_remove(actions, i)
+                else
+                    action.trigger = "Scroll"
+                    hasScroll = true
+                end
+            end
+        end
+    end
+
+    db.schemaVersion = 11
+end
+
+-------------------------------------------------------------------------------
 -- Main Event Handler (PLAYER_LOGIN)
 --
 -- Orchestrates the addon bootstrap sequence:
@@ -577,6 +617,7 @@ initFrame:SetScript("OnEvent", function(self, event)
     Migrate_V7_to_V8(db)
     Migrate_V8_to_V9(db)
     Migrate_V9_to_V10(db)
+    Migrate_V10_to_V11(db)
     
     -- Smart Auto-Detection for Minimalist Minimap Icon
     -- We do this BEFORE MergeTable to ensure detection sets the "Smart Default"

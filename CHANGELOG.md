@@ -1,4 +1,9 @@
-# Changelog (v3.12.0)
+# Changelog (v3.12.1)
+
+## v3.12.1 — 2026-11-27
+
+### Fixed
+- Scrolling over the minimap icon without holding a modifier key now adjusts Master volume on fresh installs. Upgrading repairs affected scroll bindings while keeping their selected volume channel and step size.
 
 ## v3.12.0 — 2026-11-06
 

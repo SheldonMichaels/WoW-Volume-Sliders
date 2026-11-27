@@ -3,7 +3,7 @@
 **Database:** `VolumeSlidersMMDB`
 **Scope:** Global / Account-wide
 **Format:** Serialized Lua Table (Pseudo-JSON representation below)
-**Last Audited:** 2026-05-13 (SchemaVersion 10)
+**Last Audited:** 2026-11-24 (SchemaVersion 11)
 
 This document defines the exact shape of the saved variables used by Volume Sliders. It acts as the single source of truth for the data layer, distinguishing between user-configurable options, transient session states, and deprecated keys.
 
@@ -15,7 +15,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
 
 ```json
 {
-  "schemaVersion": 10,
+  "schemaVersion": 11,
 
   // ---------------------------------------------------------
   // 1. APPEARANCE & WINDOW STYLING
@@ -177,7 +177,7 @@ As of version 3.0.0, the monolithic flat-key structure has been deprecated in fa
         "stringTarget": "string",
         "numStep": "number"
       }
-    ] // Default: {None+Scroll, SCROLL_VOLUME, Sound_MasterVolume, 0.05}
+    ] // Default: {Scroll, SCROLL_VOLUME, Sound_MasterVolume, 0.05}
   },
 
   // ---------------------------------------------------------
@@ -290,3 +290,7 @@ Adds the `appearance.volumeDisplayFormat` string enum (default `"percentage"`) t
 ## Migration Contract (`Init.lua:Migrate_V9_to_V10`)
 
 Injects default values for the new `minimap` customization fields (`iconScale`, `iconColor`, `useCustomTint`, `fadeInSpeed`, `fadeOutSpeed`, `minimalistClampMode`, `minimalistAngle`, `minimalistRadius`) introduced in v3.11.0 to support the extended minimalist minimap icon feature. Migrates any legacy `fadeSpeed` to the split `fadeInSpeed`/`fadeOutSpeed` fields.
+
+## Migration Contract (`Init.lua:Migrate_V10_to_V11`)
+
+Normalizes persisted `minimap.mouseActions` triggers from `"None+Scroll"` (written by the v3.0.0–v3.12.0 default table) to `"Scroll"` so unmodified mouse-wheel scrolling matches `VS:GetActiveTriggerString()`. Preserves the migrated binding's channel and step size. An existing `"Scroll"` binding takes precedence if it has an assigned effect. The migration stamps `schemaVersion = 11`.
