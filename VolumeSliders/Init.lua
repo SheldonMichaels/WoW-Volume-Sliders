@@ -571,7 +571,8 @@ local function Migrate_V10_to_V11(db)
     if type(actions) == "table" then
         local hasScroll = false
         for _, action in ipairs(actions) do
-            if type(action) == "table" and action.trigger == "Scroll" then
+            -- The runtime skips unfinished bindings that have no effect.
+            if type(action) == "table" and action.trigger == "Scroll" and action.effect then
                 hasScroll = true
                 break
             end

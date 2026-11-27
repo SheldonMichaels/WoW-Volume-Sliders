@@ -97,6 +97,22 @@ describe("V10 to V11 Database Migration", function()
         assert.are.equal("Sound_MusicVolume", db.minimap.mouseActions[1].stringTarget)
     end)
 
+    it("migrates None+Scroll when an unfinished Scroll action exists", function()
+        local db = _G.VolumeSlidersMMDB
+        db.minimap.mouseActions = {
+            { trigger = "None+Scroll", effect = "SCROLL_VOLUME", stringTarget = "Sound_SFXVolume", numStep = 0.10 },
+            { trigger = "Scroll" },
+        }
+
+        initFrameScript({ UnregisterEvent = function() end }, "PLAYER_LOGIN")
+
+        assert.are.equal(11, db.schemaVersion)
+        assert.are.same({
+            { trigger = "Scroll", effect = "SCROLL_VOLUME", stringTarget = "Sound_SFXVolume", numStep = 0.10 },
+            { trigger = "Scroll" },
+        }, db.minimap.mouseActions)
+    end)
+
     it("handles missing minimap mouseActions cleanly and remains idempotent", function()
         local db = _G.VolumeSlidersMMDB
         db.minimap = nil

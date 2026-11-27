@@ -293,4 +293,4 @@ Injects default values for the new `minimap` customization fields (`iconScale`, 
 
 ## Migration Contract (`Init.lua:Migrate_V10_to_V11`)
 
-Normalizes persisted `minimap.mouseActions` triggers from `"None+Scroll"` (written by the v3.0.0–v3.12.0 default table) to `"Scroll"` so unmodified mouse-wheel scrolling matches `VS:GetActiveTriggerString()`. Preserves any user-configured channel or step size, removes duplicate `"None+Scroll"` entries if a `"Scroll"` binding already exists, and stamps `schemaVersion = 11`.
+Normalizes persisted `minimap.mouseActions` triggers from `"None+Scroll"` (written by the v3.0.0–v3.12.0 default table) to `"Scroll"` so unmodified mouse-wheel scrolling matches `VS:GetActiveTriggerString()`. Preserves the migrated binding's channel and step size. An existing `"Scroll"` binding takes precedence if it has an assigned effect. The migration stamps `schemaVersion = 11`.
